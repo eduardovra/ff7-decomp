@@ -105,6 +105,25 @@ scale = (s32)(effect->AnimationFrame * t) >> 12;
 
 Once the tree is split, source order then controls `mult` operand order.
 
+**Register allocation follows pseudo-creation order.** A diff whose only
+fault is the same two registers swapped, repeated everywhere they appear,
+means the instructions are already right. gcc hands out hard registers in
+the order the pseudos are created, so a subexpression written inline can
+claim a register ahead of the value it was computed from. Naming it puts
+the creation order back:
+
+```c
+/* target: lw v0,0(a2); srl v1,v0,8  -- the loaded word is in $v0 */
+ap = materia >> 8;                 /* materia's pseudo is created first */
+if (ap == 0xFFFFFF && (materia & 0xFF) == materiaId)
+```
+
+Written as `if ((materia >> 8) == 0xFFFFFF && ...)` the shift takes $v0 and
+pushes the load to $v1. Reach for the named temp before
+`register u32 materia asm("$2")` -- a pin makes the score 0 without
+explaining anything, and it stays in the committed source forever. Applies
+to 2.7.2 as well as 2.6.3.
+
 **Where you assign decides how long a value lives.** An initialiser at the
 top of a function computes the value there. If it is not consumed until after
 several calls, gcc must park it in a callee-saved register, adding a
@@ -141,3 +160,14 @@ compiler, parsed by `tools/ninja/gen.py`.
 | PSYQ=4.0 | cc1-psx-272 | 2.56 |
 
 No annotation defaults to cc1-psx-272 / 2.34.
+
+`CC1=2.6.3` / `CC1=2.7.2` overrides the cc1 the `PSYQ=` row selected and
+leaves the aspsx version alone, so `PSYQ=3.3 CC1=2.7.2` means cc1-psx-272
+with aspsx 2.21 -- a pairing no real SDK release shipped, but the most
+common one in this tree.
+
+**Before blaming the annotation, flip it and score the whole file.** A
+wrong compiler is not subtle: bginmenu.c built as 2.6.3 breaks four
+untouched functions by 15 to 340 points. A single function that is off by
+nothing but register names scores the same under both, and is telling you
+about the source, not the toolchain.
