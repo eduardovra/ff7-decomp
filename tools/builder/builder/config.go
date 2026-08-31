@@ -3,6 +3,7 @@ package builder
 import (
 	"crypto/md5"
 	"fmt"
+	"os"
 	"path/filepath"
 )
 
@@ -34,8 +35,16 @@ type BuildConfig struct {
 }
 
 func (o Overlay) Fingerprint() []byte {
-	sum := md5.Sum([]byte(fmt.Sprintf("%v", o)))
-	return sum[:]
+	h := md5.New()
+	fmt.Fprintf(h, "%v", o)
+	// hash the symbol files' contents, not just their paths, so a
+	// symbol rename invalidates the overlay's split asm
+	for _, path := range o.SymbolAddrsPath {
+		if data, err := os.ReadFile(path); err == nil {
+			h.Write(data)
+		}
+	}
+	return h.Sum(nil)
 }
 
 func ConfigPath(version string) string {

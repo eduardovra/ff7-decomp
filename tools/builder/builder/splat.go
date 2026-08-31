@@ -113,7 +113,9 @@ func makeSplatConfig(b BuildConfig, o Overlay) (SplatConfig, error) {
 			FindFileBoundaries:             false,
 			UseLegacyIncludeAsm:            false,
 			MigrateRodataToFunctions:       o.MigrateRodataToFunctions,
-			DisassembleAll:                 o.Name == "main", // for some reason, `main` doesn't build without
+			// also keeps nonmatchings asm fresh after symbol renames:
+			// without it splat skips segments whose .c file exists
+			DisassembleAll:                 true,
 			GlobalVramStart:                o.VramStart,
 			GPValue:                        o.GPValue,
 			SectionOrder:                   []string{".rodata", ".text", ".data", ".sdata", ".sbss", ".bss"},
