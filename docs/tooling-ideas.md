@@ -64,6 +64,56 @@ core product, in build order, each independently testable. #7–8 are the
 long-game bet uniquely enabled by having the exact compiler. #10 and
 #11 are explicitly parked: large, and mostly subsumed by cheaper rows.
 
+## Taxonomy results (#1)
+
+`tools/taxonomy_poc.py --batch` over all 1634 split functions with
+target asm on disk: raw m2c `--valid-syntax` output, compiled with the
+per-file toolchain (PSYQ/CC1/G annotations honored, pipefail on),
+instruction streams compared with immediates normalized. Instruction
+streams are stored in `build/taxonomy.jsonl`, so re-classification is
+offline analysis — no recompilation.
+
+| verdict | count | share |
+|---|---|---|
+| INSN_MATCH (instruction-exact) | 151 | 9.2% |
+| STRUCTURAL, similarity >= 0.9 | 94 | 5.8% |
+| STRUCTURAL, 0.7–0.9 | 348 | 21.3% |
+| STRUCTURAL, < 0.7 | 511 | 31.3% |
+| COMPILE_FAIL | 455 | 27.8% |
+| M2C_FAIL (crash/timeout) | 75 | 4.6% |
+| REGALLOC_ONLY / REGALLOC_FRAME | 0 | 0% |
+
+Top COMPILE_FAIL causes: "too few arguments" (131), "conflicting
+types" (68), "invalid type argument" (37), assignment type mismatches
+(27) — i.e. m2c's inferred signatures/types disagreeing with the
+project context, not invalid syntax.
+
+Takeaways:
+
+- **Raw m2c divergence is never pure register allocation.** Zero
+  functions differ from target only by register naming or frame ops.
+  The regalloc-focused predictor (idea #3 as originally framed)
+  targets a failure mode that raw m2c output doesn't exhibit —
+  regalloc presumably becomes the blocker only *after* shape/type
+  problems are fixed. The #3 experiment should rerun on the
+  human-perturbed-matched-function corpus before building anything.
+- **The dominant machine-fixable class is context/type divergence**
+  (~28% COMPILE_FAIL + a large share of STRUCTURAL): wrong signatures,
+  wrong extern types, missing struct knowledge. This promotes the
+  context-steering loop (#7) and the resolver (#2) above the regalloc
+  tool in build order.
+- ~9% of raw m2c output is instruction-exact with zero human input;
+  ~6% more is within 0.9 similarity.
+- Harness gotchas worth keeping: shell pipelines hide cc1 failures
+  without pipefail; m2ctx's re-appended #defines collide with enum
+  members when re-preprocessed; the ctx prototype of the function
+  under test conflicts with m2c's inferred signature; `G=8` files
+  need gp-relative compilation.
+- Caveats: comparison is per-function instruction text, not linked
+  bytes (no reloc/data checking); the corpus over-represents unmatched
+  functions (stale asm for matched ones exists only for recent files,
+  11 of 1634).
+
 ## PoC validation plan (for #3)
 
 1. Dump parser: run `cc1 -O2 -G0 -da`, extract per-function
