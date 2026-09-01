@@ -10,6 +10,8 @@ valid if the sha1 still matches.
   Read before touching a non-matching function.
 - `docs/magic-overlays.md` -- architecture of the spell overlays under
   `src/magic/`.
+- `docs/emulator-loop.md` -- `./mako.sh redux`, which runs a rebuilt overlay
+  in PCSX-Redux. Use it when sha1 cannot answer the question.
 
 ## Verify every change
 

@@ -65,6 +65,16 @@ bin/str: tools/str.c
 	gcc -s -o $@ -O2 $<
 	chmod +x $@
 
+# The emulator for `./mako.sh redux`. PCSX-Redux publishes no tagged
+# releases, only rolling builds, so unlike bin/cc1-* there is no hash to
+# pin -- record the build that was fetched instead of checking against one.
+bin/pcsx-redux:
+	wget -O bin/pcsx-redux.zip https://distrib.app/pub/org/pcsx-redux/project/dev-linux-x64/latest
+	unzip -p bin/pcsx-redux.zip PCSX-Redux-HEAD-x86_64.AppImage > $@
+	rm bin/pcsx-redux.zip
+	chmod +x $@
+	sha256sum $@ > $@.sha256
+
 bin/%: bin/%.gz
 	sha256sum --check $<.sha256
 	gzip -kcd $< > $@

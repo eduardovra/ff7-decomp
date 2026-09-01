@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/goccy/go-yaml"
 )
 
 type Overlay struct {
@@ -47,9 +49,31 @@ func (o Overlay) Fingerprint() []byte {
 	return h.Sum(nil)
 }
 
+func (b BuildConfig) FindOverlay(name string) (Overlay, error) {
+	for _, o := range b.Overlays {
+		if o.Name == name {
+			return o, nil
+		}
+	}
+	return Overlay{}, fmt.Errorf("unknown overlay %q", name)
+}
+
 func ConfigPath(version string) string {
 	if version == "" {
 		version = Version()
 	}
 	return filepath.Join("config", version+".yaml")
+}
+
+func LoadConfig(version string) (BuildConfig, error) {
+	path := ConfigPath(version)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return BuildConfig{}, fmt.Errorf("read %s: %w", path, err)
+	}
+	var b BuildConfig
+	if err := yaml.Unmarshal(data, &b); err != nil {
+		return BuildConfig{}, fmt.Errorf("parse %s: %w", path, err)
+	}
+	return b, nil
 }
