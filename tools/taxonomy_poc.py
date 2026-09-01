@@ -139,9 +139,13 @@ def disasm(obj: Path, func_hint: str | None = None) -> list[str]:
         m = re.match(r"^\s+[0-9a-f]+:\s+[0-9a-f]+\s+(\S+)\s*(.*)$", line)
         if m and in_func:
             mnemonic, ops = m.group(1), m.group(2)
+            # strip only objdump's symbol annotations and branch
+            # targets (position-dependent); registers, immediates and
+            # shift amounts must compare exactly -- blanking them
+            # overcounted INSN_MATCH badly
             ops = re.sub(r"<[^>]*>", "", ops)
-            ops = re.sub(r"0x[0-9a-f]+", "IMM", ops)
-            ops = re.sub(r"-?\d+", "IMM", ops)
+            if mnemonic.startswith("b") or mnemonic in ("j", "jal"):
+                ops = re.sub(r"\b[0-9a-f]+\b", "TGT", ops)
             insns.append(f"{mnemonic} {ops.strip()}")
     return insns
 
