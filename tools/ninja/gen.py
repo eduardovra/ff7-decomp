@@ -433,5 +433,8 @@ with open("build.ninja", "w") as f:
         "lv5deth",
         "brizad",
         "thunder",
+        "mabaria",
+        "refrec",
+        "fire",
     ]:
         add_splat_config(os.path.join(work_dir, f"{ovl}.yaml"))
