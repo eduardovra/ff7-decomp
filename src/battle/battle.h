@@ -495,7 +495,7 @@ void* func_800D29D4(Unk801B0C98*, u_long**, int, void*);
 // diagonal, `pos` is transformed into view space to become the translation,
 // and `depthBias` nudges it along that view vector (negative pulls it toward
 // the camera). Leaves the result installed as the rot/trans matrix.
-void func_800D4368(SVECTOR* pos, s32 scale, s32 depthBias);
+MATRIX* func_800D4368(SVECTOR* pos, s32 scale, s32 depthBias);
 // Same descriptor layout as func_800D29D4 (offsets 0/4/8/A), different
 // renderer; callers that colour the model type offset 4 as a CVECTOR.
 void* func_800D4D90(void* desc, u_long** ot, int otLen, void* prim);

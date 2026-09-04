@@ -2323,3 +2323,5 @@ func_801B0350 = 0x801b0350;
 func_801B05A4 = 0x801b05a4;
 func_801B066C = 0x801b066c;
 func_801B06CC = 0x801b06cc;
+ThunderRenderDesc0 = 0x801c0e5c;
+ThunderRenderDesc1 = 0x801c0e68;

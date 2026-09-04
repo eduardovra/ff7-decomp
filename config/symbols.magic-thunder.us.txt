@@ -1,2 +1,4 @@
+ThunderRenderDesc0 = 0x801C0E5C; // size:0xC
+ThunderRenderDesc1 = 0x801C0E68; // size:0xC
 ThunderPrimBuffer = 0x801C0E78;
 ThunderBufferPtr = 0x801E0E78;
