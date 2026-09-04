@@ -6,6 +6,12 @@ import re
 import sys
 import yaml
 
+sys.path.insert(0, "tools")
+try:
+    import regtrack_poc
+except ImportError:  # the --annotate helper is optional
+    regtrack_poc = None
+
 
 def add_custom_arguments(parser):
     # Peek at argv: if the value after --overlay is a function name (not a real
@@ -36,6 +42,13 @@ def add_custom_arguments(parser):
             default=None,
             dest="overlay",
         )
+
+    parser.add_argument(
+        "--annotate",
+        action="store_true",
+        dest="annotate",
+        help="annotate each instruction with the C variable a register holds",
+    )
 
 
 def load_config(version: str) -> dict:
@@ -85,3 +98,99 @@ def apply(config, args):
     config["objdump_executable"] = "mipsel-linux-gnu-objdump"
     config["arch"] = "mipsel"
     config["makeflags"] = []
+    install_annotator(args)
+
+
+def _find_c_info() -> "regtrack_poc.CInfo | None":
+    """Locate the C definition of whichever positional names a function."""
+    for arg in sys.argv[1:]:
+        if arg.startswith("-"):
+            continue
+        info = regtrack_poc.read_c(arg)
+        if info:
+            return info
+    return None
+
+
+def _annotate(
+    lines: list,
+    info: "regtrack_poc.CInfo | None",
+    dim: str = "",
+    reset: str = "",
+) -> None:
+    """Fill Line.comment with what each register holds at that point."""
+    state = {}
+    if info:
+        # o32: the first four arguments arrive in a0-a3, by name.
+        for reg, ident in zip(regtrack_poc.PARAM_REGS, info.params):
+            state[reg] = regtrack_poc.Val(
+                text=ident, base=ident, coef=1, cname=ident
+            )
+    targets = {x.branch_target for x in lines if x.branch_target is not None}
+    # asm-differ renders "addr:" then four spaces, then the instruction
+    # tab-expanded on its own. The address is not padded, so its length
+    # varies; measure the whole thing to align the annotations.
+    widths = {}
+    for line in lines:
+        if line.line_num is None:
+            prefix = ""
+        else:
+            prefix = f"{line.line_num:x}:"
+        body = line.original.expandtabs(8)
+        widths[id(line)] = len(prefix) + 4 + len(body)
+    column = max(widths.values(), default=0)
+    for line in lines:
+        if line.line_num in targets:
+            # A branch target merges paths we did not track; start clean.
+            state.clear()
+        parts = line.original.split("\t", 1)
+        if len(parts) > 1 and parts[1].strip():
+            args = [a.strip() for a in parts[1].split(",")]
+        else:
+            args = []
+        try:
+            note = regtrack_poc.step(state, line.mnemonic, args, info)
+        except Exception:
+            note = ""
+        if info:
+            regtrack_poc.name_registers(state, info)
+        if note:
+            pad = " " * max(0, column - widths[id(line)])
+            line.comment = f"{pad}{dim}; {note}{reset}"
+
+
+def install_annotator(args) -> None:
+    """Wrap asm-differ's process() so every parsed line carries a note.
+
+    asm-differ is a submodule, so this hooks the running module rather
+    than patching it. Any failure leaves the diff untouched.
+    """
+    if not getattr(args, "annotate", False) or regtrack_poc is None:
+        return
+    # Line.comment only renders under --source; turn it on for the user.
+    args.show_source = True
+
+    module = sys.modules.get("__main__")
+    if module is None or not hasattr(module, "process"):
+        return
+
+    original_process = module.process
+    info = _find_c_info()
+
+    # Match the dim styling asm-differ gives source lines (SOURCE_OTHER),
+    # but only when it is actually emitting colour.
+    dim = reset = ""
+    if getattr(args, "format", "color") == "color":
+        style = getattr(module, "Style", None)
+        dim = getattr(style, "DIM", "\x1b[2m")
+        reset = getattr(style, "RESET_ALL", "\x1b[0m")
+
+    def process_with_notes(dump: str, config) -> list:
+        lines = original_process(dump, config)
+        try:
+            _annotate(lines, info, dim, reset)
+        except Exception:
+            pass
+        return lines
+
+    module.process = process_with_notes
