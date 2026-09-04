@@ -105,6 +105,26 @@ The per-spell `.asm` files there (`thunder.asm`, `brizad.asm`, ...) are
 raw disassembly with no annotations -- the value is in `functions.txt`
 and the `*_desc.txt` files.
 
+#### Two addressing schemes, don't mix them
+
+q-gears is a cross-platform engine reimplementation, so the natural
+worry is that its addresses are PC. They are not: this subtree is PSX
+MIPS, and their `thunder.asm` is our thunder overlay instruction for
+instruction (same `0x8015169C` / `0x80162978` references, and their
+`L0068`/`L0090`/`L016c` are our `.L801B0068`/`.L801B0090`/`.L801B016C`).
+
+The repo does use two different bases, though:
+
+| where | base | convert |
+|---|---|---|
+| per-spell `.asm` dumps | overlay-relative, `0x80000000` | add `0x1B0000` |
+| `functions.txt` names (`funcd4d90`) | absolute PSX | none |
+
+`functions.txt` is absolute because those functions live in the
+resident battle module rather than the overlay. Absolute references
+*inside* a dump keep their real addresses regardless -- the entry point
+at their `0x80000000` does `jal $801b06cc`, which is `func_801B06CC`.
+
 ## Porting workflow
 
 A struct import touches two places (see docs/tooling-ideas.md,
