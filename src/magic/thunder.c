@@ -18,11 +18,11 @@ typedef struct {
     /* 0x1A */ u16 unk1A;
     /* 0x1C */ s16 unk1C;
     /* 0x1E */ char pad1E[2];
-} ThunderData; // size = 0x20
+} ThunderData; // size:0x20
 
 typedef struct {
     /* 0x00 */ char pad[0x10000];
-} ThunderPrimPage; // size = 0x10000
+} ThunderPrimPage; // size:0x10000
 
 extern void* ThunderBufferPtr;
 extern ThunderData D_80162978[];

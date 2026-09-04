@@ -392,12 +392,13 @@ typedef struct {
 // func_800D4D90 reads only these 0xC bytes, so its instances in ROM are
 // truncated to 0xC and packed 0xC apart. QuadCount is named after q-gears'
 // note on func_800D4D90, "create number of quads according to data in
-// effect" -- see docs/external-references.md.
+// effect" (github.com/q-gears/q-gears-reversing-data).
 typedef struct {
     /* 0x0 */ s32* unk0;
     /* 0x4 */ union {
         s32 flags;     // func_800D29D4 tests bits 0x1..0x100
-        CVECTOR color; // func_800D4D90 stores it as a GPU packet word
+        CVECTOR color; // func_800D4D90 stores it as a GPU packet word; cd is
+                       // the command byte (0x2C POLY_FT4, 0x38 POLY_G4)
     } u;
     /* 0x8 */ u16 QuadCount; // bit 15 is a flag, low bits the count
     /* 0xA */ s16 unkA;
