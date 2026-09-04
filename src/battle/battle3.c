@@ -84,9 +84,7 @@ const s32 D_800A0E48[] = {0, 0, 0};
 void func_800DBC18(OT_TYPE*, s16);
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle3", func_800DBC18);
 
-static void func_800DBEA4(OT_TYPE* arg0, s16 arg1) {
-    func_800DBC18(arg0, arg1);
-}
+static void func_800DBEA4(OT_TYPE* arg0, s16 arg1) { func_800DBC18(arg0, arg1); }
 
 // ot: this frame's ordering table, selected by func_800D8D78 via the
 // D_800F1994 double-buffer index -- forwarded through to func_800DBEA4 and
@@ -97,13 +95,12 @@ void func_800DBEC8(OT_TYPE* ot) {
         return;
     }
 
-    if ((D_800F3120 != 0) && (D_800FAFEC >= 0 && D_800FAFEC < 0x128) &&
-        (D_800FAFF0 > 0xF && D_800FAFF0 < 0xA6)) {
+    if ((D_800F3120 != 0) && (D_800FAFEC >= 0 && D_800FAFEC < 0x128) && (D_800FAFF0 > 0xF && D_800FAFF0 < 0xA6)) {
         func_800DB818(ot, D_800FAFEC, D_800FAFF0);
     }
 }
 
-static void func_800DBF54(void) { func_800269C0(D_80077F64); }
+static void func_800DBF54(void) { SysMenuSetPoly(D_80077F64); }
 
 static void func_800DBF7C(void) { D_800F3122 = 0; }
 
@@ -135,7 +132,7 @@ static void func_800DD690(s32 arg0, s16 arg1) {
     s32 setupType;
     s32 temp_v1;
 
-    func_80026A00();
+    SysMenuSetOtag();
     switch (arg1) {
     case 0:
         func_800E2098();
@@ -161,10 +158,10 @@ static void func_800DD690(s32 arg0, s16 arg1) {
         if (temp_v1 < NUM_SETUP) {
             setupType = -(temp_v1 <= SETUP_BACK_ATTACK) & 7;
         }
-        func_80026F44(8, 7, func_80015248(5, 0x12, 8), setupType);
+        SysMenuDrawString(8, 7, SysKernGetString(5, 0x12, 8), setupType);
         break;
     case 3:
-        func_80026F44(9, 7, func_80015248(5, 0x13, 8), 7);
+        SysMenuDrawString(9, 7, SysKernGetString(5, 0x13, 8), 7);
         break;
     case 24:
         func_800E33A0();
@@ -312,7 +309,7 @@ void func_800DF900(void) {
     u16* tapped;
 
     if (D_800F3896 == 3 && D_800F99E4 == 0) {
-        tapped = &g_Pad1ButtonsRepeat;
+        tapped = &g_Pad1KeysRepeat;
         if (*tapped & PADRright) {
             func_800BB9B8(1);
             D_800F99E4 = 1;
@@ -320,7 +317,7 @@ void func_800DF900(void) {
             func_800A4350(D_800F38A0, D_800F389C, D_800F389E, D_801516F8);
             func_800D9F5C(3);
             func_800D9F5C(1);
-        } else if (g_Pad1ButtonsRepeat & (PADLleft | PADRdown)) {
+        } else if (g_Pad1KeysRepeat & (PADLleft | PADRdown)) {
             func_800BB9B8(4);
             D_800F99E4 = 1;
             D_800F3896 = 1;
@@ -357,7 +354,7 @@ void func_800E0294(void) {
 
     temp_s0 = &g_ActiveCharacters[D_800F38A1].unkAC[0];
     if (D_800F3896 == 0x1B && D_800F99E4 == 0) {
-        if (g_Pad1ButtonsRepeat & PADRright) {
+        if (g_Pad1KeysRepeat & PADRright) {
             if (func_800E54EC() == 2) {
                 D_800F99E4 = 1;
                 func_800BB9B8(1);
@@ -370,7 +367,7 @@ void func_800E0294(void) {
                 func_800D9F5C(0x1B);
                 func_800D9F5C(1);
             }
-        } else if ((g_Pad1ButtonsRepeat & PADRdown) && (func_800E54EC() == 0)) {
+        } else if ((g_Pad1KeysRepeat & PADRdown) && (func_800E54EC() == 0)) {
             func_800BB9B8(4);
             D_800F99E4 = 1;
             D_800F3896 = 1;
@@ -388,7 +385,7 @@ void func_800E03F0(void) {
 
     temp_s0 = &D_8009D8F8[D_800F38A1 * 0x440];
     if ((D_800F3896 == 0x1A) && (D_800F99E4 == 0)) {
-        if (g_Pad1ButtonsRepeat & PADRright) {
+        if (g_Pad1KeysRepeat & PADRright) {
             D_800F99E4 = 1;
             if (func_800E4BCC() == 2) {
                 func_800BB9B8(1);
@@ -401,7 +398,7 @@ void func_800E03F0(void) {
                 func_800D9F5C(0x1A);
                 func_800D9F5C(1);
             }
-        } else if ((g_Pad1ButtonsRepeat & PADRdown) && (func_800E4BCC() == 0)) {
+        } else if ((g_Pad1KeysRepeat & PADRdown) && (func_800E4BCC() == 0)) {
             func_800BB9B8(4);
             D_800F99E4 = 1;
             D_800F3896 = 1;
@@ -415,7 +412,7 @@ void func_800E0528(void) {}
 void func_800E0530(void) {
     s32 i;
 
-    func_80026448(&D_800F9132, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 1, 0, 0);
+    SysMenuSetCursorMovement(&D_800F9132, 0, 0, 2, 1, 0, 0, 2, 1, 0, 0, 1, 0, 0);
     for (i = 1; i < 0x1C; i++) {
         if (D_800F514C[i] != 0) {
             func_800D9F5C(i);
@@ -433,8 +430,8 @@ INCLUDE_ASM("asm/us/battle/nonmatchings/battle3", func_800E0794);
 
 void func_800E084C(void) {
     if (D_800F3896 == 9) {
-        func_800264A8(&D_800F9144);
-        if (g_Pad1ButtonsPressed & PADRright) {
+        SysMenuHandleButtons(&D_800F9144);
+        if (g_Pad1KeysPressed & PADRright) {
             if (D_800F914E == 0) {
                 func_800A4844(1);
             } else {
@@ -486,14 +483,14 @@ void func_800E0E34(void) {
     }
     menu = &D_800F90C6[D_800F38A0];
     list = D_801671B8;
-    if (g_Pad1Buttons & PADRleft) {
+    if (g_Pad1Keys & PADRleft) {
         D_800F99E4 = 1;
     } else {
         D_800F99E4 = 0;
     }
     if ((D_800F99E4 == 0) && ((D_800F514D == 2) || (D_800F515F == 2))) {
         if ((D_800F5166 != 2) && (D_800F5167 != 2)) {
-            if (g_Pad1ButtonsPressed & PADRup) {
+            if (g_Pad1KeysPressed & PADRup) {
                 func_800BB9B8(1);
                 func_800A4E40();
                 D_800F99E4 = 1;
@@ -540,8 +537,7 @@ void func_800E0E34(void) {
         if (!((((s32)D_801516F8) >> D_800F38A9) & 1)) {
             D_800F310E = 1;
         }
-        if ((D_80166F75 != 0) &&
-            (((D_800F389D == 0xA) || (D_800F389D == 3)) || (D_800F389D == 5))) {
+        if ((D_80166F75 != 0) && (((D_800F389D == 0xA) || (D_800F389D == 3)) || (D_800F389D == 5))) {
             D_800F3120 = 1;
             D_80166F75 = 0;
             D_800F99E4 = 1;
@@ -552,7 +548,7 @@ void func_800E0E34(void) {
             return;
         }
         if (D_800F99E4 == 0) {
-            if ((g_Pad1ButtonsRepeat & PADRright) != 0) { // pressed Confirm/OK
+            if ((g_Pad1KeysRepeat & PADRright) != 0) { // pressed Confirm/OK
                 if ((D_800FAFDC != 0) || (D_800F310E != 0)) {
                     func_800BB9B8(3);
                     D_800F99E4 = 1;
@@ -562,10 +558,8 @@ void func_800E0E34(void) {
                     if (D_800F38A4 == 2) {
                         if (D_800F389D == 0xA) {
                             list[menu->cursorRow + menu->scroll].count -= 1;
-                            if (list[menu->cursorRow + menu->scroll].count ==
-                                0) {
-                                list[menu->cursorRow + menu->scroll].id =
-                                    0xFFFF;
+                            if (list[menu->cursorRow + menu->scroll].count == 0) {
+                                list[menu->cursorRow + menu->scroll].id = 0xFFFF;
                             }
                         }
                         func_800DE2B4();
@@ -594,17 +588,15 @@ void func_800E0E34(void) {
                     }
                     return;
                 }
-                if (((D_800F389D == 3) || (D_800F389D == 0xA)) ||
-                    (D_800F389D == 5)) {
+                if (((D_800F389D == 3) || (D_800F389D == 0xA)) || (D_800F389D == 5)) {
                     list[menu->cursorRow + menu->scroll].count -= 1;
                     if (list[menu->cursorRow + menu->scroll].count == 0) {
                         list[menu->cursorRow + menu->scroll].id = 0xFFFF;
                     }
                 }
                 func_800DDFEC();
-            } else if (g_Pad1ButtonsRepeat & PADRdown) { // pressed Cancel/Back
-                if ((D_800F38A4 == 2) &&
-                    (D_800F389D == 0xA)) { // in the item menu?
+            } else if (g_Pad1KeysRepeat & PADRdown) {           // pressed Cancel/Back
+                if ((D_800F38A4 == 2) && (D_800F389D == 0xA)) { // in the item menu?
                     if (list[D_800F562C].count == 0) {
                         list[D_800F562C].id = D_800F314E;
                     }
@@ -689,7 +681,7 @@ static void func_800E1938(s16 arg0, s16 arg1, s32 arg2) {
     }
     x = ((var_a3 & 1) << 4) | 0x60;
     y = ((var_a3 >> 1) << 4) + 0x70;
-    func_80028CA0(arg0, arg1, x, y, 0x10, 0x10, 1, 0);
+    SysMenuDrawTexturedRect(arg0, arg1, x, y, 0x10, 0x10, 1, 0);
 }
 
 s32 func_800E1A2C(void) {
@@ -784,9 +776,7 @@ void func_800E1C40(void) {
     }
 }
 
-void func_800E2054(s32 arg0, s32 arg1) {
-    func_80027354(0xB0, arg0, &D_800F3184[arg1 * 10], 3);
-}
+void func_800E2054(s32 arg0, s32 arg1) { SysMenuDraw8widthFont(0xB0, arg0, &D_800F3184[arg1 * 10], 3); }
 
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle3", func_800E2098);
 
@@ -947,12 +937,12 @@ INCLUDE_ASM("asm/us/battle/nonmatchings/battle3", func_800E6018);
 
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle3", func_800E60F8);
 
-s32 func_800E6820(void) { return func_80026B70(D_800F384A); }
+s32 func_800E6820(void) { return SysGetSingleStringWidth(D_800F384A); }
 
 static void func_800E6848(void) {
-    func_80026F44(0x10, 8, &D_800F3828[0], 7);
-    func_80026F44(0x2C, 0x1C, &D_800F3828[0x22], 7);
-    func_80026F44(func_800E6820() + 0x4C, 0x1C, &D_800F3828[0x44], 7);
+    SysMenuDrawString(0x10, 8, &D_800F3828[0], 7);
+    SysMenuDrawString(0x2C, 0x1C, &D_800F3828[0x22], 7);
+    SysMenuDrawString(func_800E6820() + 0x4C, 0x1C, &D_800F3828[0x44], 7);
 }
 
 static void func_800E68B4(void) {

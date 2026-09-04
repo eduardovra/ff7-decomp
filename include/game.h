@@ -263,9 +263,9 @@ typedef struct {
     u8 weapon;
     u8 armor;
     u8 accessory;
-    u8 status_flags; // Status effects that remain after battle. 0x10 = Sadness,
-                     // 0x20 = Fury.
-    u8 order;        // 0xFF = front row, 0xFE = back row
+    u8 status_flags;       // Status effects that remain after battle. 0x10 = Sadness,
+                           // 0x20 = Fury.
+    u8 order;              // 0xFF = front row, 0xFE = back row
     u8 level_progress_bar; // ui related
     u16 limit_learn;
     u16 kill_count;
@@ -474,41 +474,41 @@ typedef struct {
 // against published weapon stats (same method as ArmorRecord); the remaining
 // fields follow the standard kernel weapon-data layout.
 typedef struct {
-    u8 targetFlags;     // 0x23 = melee, 0x03 = long-range (hits back row)
-    u8 attackEffectId;  // always 0xFF (unused by weapons)
-    u8 damageFormula;   // 0x11 = physical; 0xA0-0xA8 select a special formula
-                        // (HP/MP/AP/Limit/kills/status/dead-allies), shared by
-                        // formula across weapons
-    u8 unk3;            // always 0xFF (unused)
-    u8 attack;          // attack power
-    u8 statusAttack;    // index of the status this attack inflicts; 0xFF (none)
-                        // on every weapon (cf. ArmorRecord.statusDefense)
-    u8 materiaGrowth;   // 0=None, 1=Normal, 2=Double, 3=Triple
-    u8 criticalPercent; // bonus critical-hit %
-    u8 attackPercent;   // hit rate
-    u8 weaponModel;     // lo nibble = model index, hi nibble = animation mod
-    u8 alignmentA;      // always 0xFF (alignment padding)
-    u8 soundIdMask;     // mask to reach the high (0x100+) sound-effect ids
-    u8 cameraMovementId[2]; // attack camera; always 0xFFFF
-    u8 equipMask[2];      // equippable-by-character bitmask (see ArmorRecord);
-                          // Cloud weapons add bit9 (Young Cloud) = 0x0201
-    u16 attackElement;    // 0x0400=Cut,0x0800=Hit,0x1000=Punch,0x2000=Shoot
-    u8 unk12[2];          // unknown, always 0xFFFF
-    u8 statBonusId[4];    // stat each slot boosts: 0=Str,1=Vit,2=Mag,3=Spr,
-                          // 4=Dex,5=Lck; 0xFF = unused (the Mag column is id 2)
-    u8 statBonusValue[4]; // bonus amount, paired with statBonusId; 0xFF unused
-    u8 materiaSlot[8];    // one byte per slot; same encoding as ArmorRecord
-                          // (5=single/6,7=linked-pair when materiaGrowth!=None;
-                          //  1=single/2,3=linked-pair when materiaGrowth==None)
-    u8 hitSound;      // sound-effect id for a normal hit (constant per weapon
-                      // class)
-    u8 criticalSound; // sound-effect id for a critical hit
-    u8 missSound;    // sound-effect id for a miss (0x2F on firearms, else 0x05)
-    u8 impactEffect; // impact-effect id (varies per weapon)
+    u8 targetFlags;           // 0x23 = melee, 0x03 = long-range (hits back row)
+    u8 attackEffectId;        // always 0xFF (unused by weapons)
+    u8 damageFormula;         // 0x11 = physical; 0xA0-0xA8 select a special formula
+                              // (HP/MP/AP/Limit/kills/status/dead-allies), shared by
+                              // formula across weapons
+    u8 unk3;                  // always 0xFF (unused)
+    u8 attack;                // attack power
+    u8 statusAttack;          // index of the status this attack inflicts; 0xFF (none)
+                              // on every weapon (cf. ArmorRecord.statusDefense)
+    u8 materiaGrowth;         // 0=None, 1=Normal, 2=Double, 3=Triple
+    u8 criticalPercent;       // bonus critical-hit %
+    u8 attackPercent;         // hit rate
+    u8 weaponModel;           // lo nibble = model index, hi nibble = animation mod
+    u8 alignmentA;            // always 0xFF (alignment padding)
+    u8 soundIdMask;           // mask to reach the high (0x100+) sound-effect ids
+    u8 cameraMovementId[2];   // attack camera; always 0xFFFF
+    u8 equipMask[2];          // equippable-by-character bitmask (see ArmorRecord);
+                              // Cloud weapons add bit9 (Young Cloud) = 0x0201
+    u16 attackElement;        // 0x0400=Cut,0x0800=Hit,0x1000=Punch,0x2000=Shoot
+    u8 unk12[2];              // unknown, always 0xFFFF
+    u8 statBonusId[4];        // stat each slot boosts: 0=Str,1=Vit,2=Mag,3=Spr,
+                              // 4=Dex,5=Lck; 0xFF = unused (the Mag column is id 2)
+    u8 statBonusValue[4];     // bonus amount, paired with statBonusId; 0xFF unused
+    u8 materiaSlot[8];        // one byte per slot; same encoding as ArmorRecord
+                              // (5=single/6,7=linked-pair when materiaGrowth!=None;
+                              //  1=single/2,3=linked-pair when materiaGrowth==None)
+    u8 hitSound;              // sound-effect id for a normal hit (constant per weapon
+                              // class)
+    u8 criticalSound;         // sound-effect id for a critical hit
+    u8 missSound;             // sound-effect id for a miss (0x2F on firearms, else 0x05)
+    u8 impactEffect;          // impact-effect id (varies per weapon)
     u8 specialAttackFlags[2]; // always 0xFFFF
-    u8 restrictionMask[2]; // a set bit forbids: 0x01 sell, 0x02 use in battle,
-                           // 0x04 use in menu, 0x08 throw (0xFFF6 base; the
-                           // initial weapons add sell+throw -> 0xFFFF)
+    u8 restrictionMask[2];    // a set bit forbids: 0x01 sell, 0x02 use in battle,
+                              // 0x04 use in menu, 0x08 throw (0xFFF6 base; the
+                              // initial weapons add sell+throw -> 0xFFFF)
 } WeaponRecord;
 
 typedef struct {
@@ -678,7 +678,7 @@ typedef struct {
     u16 SolidRange;       // 0x6C
     u16 TalkRange;        // 0x6E
     u16 MoveSpeed;        // 0x70
-    s16 PosI;             // 0x72
+    u16 PosI;             // 0x72
     s16 MoveEndI;         // 0x74
     u16 Pad76;
     s32 MoveEndX; // 0x78
@@ -772,9 +772,8 @@ typedef struct {
     u16 cameraScrollNumSteps;
     // Following two variables are set when exiting from field to mini games,
     // world map, or another field map.
-    u16 pcWalkMeshId; // Walk mesh triangle id player is inside of.
-    u8 pcDirection;   // Direction player is facing.
-    u8 unk25;
+    u16 pcWalkMeshId;      // Walk mesh triangle id player is inside of.
+    s16 pcDirection;       // Direction player is facing.
     s16 movieCommandState; // enum MovieCommandState.
     u16 modelCount;
     s16 pcModelId;
@@ -826,14 +825,15 @@ typedef struct {
     u8 unk66;
     u8 unk67;
     // Uses PADx macros in libetc.h
-    u32 activeKeys;      // Currently active keys.
-    u32 oldActiveKeys;   // activeKeys from last frame.
-    u32 newActiveKeys;   // Was inactive last frame.
-    u32 newInactiveKeys; // Was active last frame.
-    u32 activeKeys2;
-    u32 oldActiveKeys2;
-    u32 newActiveKeys2;
-    u32 newInactiveKeys2;
+    // Raw states ignore custom key mapping set by player.
+    u32 activeKeysRaw;     // Currently active keys.
+    u32 activeKeysPrevRaw; // activeKeysRaw from last frame.
+    u32 pressedKeysRaw;    // Was inactive last frame.
+    u32 releasedKeysRaw;   // Was active last frame.
+    u32 activeKeys;
+    u32 activeKeysPrev;
+    u32 pressedKeys;
+    u32 releasedKeys;
     s16 currentMovieFrame;
     // Set by SHAKE to enable a randomized camera shake effect.
     FieldShakeData shakeX;
@@ -906,10 +906,15 @@ typedef struct WindowData {
     u16 preventClose;
 } WindowData; // size:0x30
 
-extern u16 g_Pad1Buttons;
-extern u16 g_Pad1ButtonsPressed;
-extern u16 g_Pad1ButtonsRepeat;
+extern u16 g_Pad1Keys;
+extern u16 g_Pad1KeysPressed;
+extern u16 g_Pad1KeysRepeat;
 
+// Map between battle character IDs and index into character record array.
+// Battle characters have IDs 0-10. 9 and 10 are young Cloud and Sephiroth from
+// flashback sequence and they use same character records as Cait Sith and
+// Vincent.
+extern s32 g_BattleCharIdToCharId[11];
 extern u8 g_MenuColors[12]; // 4 corners x RGB
 extern u8 D_800492F0[][12]; // see Labels enum
 extern FieldModelData* g_FieldModelData;
@@ -965,10 +970,10 @@ extern DISPENV D_8007EB68[2];
 extern u8 g_EntityToModel[48]; // entity id -> model id (0xFF: none)
 extern s8 D_8007EBCC;
 extern s8 D_8007EBDC;
-extern u8 D_8007EBE0;      // field debug mode
-extern u8 g_CharacterLock; // mirror of the UC opcode's control-lock flag
+extern u8 D_8007EBE0;                 // field debug mode
+extern u8 g_CharacterLock;            // mirror of the UC opcode's control-lock flag
 extern u8 g_EntitySplitJoinState[48]; // states for SPLIT and JOIN opcodes
-extern s16 D_80082248[]; // per-model current animation playback speed
+extern s16 D_80082248[];              // per-model current animation playback speed
 extern u8 D_80083184[0x40];
 extern u8 D_800831C4[];         // Magic Order table from kernel.bin section 3.
 extern u16 g_FieldScriptPC[48]; // program counters for active entity scripts
@@ -996,14 +1001,14 @@ extern u8 g_FieldCurrentOpcode;
 extern s32 D_8009A064;
 extern MenuTable g_PartyMenuTables[3];
 extern u8 g_FieldScriptPriority[48]; // active scripts execution priority
-extern FieldState D_8009ABF4;
+extern FieldState g_FieldState;
 extern u8 D_8009AC2F;
 extern u8 g_CharIdToEntity[9];
 extern FieldEntity* g_FieldModels; // loaded field models
 extern u8 g_FieldModelCount;       // number of allocated field models
 extern FieldScriptHeader* g_FieldScripts;
-extern FieldState* g_FieldState; // points to 0x8009abf4
-extern SaveWork Savemap;         // 0x8009C6E4
+extern FieldState* g_pFieldState; // points to g_FieldState
+extern SaveWork Savemap;          // 0x8009C6E4
 extern u8 D_8009CBDC[];
 extern u16 D_8009D288[];
 extern u8 D_8009D2E7;
@@ -1024,7 +1029,7 @@ extern u8 D_8009D8F8[];
 extern u32 D_8009D260;
 extern volatile s32 D_8009D268[];
 extern ActiveCharacterData g_ActiveCharacters[9];
-extern s8 D_8009FE8C;
+extern u8 D_8009FE8C;
 extern u8 D_800C7304[16];
 
 // PSXSDK funcs
@@ -1032,35 +1037,33 @@ SVECTOR* ApplyMatrixSV(MATRIX* m, SVECTOR* v0, SVECTOR* v1);
 MATRIX* RotMatrixYXZ(SVECTOR* r, MATRIX* m);
 void SystemError(char c, long n);
 
-void func_80014B54(void);
-s32 func_8001521C(s32);
-const char* func_80015248(s32 arg0, s32 arg1, s32 arg2);
+void SysIncSeedForRandom(void);
+s32 SysGetPtrToUncompKernBattleTxtWithId(s32);
+const char* SysKernGetString(s32 arg0, s32 arg1, s32 arg2);
 void func_800155A4(s32, ...);
 void func_8001726C(s16, u16);
-u32 func_8001C808(void);
-u32 func_8001C8D4(void);
-void func_80021044(DRAWENV* draw_env, DISPENV* disp_env);
-s32 func_80023050(void);
-void func_8002305C(s32 state, s32 menuId);
+u32 InputReadPadsRaw(void);
+u32 InputReadPads(void);
+void SysMenuCreateDrawenvDispenv(DRAWENV* draw_env, DISPENV* disp_env);
+s32 SysMenuGetMenuListState(void);
+void SysMenuSetMenuListAnimation(s32 state, s32 menuId);
 u8* GetCharacterName(s32 battleCharId);
 void func_800262D8();
-void func_80026448(
-    MenuTable* table, s32 column, s32 row, s32 numColumns, s32 numRowsPerPage,
-    s32 unk0, s32 rowOffset, s32 unk4, s32 numTotalRows, s32 unkE, s32 unkF,
-    s32 unk10, s32 unk11, u16 scrolling);
-void func_800269C0(void* poly);
-s32 func_80026B70(unsigned char* str);
-void func_80026F44(s32 x, s32 y, const char*, s32 color); // print FF7 string
+void SysMenuSetCursorMovement(
+    MenuTable* table, s32 column, s32 row, s32 numColumns, s32 numRowsPerPage, s32 unk0, s32 rowOffset, s32 unk4,
+    s32 numTotalRows, s32 unkE, s32 unkF, s32 unk10, s32 unk11, u16 scrolling);
+void SysMenuSetPoly(void* poly);
+s32 SysGetSingleStringWidth(unsigned char* str);
+void SysMenuDrawString(s32 x, s32 y, const char*, s32 color); // print FF7 string
 int SystemAkaoExecute();
 
 int func_80033DAC(int sector_no, void (*cb)());
 int func_80033DE4(int sector_no);
-int SystemLoadFileBySector(
-    int sector_no, size_t size, u_long* dst, void (*cb)());
+int SystemLoadFileBySector(int sector_no, size_t size, u_long* dst, void (*cb)());
 int DS_read(int sector_no, size_t size, u_long* dst, void (*cb)());
 int func_80033EDC(int sector_no, void (*cb)());
-int func_80033F40(int sector_no, size_t size, u_long* dst, void (*cb)());
-int func_80033FC4(int sector_no, size_t size, u_long* dst, void (*cb)());
+int SysCdromLoadFile(int sector_no, size_t size, u_long* dst, void (*cb)());
+int SysCdromLoadLzs(int sector_no, size_t size, u_long* dst, void (*cb)());
 u32 SystemCdromReadChain(void);
 
 // from overlays

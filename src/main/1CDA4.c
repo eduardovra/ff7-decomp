@@ -1,22 +1,22 @@
 //! PSYQ=3.3 CC1=2.7.2 G=8 COMM=true
 #include "main_private.h"
 
-u16 g_Pad1Buttons = 0;
-u16 g_Pad1ButtonsPrev = 0;
-u16 g_Pad1ButtonsPressed = 0;
-u16 g_Pad1ButtonsRepeat = 0;
-u16 g_Pad2Buttons = 0;
-u16 g_Pad2ButtonsPrev = 0;
-u16 g_Pad2ButtonsPressed = 0;
-u16 g_Pad2ButtonsRepeat = 0;
-u16 g_Pad1FastButtons = 0;
-u16 g_Pad1FastButtonsPrev = 0;
-u16 g_Pad1FastButtonsPressed = 0;
-u16 g_Pad1FastButtonsRepeat = 0;
-u16 g_Pad2FastButtons = 0;
-u16 g_Pad2FastButtonsPrev = 0;
-u16 g_Pad2FastButtonsPressed = 0;
-u16 g_Pad2FastButtonsRepeat = 0;
+u16 g_Pad1Keys = 0;
+u16 g_Pad1KeysPrev = 0;
+u16 g_Pad1KeysPressed = 0;
+u16 g_Pad1KeysRepeat = 0;
+u16 g_Pad2Keys = 0;
+u16 g_Pad2KeysPrev = 0;
+u16 g_Pad2KeysPressed = 0;
+u16 g_Pad2KeysRepeat = 0;
+u16 g_Pad1BattleKeys = 0;
+u16 g_Pad1BattleKeysPrev = 0;
+u16 g_Pad1BattleKeysPressed = 0;
+u16 g_Pad1BattleKeysRepeat = 0;
+u16 g_Pad2BattleKeys = 0;
+u16 g_Pad2BattleKeysPrev = 0;
+u16 g_Pad2BattleKeysPressed = 0;
+u16 g_Pad2BattleKeysRepeat = 0;
 u8 D_80062D98 = 0x00;
 volatile u8 g_SavemapBusy = 0x00;
 static s16 D_80062D9A = 0x0000;
@@ -39,19 +39,18 @@ s32 D_80062DC8 = 0x00000000;
 s32 D_80062F9C;
 s32 D_80062FF0;
 
-void func_8001155C(void);
+void SysBgRender(void);
 void func_80014A00(s32* dst, s32* src, s32 len);
-u16* func_80014D9C(s32, s32, s32);
-s32 func_800150E4(u16*, u16*);
-u16* func_800151F4(s32);
-void func_80015CA0(GzHeader* src, s32* dst);
-s32 func_8001AC9C(u8, s32);
-s32 func_8001B834(s32);
-void func_8001BD50(u8, u8, u8);
+u16* SysGetPointerToTextInKernWithBlockAndTextId(s32, s32, s32);
+s32 SysDecompKernStringWithF9(u16*, u16*);
+u16* SysGetPtrToKernBattleTxtWithId(s32);
+void SysGzipBinDecompress(GzHeader* src, s32* dst);
+s32 SysGetMateriaActivatedStars(u8, s32);
+s32 SysAddCommandToTemp(s32);
+void SysAddMagicSummonSkillToUnitStructure(u8, u8, u8);
 u8 func_8001F6B4();
-void func_8001F6E4(
-    s16 enabled, s16 x, s16 y); // PC: menu_setNotificationWindowPosition
-void func_80026A34(s32 dfe, s32 dtd, u16 tpage, RECT* tw);
+void SysMenuSetPosAddWindow(s16 enabled, s16 x, s16 y); // PC: menu_setNotificationWindowPosition
+void SysMenuSetDrawMode(s32 dfe, s32 dtd, u16 tpage, RECT* tw);
 
 void func_8001CDA4(void) {
     SetPolyFT4(D_80062F24.ft4);
@@ -78,8 +77,7 @@ void func_8001CDA4(void) {
     D_80062F24.ft4++;
 }
 
-void func_8001CF3C(s16 x, s16 y, s16 w, s16 h, u16 tx, u16 ty, u16 tw, u16 th,
-                   s16 clut, s32 tex) {
+void SysMenuDrawAvatar(s16 x, s16 y, s16 w, s16 h, u16 tx, u16 ty, u16 tw, u16 th, s16 clut, s32 tex) {
     SetPolyFT4(D_80062F24.ft4);
     SetShadeTex(D_80062F24.ft4, 1);
     if (tex << 0x10) {
@@ -107,8 +105,7 @@ void func_8001CF3C(s16 x, s16 y, s16 w, s16 h, u16 tx, u16 ty, u16 tw, u16 th,
     D_80062F24.ft4++;
 }
 
-void func_8001D180(s16 x, s16 y, s16 w, s16 h, u16 tx, u16 ty, u16 tw, u16 th,
-                   s16 clut, s32 tex) {
+void SysMenuDrawAvatar2(s16 x, s16 y, s16 w, s16 h, u16 tx, u16 ty, u16 tw, u16 th, s16 clut, s32 tex) {
     SetPolyFT4(D_80062F24.ft4);
     SetShadeTex(D_80062F24.ft4, 1);
     if (tex << 0x10) {
@@ -180,7 +177,7 @@ void func_8001D56C(s16 x0, s16 y0, s16 x1, s16 y1, s16 is_yellow) {
     D_80062F24.linef2++;
 }
 
-s16 func_8001D6A8(s16 x, s16 y, s16 w, u8* txt) {
+s16 SysMenuDrawDialogString(s16 x, s16 y, s16 w, u8* txt) {
     RECT rect;
     u8 c;
     s32 width;
@@ -269,7 +266,7 @@ s16 func_8001D6A8(s16 x, s16 y, s16 w, u8* txt) {
                     rect.y = 0;
                     rect.w = 256;
                     rect.h = 256;
-                    func_80026A34(0, 1, GetTPage(0, 1, 0x380, 0x100), &rect);
+                    SysMenuSetDrawMode(0, 1, GetTPage(0, 1, 0x380, 0x100), &rect);
 
                     setSprt(D_80062F24.sprt);
                     SetShadeTex(D_80062F24.sprt, 1);
@@ -306,7 +303,7 @@ s16 func_8001D6A8(s16 x, s16 y, s16 w, u8* txt) {
                     rect.w = 256;
                     rect.h = 256;
                     D_80062DBC--;
-                    func_80026A34(0, 1, GetTPage(0, 1, 0x3C0, 0x100), &rect);
+                    SysMenuSetDrawMode(0, 1, GetTPage(0, 1, 0x3C0, 0x100), &rect);
                     D_80062FF0++;
                     x += 16;
                     continue;
@@ -320,13 +317,11 @@ s16 func_8001D6A8(s16 x, s16 y, s16 w, u8* txt) {
                 if (D_80062DB8 == 0) {
                     textColor = D_80062DB4 + 0x1F0;
                 } else {
-                    textColor =
-                        (((D_80062DBA >> 2) - colorCycleCount) & 7) | 0x1F0;
+                    textColor = (((D_80062DBA >> 2) - colorCycleCount) & 7) | 0x1F0;
                 }
             } else {
                 if (D_80062DB8) {
-                    textColor =
-                        (((D_80062DBA >> 2) - colorCycleCount) & 7) | 0x1F0;
+                    textColor = (((D_80062DBA >> 2) - colorCycleCount) & 7) | 0x1F0;
                 } else if (((D_80062DBA >> 2) & 1) != 0) {
                     textColor = D_80062DB4 + 0x1F0;
                 } else {
@@ -341,9 +336,7 @@ s16 func_8001D6A8(s16 x, s16 y, s16 w, u8* txt) {
             next = *txt;
             tu = 12 * (next % 21);
             tv += 12 * (next / 21);
-            if (x + ((D_800707C0[next + windowBinOffset] >> 5) +
-                     (D_800707C0[next + windowBinOffset] & 0x1F)) >
-                w) {
+            if (x + ((D_800707C0[next + windowBinOffset] >> 5) + (D_800707C0[next + windowBinOffset] & 0x1F)) > w) {
                 x = 8;
                 y += 16;
                 D_80062F9C++;
@@ -362,8 +355,7 @@ s16 func_8001D6A8(s16 x, s16 y, s16 w, u8* txt) {
             D_80062F24.sprt->v0 = tv;
             D_80062F24.sprt->w = 12;
             D_80062F24.sprt->h = 12;
-            D_80062F24.sprt->clut =
-                GetClut((width << 16 >> 16) | 0x100, textColor);
+            D_80062F24.sprt->clut = GetClut((width << 16 >> 16) | 0x100, textColor);
             AddPrim(D_80062FC4, D_80062F24.sprt++);
 
             if (D_80062DC4 == 0)
@@ -380,11 +372,11 @@ s16 func_8001D6A8(s16 x, s16 y, s16 w, u8* txt) {
     rect.y = 0;
     rect.w = 256;
     rect.h = 256;
-    func_80026A34(0, 1, GetTPage(0, 1, 0x380, 0x100), &rect);
+    SysMenuSetDrawMode(0, 1, GetTPage(0, 1, 0x380, 0x100), &rect);
     return y;
 }
 
-void func_8001DE0C(Unk8001DE0C* arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
+void SysMenuSetWindowRect(Unk8001DE0C* arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
     arg0->unk0 = arg1;
     arg0->unk2 = arg2;
     arg0->unk4 = arg3;
@@ -392,32 +384,32 @@ void func_8001DE0C(Unk8001DE0C* arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
 }
 
 // translate window dialog
-void func_8001DE24(Unk8001DE0C* arg0, s32 arg1, s32 arg2) {
+void SysMenuMoveWindowRect(Unk8001DE0C* arg0, s32 arg1, s32 arg2) {
     arg0->unk0 = arg0->unk0 + arg1;
     arg0->unk2 = arg0->unk2 + arg2;
 }
 
 // set window dialog rect
-void func_8001DE40(Unk8001DE0C* arg0, Unk8001DE0C* arg1) {
+void SysMenuCopyWindowRect(Unk8001DE0C* arg0, Unk8001DE0C* arg1) {
     arg0->unk0 = arg1->unk0;
     arg0->unk2 = arg1->unk2;
     arg0->unk4 = arg1->unk4;
     arg0->unk6 = arg1->unk6;
 }
 
-INCLUDE_ASM("asm/us/main/nonmatchings/1CDA4", func_8001DE70);
+INCLUDE_ASM("asm/us/main/nonmatchings/1CDA4", SysMenuStoreWindowColor);
 
-INCLUDE_ASM("asm/us/main/nonmatchings/1CDA4", func_8001DEB0);
+INCLUDE_ASM("asm/us/main/nonmatchings/1CDA4", SysMenuRestoreWindowColor);
 
 // sets the menu color with a quadruplet of RGB values
-void func_8001DEF0(u8* menu_colors) {
+void SysMenuSetWindowColor(u8* menu_colors) {
     s32 i;
     for (i = 0; i < 12; i++) {
         g_MenuColors[i] = *menu_colors++;
     }
 }
 
-void func_8001DF24(RECT* rect, u8 arg1, u8 arg2, u8 arg3) {
+void SysMenuDrawColoredRect(RECT* rect, u8 arg1, u8 arg2, u8 arg3) {
     setTile(D_80062F24.tile);
     SetShadeTex(D_80062F24.tile, 1);
     D_80062F24.tile->x0 = rect->x;
@@ -431,10 +423,10 @@ void func_8001DF24(RECT* rect, u8 arg1, u8 arg2, u8 arg3) {
 }
 
 // prints menu window
-INCLUDE_ASM("asm/us/main/nonmatchings/1CDA4", func_8001E040);
+INCLUDE_ASM("asm/us/main/nonmatchings/1CDA4", SysMenuDrawWindow);
 
 // print menu cursor
-void func_8001EB2C(s16 x, s16 y) {
+void SysMenuDrawCursor(s16 x, s16 y) {
     RECT rect;
 
     setSprt(D_80062F24.sprt);
@@ -452,12 +444,12 @@ void func_8001EB2C(s16 x, s16 y) {
     rect.y = 0;
     rect.w = 0xFF;
     rect.h = 0xFF;
-    func_80026A34(0, 1, (u16)GetTPage(0, 2, 0x3C0, 0x100), &rect);
+    SysMenuSetDrawMode(0, 1, (u16)GetTPage(0, 2, 0x3C0, 0x100), &rect);
 }
 
-INCLUDE_ASM("asm/us/main/nonmatchings/1CDA4", func_8001EC70);
+INCLUDE_ASM("asm/us/main/nonmatchings/1CDA4", SysMenuDrawDialogTimer);
 
-void func_8001EF84(s32 x, s32 y, s32 n, s32 len) {
+void SysMenuDrawDialogDigits(s32 x, s32 y, s32 n, s32 len) {
     RECT rect;
     s32 i;
     s32 uv;
@@ -483,7 +475,7 @@ void func_8001EF84(s32 x, s32 y, s32 n, s32 len) {
     rect.y = 0;
     rect.w = 255;
     rect.h = 255;
-    func_80026A34(0, 1, (u16)GetTPage(0, 1, 0x3C0, 0x100), &rect);
+    SysMenuSetDrawMode(0, 1, (u16)GetTPage(0, 1, 0x3C0, 0x100), &rect);
 }
 
 INCLUDE_ASM("asm/us/main/nonmatchings/1CDA4", SystemMenuDrawDialog);

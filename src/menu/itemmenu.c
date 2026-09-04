@@ -5,19 +5,17 @@ extern u8 g_MateriaPriority[];
 extern s32 g_MateriaStealLoot[];
 extern u8 D_800738BC[][44];
 extern u8 D_80071E4D[][36];
-extern u16
-    D_8009CBE0[]; // item inventory (320 slots; each u16 = (count << 9) | id)
+extern u16 D_8009CBE0[]; // item inventory (320 slots; each u16 = (count << 9) | id)
 extern u16 D_801D35B4[]; // per-item-id sort order for the "Name" arrange option
 
-s32 func_8001FAF8(
-    s32); // returns an item's usage flags (0x2 battle, 0x4 field, 0x8 throw)
+s32 SysMenuGetInventoryRestrictionMask(s32); // returns an item's usage flags (0x2 battle, 0x4 field, 0x8 throw)
 typedef s32 (*SortCmp)(s32, s32, s32*);
 typedef void (*SortSwap)(s32, s32, s32*);
 static s32 Quicksort(s32, s32, SortCmp, SortSwap);
 
-s32 func_80015AFC(s32, s32);
-void func_80025D14(u_long*, s32, s32, s32, s32);
-void func_80028CA0(s16, s16, s32, s32, s32, s32, s32, s32);
+s32 SysGetLimitCmdId(s32, s32);
+void SysMenuLoadImg(u_long*, s32, s32, s32, s32);
+void SysMenuDrawTexturedRect(s16, s16, s32, s32, s32, s32, s32, s32);
 extern u16 D_80062F50;
 extern u8 D_8009D5E8;
 extern u16 D_8009C75A[]; // character record fields, stride 0x84
@@ -66,7 +64,8 @@ void func_801D01E8(u16 arg0) {
 }
 
 // Draws the type icon for an item at (arg0, arg1): maps the item id (arg2) to
-// one of several icon cells, then blits a 16x16 sprite via func_80028CA0.
+// one of several icon cells, then blits a 16x16 sprite via
+// SysMenuDrawTexturedRect.
 void func_801D0228(s16 arg0, s16 arg1, s32 arg2) {
     s32 icon;
     if (arg2 < 0x80) {
@@ -100,7 +99,7 @@ void func_801D0228(s16 arg0, s16 arg1, s32 arg2) {
     {
         s32 ix = ((icon & 1) << 4) | 0x60;
         s32 iy = (((u32)icon >> 1) << 4) + 0x70;
-        func_80028CA0(arg0, arg1, ix, iy, 0x10, 0x10, 1, 0);
+        SysMenuDrawTexturedRect(arg0, arg1, ix, iy, 0x10, 0x10, 1, 0);
     }
 }
 
@@ -214,8 +213,7 @@ ret0:
         if (((u32)lo) < ((u32)j)) {
             j -= 1;
             if (((u32)lo) < ((u32)j)) {
-                if ((((u32)i) < (va1 = (u32)count)) &&
-                    (((u32)(j - lo)) < ((u32)(count - i)))) {
+                if ((((u32)i) < (va1 = (u32)count)) && (((u32)(j - lo)) < ((u32)(count - i)))) {
                     SwapS32(&j, &count);
                     SwapS32(&lo, &i);
                 }
@@ -337,13 +335,13 @@ static s32 CompareItemsByField(s16 arg0, s16 arg1, s32* arg2) {
     if (a == 0xFFFF) {
         ka = 0;
     } else {
-        ka = (func_8001FAF8(a & 0x1FF) & 4) ? 1 : 2;
+        ka = (SysMenuGetInventoryRestrictionMask(a & 0x1FF) & 4) ? 1 : 2;
     }
     b = *(u16*)(*arg2 + arg1 * 2);
     if (b == 0xFFFF) {
         kb = 0;
     } else {
-        kb = (func_8001FAF8(b & 0x1FF) & 4) ? 1 : 2;
+        kb = (SysMenuGetInventoryRestrictionMask(b & 0x1FF) & 4) ? 1 : 2;
     }
     return Sign(kb - ka);
 }
@@ -358,13 +356,13 @@ static s32 CompareItemsByBattle(s16 arg0, s16 arg1, s32* arg2) {
     if (a == 0xFFFF) {
         ka = 0;
     } else {
-        ka = (func_8001FAF8(a & 0x1FF) & 2) ? 1 : 2;
+        ka = (SysMenuGetInventoryRestrictionMask(a & 0x1FF) & 2) ? 1 : 2;
     }
     b = *(u16*)(*arg2 + arg1 * 2);
     if (b == 0xFFFF) {
         kb = 0;
     } else {
-        kb = (func_8001FAF8(b & 0x1FF) & 2) ? 1 : 2;
+        kb = (SysMenuGetInventoryRestrictionMask(b & 0x1FF) & 2) ? 1 : 2;
     }
     return Sign(kb - ka);
 }
@@ -379,13 +377,13 @@ static s32 CompareItemsByThrow(s16 arg0, s16 arg1, s32* arg2) {
     if (a == 0xFFFF) {
         ka = 0;
     } else {
-        ka = (func_8001FAF8(a & 0x1FF) & 8) ? 1 : 2;
+        ka = (SysMenuGetInventoryRestrictionMask(a & 0x1FF) & 8) ? 1 : 2;
     }
     b = *(u16*)(*arg2 + arg1 * 2);
     if (b == 0xFFFF) {
         kb = 0;
     } else {
-        kb = (func_8001FAF8(b & 0x1FF) & 8) ? 1 : 2;
+        kb = (SysMenuGetInventoryRestrictionMask(b & 0x1FF) & 8) ? 1 : 2;
     }
     return Sign(kb - ka);
 }
@@ -407,32 +405,25 @@ static void ArrangeItems(s32 mode) {
     case 0:
         break;
     case 1:
-        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByField,
-                  (SortSwap)SwapItemSlots);
+        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByField, (SortSwap)SwapItemSlots);
         break;
     case 2:
-        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByBattle,
-                  (SortSwap)SwapItemSlots);
+        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByBattle, (SortSwap)SwapItemSlots);
         break;
     case 3:
-        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByThrow,
-                  (SortSwap)SwapItemSlots);
+        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByThrow, (SortSwap)SwapItemSlots);
         break;
     case 4:
-        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByType,
-                  (SortSwap)SwapItemSlots);
+        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByType, (SortSwap)SwapItemSlots);
         break;
     case 5:
-        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByName,
-                  (SortSwap)SwapItemSlots);
+        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByName, (SortSwap)SwapItemSlots);
         break;
     case 6:
-        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByMost,
-                  (SortSwap)SwapItemSlots);
+        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByMost, (SortSwap)SwapItemSlots);
         break;
     case 7:
-        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByLeast,
-                  (SortSwap)SwapItemSlots);
+        Quicksort((s32)D_8009CBE0, 0x140, (SortCmp)CompareItemsByLeast, (SortSwap)SwapItemSlots);
         break;
     }
 }
@@ -444,24 +435,21 @@ static void ArrangeItems(s32 mode) {
 // func_801D131C if the player picks Arrange or Key Items instead, or by
 // func_801D1A6C if they back out to the tab selector (see ItemMenuScreen).
 // Reached from src/main/ovl.c's D_800493A8 per-screen entry table for
-// several item-menu pages, called out of func_800230C4 in src/main/21D5C.c.
+// several item-menu pages, called out of SysMenuDrawMenuList in
+// src/main/21D5C.c.
 void func_801D0BA0(void) {
     D_801D3E48 = ITEMMENU_SCREEN_USE;
-    func_80026448(&D_801D3DDC[0], 0, 0, 3, 1, 0, 0, 3, 1, 0, 0, 1, 0, 0);
-    func_80026448(&D_801D3DDC[1], 0, 0, 1, 0xA, 0, 0, 1, 0x140, 0, 0, 0, 0, 0);
-    func_80026448(&D_801D3DDC[2], 0, 0, 1, 3, 0, 0, 1, 3, 0, 0, 0, 1, 0);
+    SysMenuSetCursorMovement(&D_801D3DDC[0], 0, 0, 3, 1, 0, 0, 3, 1, 0, 0, 1, 0, 0);
+    SysMenuSetCursorMovement(&D_801D3DDC[1], 0, 0, 1, 0xA, 0, 0, 1, 0x140, 0, 0, 0, 0, 0);
+    SysMenuSetCursorMovement(&D_801D3DDC[2], 0, 0, 1, 3, 0, 0, 1, 3, 0, 0, 0, 1, 0);
     func_801D031C();
 }
 
 // True if the two adjacent record fields for entry arg0 are equal.
-s32 func_801D0CAC(s32 arg0) {
-    return D_8009D85E[arg0 * 0x220] == D_8009D85C[arg0 * 0x220];
-}
+s32 func_801D0CAC(s32 arg0) { return D_8009D85E[arg0 * 0x220] == D_8009D85C[arg0 * 0x220]; }
 
 // True if the two adjacent record fields for entry arg0 are equal.
-s32 func_801D0CE8(s32 arg0) {
-    return D_8009D862[arg0 * 0x220] == D_8009D860[arg0 * 0x220];
-}
+s32 func_801D0CE8(s32 arg0) { return D_8009D862[arg0 * 0x220] == D_8009D860[arg0 * 0x220]; }
 
 // Builds a 10-bit mask of which of character arg0's slots are occupied (slot
 // value != 0x7F), clears bit 9, and returns whether it matches the stored
@@ -470,7 +458,7 @@ s32 func_801D0D24(s32 arg0) {
     s32 mask;
     s32 i;
     for (i = 0, mask = 0; i < 10; i++) {
-        if (func_80015AFC(arg0, i) != 0x7F) {
+        if (SysGetLimitCmdId(arg0, i) != 0x7F) {
             mask |= 1 << i;
         }
     }
@@ -478,12 +466,12 @@ s32 func_801D0D24(s32 arg0) {
     return (D_8009C75A[arg0 * 0x42] ^ mask) == 0;
 }
 
-// Returns an item's usage flags (func_8001FAF8), with two context-dependent
-// overrides: item 0x46 (the Tent) becomes field-usable while a location flag
-// permits resting, and item 0x62 (the Save Crystal) while its one-time-use
-// save flag is still clear.
+// Returns an item's usage flags (SysMenuGetInventoryRestrictionMask), with two
+// context-dependent overrides: item 0x46 (the Tent) becomes field-usable while
+// a location flag permits resting, and item 0x62 (the Save Crystal) while its
+// one-time-use save flag is still clear.
 s32 func_801D0DCC(s32 arg0) {
-    s32 flags = func_8001FAF8(arg0);
+    s32 flags = SysMenuGetInventoryRestrictionMask(arg0);
     if (arg0 != 0x46) {
         if (arg0 == 0x62) {
             if (!(D_8009D5E8 & 2)) {
@@ -580,8 +568,7 @@ static s32 ReequipReturnedMateria(s32 materia) {
             {
                 s32 j;
                 for (j = 0; j < 8; j++) {
-                    if (Savemap.party[c].materia_weapon[j] == -1 &&
-                        D_800738BC[Savemap.party[c].weapon][j]) {
+                    if (Savemap.party[c].materia_weapon[j] == -1 && D_800738BC[Savemap.party[c].weapon][j]) {
                         Savemap.party[c].materia_weapon[j] = materia;
                         return 0;
                     }
@@ -590,8 +577,7 @@ static s32 ReequipReturnedMateria(s32 materia) {
             {
                 s32 j;
                 for (j = 0; j < 8; j++) {
-                    if (Savemap.party[c].materia_armor[j] == -1 &&
-                        D_80071E4D[Savemap.party[c].armor][j]) {
+                    if (Savemap.party[c].materia_armor[j] == -1 && D_80071E4D[Savemap.party[c].armor][j]) {
                         Savemap.party[c].materia_armor[j] = materia;
                         return 0;
                     }
@@ -680,7 +666,7 @@ void ReturnStolenMateria(void) {
         if (Savemap.yuffie_stolen_materia[i] != -1) {
             if (ReequipReturnedMateria(Savemap.yuffie_stolen_materia[i]) != 0) {
                 // no free equip slot - add it to the materia inventory
-                func_8002542C(Savemap.yuffie_stolen_materia[i]);
+                SysMenuAddMateria(Savemap.yuffie_stolen_materia[i]);
             }
         }
     }
@@ -696,7 +682,7 @@ void UnequipCharacterMateria(s32 charIdx) {
         s32* p = Savemap.party[charIdx].materia_weapon;
         do {
             if (*p != empty) {
-                func_8002542C(*p);
+                SysMenuAddMateria(*p);
                 *p = empty;
             }
             i += 1;
@@ -709,7 +695,7 @@ void UnequipCharacterMateria(s32 charIdx) {
         s32* p = Savemap.party[charIdx].materia_armor;
         do {
             if (*p != empty) {
-                func_8002542C(*p);
+                SysMenuAddMateria(*p);
                 *p = empty;
             }
             i += 1;
@@ -718,7 +704,7 @@ void UnequipCharacterMateria(s32 charIdx) {
     }
     v = Savemap.party[charIdx].accessory;
     if (v != 0xFF) {
-        func_80025380((v + 0x120) | 0x200);
+        SysMenuAddItem((v + 0x120) | 0x200);
         Savemap.party[charIdx].accessory = 0xFF;
     }
 }
@@ -854,8 +840,6 @@ void RestoreCharacterMateria(s32 charIdx) {
 // Runs once at boot/menu init (main -> func_80026258 -> func_80025008); the
 // texture stays resident so the battle UI can scroll it as the animated
 // backdrop behind the coin-throw amount prompt.
-void func_801D3228(void) {
-    func_80025D14((u_long*)D_801D3890, 0x3F0, 0x120, 0x110, 0x1E0);
-}
+void func_801D3228(void) { SysMenuLoadImg((u_long*)D_801D3890, 0x3F0, 0x120, 0x110, 0x1E0); }
 
 INCLUDE_ASM("asm/us/menu/nonmatchings/itemmenu", func_801D3260);
