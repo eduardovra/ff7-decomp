@@ -38,6 +38,10 @@ the address files are the unclaimed half.
 
 ### Final Fantasy Inside / Qhimm wiki
 
+The `qhimm-modding.fandom.com` mirror now returns HTTP 402 to scripted
+fetches; use the `wiki.ffrtt.ru` URLs below, which serve the same
+pages.
+
 - Savemap, field-by-field: <https://wiki.ffrtt.ru/index.php/FF7/Savemap>
   (mirror: <https://qhimm-modding.fandom.com/wiki/FF7/Savemap>) --
   directly relevant to savemenu.
@@ -60,12 +64,46 @@ for orienting naming decisions rather than mechanical import.
 - FF7 1.02 addresses (PC, structures largely mirror PSX):
   <https://forums.qhimm.com/index.php?topic=12914.0>
 
-### q-gears engine code
+### q-gears engine code and reversing data
 
-<https://github.com/q-gears/q-gears> and
-<https://github.com/q-gears/q-gears-reversing-data> -- file-format
-structs (kernel.bin, scene.bin, field formats) in C++; more about disc
-formats than RAM layout.
+<https://github.com/q-gears/q-gears> -- the engine itself; file-format
+structs (kernel.bin, scene.bin, field formats) in C++.
+
+<https://github.com/q-gears/q-gears-reversing-data> -- richer than
+"file formats" suggests. `reversing/ffvii/ffvii_battle/effect/magic/`
+documents the battle *effect* functions the magic overlays call:
+
+| ours | q-gears note (`functions.txt`) |
+|---|---|
+| `func_800D4D90` | "create number of quads according to data in effect" -- walks effect frame data, emits textured quads, `gte_RTPS`, colour blending |
+| `func_800D4368` | "applies scale matrix, rotation, and translation transformations" |
+| `func_800D5444` | "initializes impact effect data structure with sound and damage information" |
+| `func_800D574C` | "calculates middle point from target mask unit positions for sound positioning" |
+| `func_800D56A8` | "sets rotation/translation matrices via GTE, performs perspective transform" |
+| `func_800D55F4` | "executes AKAO sound system with effect parameters" |
+
+`fire_desc.txt` sketches an overlay's skeleton -- the same shape as
+`thunder.c`:
+
+> load texture from 0x801b039c. add 0x801b00b8 callback for all units
+> in target mask. add 0x801b0294 callback. calculate sound params and
+> play sound.
+>
+> 0x801b0000 effect: work 0xe frames. each frame read data from effect
+> billboard data and create number of quads with texture.
+
+That is `func_800D2980` -> `MagicAnimationRegister` ->
+`BattleEffectRegister` -> `BattleCommandSend`, then a fixed-frame-count
+render callback -- exactly `func_801B06CC` and `func_801B0020`.
+
+Applied so far: `ModelRenderDesc.QuadCount` (was `unk8`) is named from
+the `func_800D4D90` note, corroborated independently by the countdown
+loop (`addiu -1` / `bltz`) in that function's asm. The same note
+supports the `CVECTOR color` arm of the union at offset 0x4.
+
+The per-spell `.asm` files there (`thunder.asm`, `brizad.asm`, ...) are
+raw disassembly with no annotations -- the value is in `functions.txt`
+and the `*_desc.txt` files.
 
 ## Porting workflow
 
@@ -86,3 +124,10 @@ layouts.
 
 Attribution: credit the source (Akari / q-gears / wiki page) in the
 commit message when porting.
+
+## Caveat
+
+All of the above is community reverse engineering, not ground truth.
+Treat a name or offset from it as a hypothesis to check against the
+asm, exactly as with any other guess -- the value is that it is an
+*independent* derivation, so agreement is real evidence.
