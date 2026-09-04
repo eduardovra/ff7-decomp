@@ -3,9 +3,15 @@
 A walkthrough of `src/magic/brizad.c`, the ice spell, tracing one cast all
 the way down to the words that reach the GPU.
 
-Brizad is the smallest magic overlay in the game: 147 lines, five functions,
-one of which is never called. That makes it a good specimen. Everything the
-big overlays do, it does once.
+Brizad has the smallest code segment of the four magic overlays decompiled so
+far: `0x3F0` bytes, against `0xB68` for barrier. In C that is 147 lines and
+five functions, one of which is never called. It does once what the others do
+several times over, which makes it a good specimen.
+
+Only four are decompiled. The battle engine's magic dispatch table holds 54
+entries, so "smallest" above means smallest of what can currently be read, not
+smallest in the game. Measured by whole binary rather than code, barrier is
+smaller still, because brizad carries more data.
 
 This doc assumes you can read C and nothing else. It explains the PlayStation
 parts as it goes. Companion docs: `magic-overlays.md` for the architecture of
@@ -656,7 +662,7 @@ its geometry.
 ```
 
 The function returns the advanced packet pointer in `$v0`, which is why every
-call site in every overlay looks like this:
+call site in all four overlays looks like this:
 
 ```c
 ThunderBufferPtr = func_800D4D90(&desc, g_cDb->unk70, 0xC, ThunderBufferPtr);
