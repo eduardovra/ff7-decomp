@@ -34,11 +34,12 @@ typedef struct {
 #define FIXED_ONE (1 << FIXED_SHIFT)
 
 // The block renders on frames 0..14, retiring after the last one, so both rates
-// are per (BRIZAD_LIFETIME - 1) frames: over its life it grows from nothing to
-// 3x the target's size and spins through exactly one revolution.
+// are per (BRIZAD_LIFETIME - 1) frames: it grows to 3x the target's size and
+// fades out. The fade is not an angle -- func_800D29D4 loads it as the GTE's
+// depth-cue factor, blending toward SetFarColor, which is black here.
 #define BRIZAD_LIFETIME 15
 #define GROWTH_PER_FRAME (3 * FIXED_ONE / (BRIZAD_LIFETIME - 1)) // 0x36D
-#define SPIN_PER_FRAME (FIXED_ONE / (BRIZAD_LIFETIME - 1))       // 0x124
+#define FADE_PER_FRAME (FIXED_ONE / (BRIZAD_LIFETIME - 1))       // 0x124
 
 // ScaleMatrix writes into MATRIX.m, which is s16; a scale of 0x7FFF against an
 // identity entry of FIXED_ONE lands exactly on the ceiling, so clamp there.
@@ -58,7 +59,7 @@ static void BrizadRenderIce(void) {
     BrizadData* effect = &D_80162978[D_8015169C];
     s16 nextFrame;
     s16 frame;
-    s16 spin;
+    s16 fade;
     s32 growth = (effect->Scale * GROWTH_PER_FRAME);
     s32 scale = (s32)(effect->AnimationFrame * growth) >> FIXED_SHIFT;
 
@@ -68,9 +69,9 @@ static void BrizadRenderIce(void) {
     scaleVec.vx = scaleVec.vy = scaleVec.vz = scale;
     frame = effect->AnimationFrame;
     if (frame < 0) {
-        spin = 0;
+        fade = 0;
     } else {
-        spin = frame * SPIN_PER_FRAME;
+        fade = frame * FADE_PER_FRAME;
     }
     RotMatrixYXZ(&effect->Rot, &matrix);
     ScaleMatrix(&matrix, &scaleVec);
@@ -81,7 +82,7 @@ static void BrizadRenderIce(void) {
     SetRotMatrix(&matrix);
     SetTransMatrix(&matrix);
     SetFarColor(0, 0, 0);
-    BrizadRenderDesc.desc.unkA = spin;
+    BrizadRenderDesc.desc.unkA = fade;
     BrizadBufferPtr = func_800D29D4(&BrizadRenderDesc, g_cDb->unk70, 12, BrizadBufferPtr);
     if (D_80062D98 == 0) {
         nextFrame = (u16)effect->AnimationFrame + 1;
