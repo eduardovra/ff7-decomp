@@ -1,0 +1,2 @@
+ThunderPrimBuffer = 0x801C0E78;
+ThunderBufferPtr = 0x801E0E78;

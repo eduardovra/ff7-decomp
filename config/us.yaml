@@ -271,3 +271,16 @@ overlays:
     segments:
       - [0, c, lv5deth]
       - [0x5e0, data, lv5deth]
+  # THUNDER.BIN -- "Bolt", the tier-1 lightning spell
+  - name: thunder
+    disk_path: disks/us/MAGIC/THUNDER.BIN
+    sha1: 5767aed5f73876075f01b3958a2e4738fa33b043
+    base_path: magic
+    vram_start: 0x801B0000
+    symbol_addrs_path:
+      - config/sym_export.us.txt
+      - config/symbols.magic-thunder.us.txt
+      - config/sym_export_battle.us.txt
+    segments:
+      - [0, c, thunder]
+      - [0x73c, data, thunder]
