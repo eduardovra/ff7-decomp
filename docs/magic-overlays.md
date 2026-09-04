@@ -3,6 +3,10 @@
 How the spell overlays under `src/magic/` are put together, drawn from
 `barrier.c`, `lv5deth.c` and `brizad.c`.
 
+For a ground-up walkthrough of one overlay, down to the GTE instructions and
+the GPU packets, see `how-a-spell-is-drawn.md`. This doc is the reference;
+that one is the explanation.
+
 Each spell is its own overlay, loaded into RAM at `0x801B0000` while the
 `battle` overlay stays resident. The overlay's only job is to register
 callbacks with the battle engine and render; all scheduling belongs to
@@ -147,15 +151,20 @@ the battle ends; the flip slot retires when it drops below 2.
 **Fixed point is 4096.** `>> 12` follows every scale multiply. Angles use
 the same unit, 4096 to a full turn. brizad's constants are both derived from
 its 15-frame lifetime: `0x36D` is `3 * 4096 / 14` (grow to 3x) and `0x124`
-is `4096 / 14` (one revolution).
+is `4096 / 14`, which ramps the depth-cue factor to a full fade. It was
+called `SPIN_PER_FRAME` until the evidence came in; see
+`how-a-spell-is-drawn.md` section 13.
 
 **Double buffering** is always two `0x10000` pages, with the buffer and its
 write pointer adjacent in `.bss`, pointer immediately after the buffer.
 
 **Render descriptors** are `Unk801B0C98`: model pointer at `0x0`, flags at
-`0x4`, rotation at `0xA`. barrier and lv5deth also build one in scratchpad
-RAM at `0x1F800000`; brizad uses stack locals. Both appear in matching code,
-so it is an authoring choice rather than a rule.
+`0x4`. Offset `0xA` reaches the GTE as `IR0`, the depth-cue factor blended
+toward `SetFarColor`, so it is a fade level and not a rotation as this doc
+previously claimed; `func_800D4D90` instead reads it as a CLUT addend.
+`how-a-spell-is-drawn.md` section 10 has the evidence. barrier and lv5deth
+also build one in scratchpad RAM at `0x1F800000`; brizad uses stack locals.
+Both appear in matching code, so it is an authoring choice rather than a rule.
 
 ## Where overlay data lives
 
