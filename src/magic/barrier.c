@@ -67,9 +67,9 @@ static s32 bari_a2[] = {    // Embedded Model
     0x003F3F3F}; // Triangle 1: vertex 2 color, RGB 3F3F3F
 static int emptyPoly = 0x00000000;
 static SVECTOR BorderPivotOffset = {0, 0, -500};
-static Unk801B0C98 BorderRenderDesc = {bari_a1, 0, 0, 0, 0x20};
+static Unk801B0C98 BorderRenderDesc = {{bari_a1, {0}, 0, 0}, 0x20};
 static SVECTOR ShieldPivotOffset = {0, 0, -500};
-static Unk801B0C98 ShieldRenderDesc = {bari_a2, 0, 0, 0, 0x20};
+static Unk801B0C98 ShieldRenderDesc = {{bari_a2, {0}, 0, 0}, 0x20};
 static int BarrierBaseScale;
 static char BarrierPrimBuffer[0x20000];
 static void* BarrierBufferPtr;
@@ -113,8 +113,8 @@ static void BarrierRenderBorder(void) {
     SetRotMatrix(matrix);
     SetTransMatrix(matrix);
 
-    BorderRenderDesc.unk4 = var_s3 | 0x80;
-    BorderRenderDesc.unkA = var_s4;
+    BorderRenderDesc.desc.u.flags = var_s3 | 0x80;
+    BorderRenderDesc.desc.unkA = var_s4;
     BarrierBufferPtr = func_800D29D4(&BorderRenderDesc, g_cDb->unk70, 12, BarrierBufferPtr);
 
     if (D_80062D98 == 0) {
@@ -166,8 +166,8 @@ static void BarrierRenderShield(void) {
     SetRotMatrix(matrix1);
     SetTransMatrix(matrix1);
 
-    ShieldRenderDesc.unk4 = var_s5 | 0x80;
-    ShieldRenderDesc.unkA = var_s6;
+    ShieldRenderDesc.desc.u.flags = var_s5 | 0x80;
+    ShieldRenderDesc.desc.unkA = var_s6;
     BarrierBufferPtr = func_800D29D4(&ShieldRenderDesc, g_cDb->unk70, 12, BarrierBufferPtr);
 
     if (D_80062D98 == 0) {

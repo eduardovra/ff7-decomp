@@ -389,14 +389,26 @@ typedef struct {
 
 } Unk800BB75C; // size:0x38
 
+// func_800D4D90 reads only these 0xC bytes, so its instances in ROM are
+// truncated to 0xC and packed 0xC apart.
 typedef struct {
-    s32* unk0;
-    s32 unk4;
-    s16 unk8;
-    s16 unkA;
-    s16 unkC;
-    s16 unkE;
-} Unk801B0C98;
+    /* 0x0 */ s32* unk0;
+    /* 0x4 */ union {
+        s32 flags;     // func_800D29D4 tests bits 0x1..0x100
+        CVECTOR color; // func_800D4D90 stores it as a GPU packet word
+    } u;
+    /* 0x8 */ u16 unk8; // lhu; bit 15 is a flag
+    /* 0xA */ s16 unkA;
+} ModelRenderDesc; // size:0xC
+
+// Full 0x10 form, read by func_800D29D4. 0x801B0C98 is an address inside the
+// barrier overlay, not a global one -- every magic overlay loads at
+// 0x801B0000, so only the type is shared, not the address.
+typedef struct {
+    /* 0x0 */ ModelRenderDesc desc;
+    /* 0xC */ s16 unkC;
+    /* 0xE */ s16 unkE;
+} Unk801B0C98; // size:0x10
 
 typedef struct {
     s16 unk0;
@@ -498,7 +510,7 @@ void* func_800D29D4(Unk801B0C98*, u_long**, int, void*);
 MATRIX* func_800D4368(SVECTOR* pos, s32 scale, s32 depthBias);
 // Same descriptor layout as func_800D29D4 (offsets 0/4/8/A), different
 // renderer; callers that colour the model type offset 4 as a CVECTOR.
-void* func_800D4D90(void* desc, u_long** ot, int otLen, void* prim);
+void* func_800D4D90(ModelRenderDesc* desc, u_long** ot, int otLen, void* prim);
 void func_800D5444(int, int, int, void (*func)(int));
 void BattleCommandSend(s32 cmdId, ...);
 int func_800D574C(int);

@@ -1276,23 +1276,23 @@ extern Unk801B0C98 D_800F14D0;
 // barrier.c's D_801B0C98/D_801B0CB0), toggling the 0x1/0x2 flag bits between
 // passes.
 void func_800D6394(s32* arg0, s16 arg1) {
-    D_800F14D0.unk0 = arg0;
-    D_800F14D0.unkA = arg1;
+    D_800F14D0.desc.unk0 = arg0;
+    D_800F14D0.desc.unkA = arg1;
     SetFarColor(0, 0, 0);
     PushMatrix();
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
     PopMatrix();
     PushMatrix();
-    D_800F14D0.unk4 |= 1;
+    D_800F14D0.desc.u.flags |= 1;
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
     PopMatrix();
     PushMatrix();
-    D_800F14D0.unk4 |= 2;
+    D_800F14D0.desc.u.flags |= 2;
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
     PopMatrix();
-    D_800F14D0.unk4 &= ~1;
+    D_800F14D0.desc.u.flags &= ~1;
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
-    D_800F14D0.unk4 &= ~2;
+    D_800F14D0.desc.u.flags &= ~2;
 }
 
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D650C);

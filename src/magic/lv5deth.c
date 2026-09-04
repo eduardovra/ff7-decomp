@@ -38,17 +38,8 @@ extern u_long Lv5DeathTexture[]; // 8bpp TIM + 256-colour CLUT, uploaded on setu
 // Flat 16-point ring of radius 976 lying in the XY plane at z = -21.
 extern s32 Lv5DeathRingModel[];
 
-// Render descriptor for the func_800D4D90 pass. Same layout func_800D29D4
-// reads, but this renderer only touches offsets 0x0..0xB, so the instance in
-// ROM is truncated to 0xC bytes.
-typedef struct {
-    /* 0x0 */ s32* model;
-    /* 0x4 */ CVECTOR color; // .cd holds the GPU primitive code (0x2E)
-    /* 0x8 */ s16 TextureFrame;
-    /* 0xA */ s16 unkA;
-} Lv5DeathDesc; // size:0xC
-
-extern Lv5DeathDesc Lv5DeathSpriteDesc;
+// .color.cd holds the GPU primitive code (0x2E).
+extern ModelRenderDesc Lv5DeathSpriteDesc;
 
 static void Lv5DeathBufferFlip(void) {
     Lv5DeathBufferPtr = g_dbIndex == 0 ? Lv5DeathPrimBuffer0 : Lv5DeathPrimBuffer1;
@@ -79,19 +70,19 @@ static void Lv5DeathRenderRing(void) {
 
     // Render descriptor built in scratchpad RAM.
     desc = (Unk801B0C98*)0x1F800000;
-    desc->unk0 = Lv5DeathRingModel;
-    desc->unk4 = 0x88;
-    desc->unk8 = 0;
-    desc->unkA = 0x800;
+    desc->desc.unk0 = Lv5DeathRingModel;
+    desc->desc.u.flags = 0x88;
+    desc->desc.unk8 = 0;
+    desc->desc.unkA = 0x800;
     desc->unkC = 0;
     desc->unkE = 0;
 
     val = effect->AnimationFrame;
     if (val < 8) {
         val <<= 8;
-        desc->unkA = 0x1000 - val;
+        desc->desc.unkA = 0x1000 - val;
     } else if (val >= 37) {
-        desc->unkA = (val << 8) - 0x1D00;
+        desc->desc.unkA = (val << 8) - 0x1D00;
     }
 
     SetFarColor(0, 0, 0);
@@ -114,7 +105,7 @@ static void Lv5DeathRenderTargetSprite(void) {
     u8 color;
 
     effect = &D_80162978[D_8015169C];
-    Lv5DeathSpriteDesc.TextureFrame = effect->AnimationFrame & 7;
+    Lv5DeathSpriteDesc.unk8 = effect->AnimationFrame & 7;
 
     frame = effect->AnimationFrame;
     if (frame < 8) {
@@ -124,7 +115,7 @@ static void Lv5DeathRenderTargetSprite(void) {
     } else {
         color = 128;
     }
-    Lv5DeathSpriteDesc.color.r = Lv5DeathSpriteDesc.color.g = Lv5DeathSpriteDesc.color.b = color;
+    Lv5DeathSpriteDesc.u.color.r = Lv5DeathSpriteDesc.u.color.g = Lv5DeathSpriteDesc.u.color.b = color;
 
     func_800D4368(&effect->Pos, (s16)effect->Scale, -((s16)effect->Scale >> 2));
     Lv5DeathBufferPtr = func_800D4D90(&Lv5DeathSpriteDesc, g_cDb->unk70, 12, Lv5DeathBufferPtr);
