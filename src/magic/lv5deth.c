@@ -72,7 +72,7 @@ static void Lv5DeathRenderRing(void) {
     desc = (Unk801B0C98*)0x1F800000;
     desc->desc.unk0 = Lv5DeathRingModel;
     desc->desc.u.flags = 0x88;
-    desc->desc.unk8 = 0;
+    desc->desc.QuadCount = 0;
     desc->desc.unkA = 0x800;
     desc->unkC = 0;
     desc->unkE = 0;
@@ -105,7 +105,7 @@ static void Lv5DeathRenderTargetSprite(void) {
     u8 color;
 
     effect = &D_80162978[D_8015169C];
-    Lv5DeathSpriteDesc.unk8 = effect->AnimationFrame & 7;
+    Lv5DeathSpriteDesc.QuadCount = effect->AnimationFrame & 7;
 
     frame = effect->AnimationFrame;
     if (frame < 8) {

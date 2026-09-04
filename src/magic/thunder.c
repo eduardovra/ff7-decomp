@@ -9,7 +9,8 @@ typedef struct {
     /* 0x04 */ SVECTOR pos;
     /* 0x0C */ char pad0C[8];
     /* 0x14 */ s16 unk14;
-    /* 0x16 */ char pad16[4];
+    /* 0x16 */ u16 unk16;
+    /* 0x18 */ u16 unk18;
     /* 0x1A */ u16 unk1A;
     /* 0x1C */ s16 unk1C;
     /* 0x1E */ char pad1E[2];
@@ -23,27 +24,57 @@ extern void* ThunderBufferPtr;
 extern ThunderData D_80162978[];
 extern ThunderPrimPage ThunderPrimBuffer[];
 extern u32 D_801B0DAC;
-
 extern ModelRenderDesc ThunderRenderDesc0;
 extern ModelRenderDesc ThunderRenderDesc1;
+extern MATRIX D_801C0E2C;
+extern s16 D_801C0E3A; // = D_801C0E2C.m[2][1]
+extern Unk801B0C98 D_801C0E4C;
 
 void func_801B06CC(s32 arg0, s32 arg1);
 
 void func_801B0000(s32 arg0, s32 arg1) { func_801B06CC(arg0, arg1); }
 
-INCLUDE_ASM("asm/us/magic/nonmatchings/thunder", func_801B0020);
+void func_801B0020(void) {
+    MATRIX sp10;
+    ThunderData* temp_s0 = &D_80162978[D_8015169C];
+    s16 temp_v1 = temp_s0->AnimationFrame;
+    u16* frame;
 
-void func_801B0180(void)
-{
+    if (temp_v1 < 8) {
+        D_801C0E4C.desc.unkA = 0x80;
+    } else if (temp_v1 < 16) {
+        D_801C0E4C.desc.unkA = 0x80 - ((temp_v1 - 8) * 0x10);
+    } else {
+        temp_s0->StartFrame = -1;
+        return;
+    }
+
+    frame = &temp_s0->unk16;
+    D_801C0E2C.m[0][0] = D_801C0E3A = *frame;
+    D_801C0E2C.m[1][2] = -(s16)*frame;
+    D_801C0E2C.t[0] = (s32)temp_s0->pos.vx;
+    D_801C0E2C.t[1] = (s32)temp_s0->pos.vy;
+    D_801C0E2C.t[2] = (s32)temp_s0->pos.vz;
+    CompMatrix(&D_800FA63C.m, &D_801C0E2C, &sp10);
+    SetRotMatrix(&sp10);
+    SetTransMatrix(&sp10);
+    ThunderBufferPtr = func_800D29D4(&D_801C0E4C, g_cDb->unk70, 0xC, ThunderBufferPtr);
+    if (D_80062D98 == 0) {
+        temp_s0->AnimationFrame = (u16)temp_s0->AnimationFrame + 1;
+        temp_s0->unk16 += temp_s0->unk18;
+    }
+}
+
+void func_801B0180(void) {
     ThunderData* temp_s0;
     s16 temp_v0;
 
     temp_s0 = &D_80162978[D_8015169C];
     func_800D4368(&temp_s0->pos, 0x2000, temp_s0->unk1C);
-    ThunderRenderDesc0.unk8 = (s16) (u16) temp_s0->AnimationFrame >> 1;
+    ThunderRenderDesc0.QuadCount = (s16)(u16)temp_s0->AnimationFrame >> 1;
     ThunderBufferPtr = func_800D4D90(&ThunderRenderDesc0, g_cDb->unk70, 0xC, ThunderBufferPtr);
     if (D_80062D98 == 0) {
-        temp_v0 = (u16) temp_s0->AnimationFrame + 1;
+        temp_v0 = (u16)temp_s0->AnimationFrame + 1;
         temp_s0->AnimationFrame = temp_v0;
         if (temp_v0 == 9) {
             temp_s0->StartFrame = -1;
@@ -65,10 +96,10 @@ void func_801B023C(void) {
     }
     SetRotMatrix(temp_s0);
     SetTransMatrix(temp_s0);
-    ThunderRenderDesc1.unk8 = temp_s1->AnimationFrame;
+    ThunderRenderDesc1.QuadCount = temp_s1->AnimationFrame;
     ThunderBufferPtr = func_800D4D90(&ThunderRenderDesc1, g_cDb->unk70, 0xC, ThunderBufferPtr);
     if (D_80062D98 == 0) {
-        temp_v0 = (u16) temp_s1->AnimationFrame + 1;
+        temp_v0 = (u16)temp_s1->AnimationFrame + 1;
         temp_s1->AnimationFrame = temp_v0;
         if (temp_v0 == 8) {
             temp_s1->StartFrame = -1;
