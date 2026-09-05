@@ -124,6 +124,16 @@ pushes the load to $v1. Reach for the named temp before
 explaining anything, and it stays in the committed source forever. Applies
 to 2.7.2 as well as 2.6.3.
 
+**m2c invents a name per assignment.** It works close to SSA form, so every
+write becomes a fresh `temp_*`/`var_*` and it cannot tell one variable
+reassigned from two variables. When a value the target keeps in a single
+register is spread across two in your build, suspect that split first: the
+tell is a two-address update in the target, `addu s1,s1,v0`, against a
+three-address one in yours, `addu s0,a2,s0`. Collapsing them back into one
+local restores the allocation, and usually fixes a register swap further
+down as a side effect, since the extra long-lived pseudo was shifting
+everything after it.
+
 **Where you assign decides how long a value lives.** An initialiser at the
 top of a function computes the value there. If it is not consumed until after
 several calls, gcc must park it in a callee-saved register, adding a

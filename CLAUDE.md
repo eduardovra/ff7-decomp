@@ -10,6 +10,11 @@ valid if the sha1 still matches.
   Read before touching a non-matching function.
 - `docs/magic-overlays.md` -- architecture of the spell overlays under
   `src/magic/`.
+- `docs/how-a-spell-is-drawn.md` -- one cast traced to the GPU packets.
+  Section 13 lists names already found wrong and corrected. Read it before
+  naming anything in the battle render path: several fields there mean
+  different things depending on which renderer consumes them, and that has
+  been re-derived from assembly more than once for want of reading it.
 - `docs/emulator-loop.md` -- `./mako.sh redux`, which runs a rebuilt overlay
   in PCSX-Redux. Use it when sha1 cannot answer the question.
 - `docs/magic-probe.md` -- sampling RAM and frames from a running spell,
