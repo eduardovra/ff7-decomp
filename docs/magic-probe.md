@@ -164,6 +164,14 @@ only have replayed arithmetic already settled on paper.
 Reach for the emulator when the question is about behaviour over time, or
 about what actually reaches the screen.
 
+A frame capture measures the whole screen, so it can only isolate one
+effect when the overlay draws one thing. brizad renders a single model
+pass, so bright-pixel counts tracked its fade cleanly. thunder renders the
+model plus two textured-quad passes, over an enemy flashing red from
+damage; its brightness curve is consistent with the model dimming but
+cannot be attributed to it. Check how many passes an overlay draws before
+planning to prove anything from pixels.
+
 And prefer memory to pixels wherever both could answer. Confirming that
 brizad's ice block does not rotate is impossible from the images: the
 crystal is an eight-pointed symmetric star, so a 45-degree rotation is
