@@ -94,6 +94,7 @@ def build_arm_script(
     return f"""
 {LUA_TABLE} = {LUA_TABLE} or {{}}
 {LUA_TABLE}.log = {{}}
+{LUA_TABLE}.rejected = 0
 {LUA_TABLE}.head = {{{head_list}}}
 local function hex(mem, addr, size)
   local out = {{}}
@@ -114,13 +115,24 @@ if {LUA_TABLE}.bp ~= nil then {LUA_TABLE}.bp:remove() end
 {LUA_TABLE}.bp = PCSX.addBreakpoint({address}, 'Exec', 4, 'ff7probe',
   function()
     local mem = PCSX.getMemPtr()
-    if not resident(mem) then return true end
+    if not resident(mem) then
+      {LUA_TABLE}.rejected = {LUA_TABLE}.rejected + 1
+      return true
+    end
     local parts = {{}}
 {body}{shot}
     {LUA_TABLE}.log[#{LUA_TABLE}.log+1] = table.concat(parts, ' ')
     return true
   end, 'ff7probe')
 return 'armed at ' .. string.format('0x%08X', {address})
+"""
+
+
+def build_rejected_script() -> str:
+    """Lua returning how many hits the residency guard dropped."""
+    return f"""
+if {LUA_TABLE} == nil then return '0' end
+return tostring({LUA_TABLE}.rejected or 0)
 """
 
 
@@ -240,6 +252,7 @@ def main(argv: list[str] | None = None) -> int:
         if text.startswith("error"):
             print(text, file=sys.stderr)
             return 1
+        rejected = eval_lua(source=build_rejected_script(), host=args.host)
         records = parse_records(text)
         lines = [json.dumps(record) for record in records]
         payload = "\n".join(lines)
@@ -247,7 +260,8 @@ def main(argv: list[str] | None = None) -> int:
             args.out.write_text(payload + "\n" if payload else "")
         else:
             print(payload)
-        print(f"{len(records)} records", file=sys.stderr)
+        print(f"{len(records)} records, {rejected.strip()} hits rejected "
+              f"by the residency guard", file=sys.stderr)
         return 0
 
     watches = [parse_watch(spec, symbols) for spec in args.watch]

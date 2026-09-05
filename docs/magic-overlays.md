@@ -220,6 +220,23 @@ ever move before naming anything -- and check it in memory. brizad's ice
 block is an eight-pointed symmetric star, so a 45-degree rotation looks
 exactly like none. No screenshot could have settled it.
 
+**barrier reveals what the flag bits do.** Its flags are computed at
+runtime (`var_s3 | 0x80`), unlike the constants the other overlays carry, so
+a capture shows the range: `0x80`, `0x81`, `0x82`, `0x83`, then the same
+four with `0x8` added. Bits `0x1`, `0x2` and `0x4` call three helpers that
+negate one column each of the GTE rotation matrix through control registers
+0-4 -- `func_800D3418` regs 0/1/3 is the X column, `func_800D3474` regs
+0/2/3 the Y, `func_800D34C8` regs 1/2/4 the Z. They are per-axis mirrors,
+and each flips a parity that tracks the winding an odd number of mirrors
+requires.
+
+So barrier draws one quarter of its shell four times -- unmirrored,
+mirrored X, mirrored Y, mirrored both -- which is how a four-fold symmetric
+barrier is built from a quarter model. `battle2.c`'s `func_800D6394` does
+the same thing explicitly, toggling `|= 1` and `|= 2` across four passes.
+Bit `0x8` is semi-transparency: it is shifted left 22 into bit 25 of the
+colour word, which is bit 1 of the GPU code byte.
+
 ## Where overlay data lives
 
 barrier brought its whole data segment into C as initialised arrays.

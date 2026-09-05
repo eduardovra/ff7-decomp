@@ -385,7 +385,17 @@ typedef struct {
 typedef struct {
     /* 0x0 */ s32* unk0;
     /* 0x4 */ union {
-        s32 flags;     // func_800D29D4 tests bits 0x1..0x100
+        // func_800D29D4 tests bits 0x1..0x100. Established so far:
+        //   0x1/0x2/0x4  mirror X/Y/Z, by negating that column of the GTE
+        //                rotation matrix through control registers 0-4.
+        //                Each also flips an internal parity, which is the
+        //                winding an odd number of mirrors needs
+        //   0x8          sets the primitive's semi-transparency bit: the
+        //                flag is shifted left 22 into bit 25 of the colour
+        //                word, i.e. bit 1 of the GPU code byte
+        //   0x80         take the depth-cue path; see offset 0xA below
+        // 0x10, 0x40 and 0x100 are tested but not yet established.
+        s32 flags;
         CVECTOR color; // func_800D4D90 stores it as a GPU packet word; cd is
                        // the command byte (0x2C POLY_FT4, 0x38 POLY_G4)
     } u;

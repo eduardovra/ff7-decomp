@@ -126,6 +126,11 @@ time. The collision is not theoretical: `MabariaRenderModel` and
 returns bytes with no indication of which spell they belong to, and a
 breakpoint at `0x801B0020` fires for whichever one is loaded.
 
+This matters in an ordinary battle, not just in theory: enemies cast too,
+and every spell they cast loads a different overlay over the same address.
+`drain` reports how many hits the guard dropped, so filtering is something
+the run tells you rather than something you assume.
+
 So guard every sample: read 32 bytes at `0x801B0000` and compare against
 `build/us/<overlay>.exe`. That needs no per-overlay knowledge -- the seven
 magic overlays diverge by the twelfth byte, since the `jal` in the third

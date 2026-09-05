@@ -34,6 +34,19 @@ def test_arm_script_keeps_the_breakpoint_alive() -> None:
     assert "return false" not in callback
 
 
+def test_arm_script_counts_rejected_hits() -> None:
+    script = mp.build_arm_script(
+        address=0x801B0020,
+        head=b"\x01",
+        watches=[mp.Watch(name="w", addr=0x80162978, size=2)],
+    )
+    # Without this the guard is silent: "it worked" would be an inference
+    # rather than something the run reports.
+    assert f"{mp.LUA_TABLE}.rejected = 0" in script
+    callback = script.split("PCSX.addBreakpoint", 1)[1]
+    assert f"{mp.LUA_TABLE}.rejected + 1" in callback
+
+
 def test_parse_records_round_trip() -> None:
     text = "a=00FF b=1234\na=0100 b=1235\n"
     records = mp.parse_records(text)
