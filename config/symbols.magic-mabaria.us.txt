@@ -1,0 +1,7 @@
+MAGIC_MBarrier = 0x801B0000;
+MabariaRenderModel = 0x801B0020;
+MabariaDoubleBufferFlip = 0x801B04DC;
+MabariaMainSetup = 0x801B053C;
+MabariaRenderDesc = 0x801B0C90; // size:0x10
+MabariaPrimBuffer = 0x801B0CA8;
+MabariaBufferPtr = 0x801D0CA8;
