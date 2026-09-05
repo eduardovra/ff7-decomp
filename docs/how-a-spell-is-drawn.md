@@ -563,12 +563,12 @@ table, two conventions.
 `func_800D4D90` is 149 lines of hand-written assembly and it builds one
 `POLY_FT4` per quad. Here is the whole shape, in order.
 
-**Pick the block.** The descriptor's `QuadCount` field is not a count, it is
-an index. Bit 15 is a flag; the low bits select which block of the model data
+**Pick the block.** The descriptor's offset `8` is not a count, it is an
+index. Bit 15 is a flag; the low bits select which block of the model data
 to draw, and the function walks forward over that many blocks to reach it:
 
 ```
-    lhu   $t8, 0x8($a0)        # QuadCount
+    lhu   $t8, 0x8($a0)        # u08.frameIndex
     andi  $v0, $t8, 0x8000     # bit 15 selects whether unkA is used
     andi  $t8, $t8, 0x7FFF     # low bits: which block
     lhu   $t7, 0xA($a0)        # unkA, only when bit 15 was set
@@ -581,7 +581,7 @@ Each block is a 4-byte header holding a quad count, followed by that many
 the field ramps with the animation frame, so each frame draws the next block.
 
 ```c
-ThunderRenderDesc0.QuadCount = (s16)(u16)effect->AnimationFrame >> 1;
+ThunderRenderDesc0.u08.frameIndex = (s16)(u16)effect->AnimationFrame >> 1;
 ThunderBufferPtr = func_800D4D90(&ThunderRenderDesc0, g_cDb->unk70, 0xC,
                                  ThunderBufferPtr);
 ```
@@ -934,7 +934,7 @@ depth-cue blend. A local and a macro cannot reach the binary, but `make build`
 was run anyway and `brizad.exe` still reports `OK`.
 
 **A related trap in the same field.** `func_800D4D90` also reads offset `0xA`,
-but as a CLUT addend, and only when bit 15 of `QuadCount` is set. The same
+but as a CLUT addend, and only when bit 15 of offset `8` is set. The same
 offset means different things to the two renderers, so a struct field name
 covering both would be a fiction either way.
 
@@ -955,10 +955,12 @@ likely to be misdescribed.
 - **The off-screen reject bounds are unexplained.** The helper that rejects
   primitives entirely outside the screen tests X against 320 and Y against
   166. The 320 is the display width. The 166 has not been matched to anything.
-- **`QuadCount` is named after the wrong function.** In `func_800D4D90` the
+- **`QuadCount` was named after the wrong function.** In `func_800D4D90` the
   field selects a block of animation. In `func_800D29D4` it is added to every
   texture coordinate instead, making it a UV offset. No caller of the latter
   sets it to anything but zero, so that reading rests on the assembly alone.
+  It is now the union `u08` of `frameIndex` and `uvOffset`, and offset `0xA`
+  likewise splits into `depthCue`, `greyLevel` and `clutBias`.
 
 - **One instruction looks like a mistake in the original.** In
   `func_800D29D4`, three of the four passes OR the descriptor's colour

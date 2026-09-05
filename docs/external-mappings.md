@@ -96,10 +96,12 @@ That is `func_800D2980` -> `MagicAnimationRegister` ->
 `BattleEffectRegister` -> `BattleCommandSend`, then a fixed-frame-count
 render callback -- exactly `func_801B06CC` and `func_801B0020`.
 
-Applied so far: `ModelRenderDesc.QuadCount` (was `unk8`) is named from
-the `func_800D4D90` note, corroborated independently by the countdown
-loop (`addiu -1` / `bltz`) in that function's asm. The same note
-supports the `CVECTOR color` arm of the union at offset 0x4.
+Applied so far: the q-gears note on `func_800D4D90` named offset `0x8`,
+corroborated by the countdown loop (`addiu -1` / `bltz`) in that
+function's asm -- though the note's "number of quads according to data in
+effect" describes the count held in the *data*, not in the field, which is
+an index. It is now `u08.frameIndex`. The same note supports the
+`CVECTOR color` arm of the union at offset 0x4.
 
 The per-spell `.asm` files there (`thunder.asm`, `brizad.asm`, ...) are
 raw disassembly with no annotations -- the value is in `functions.txt`

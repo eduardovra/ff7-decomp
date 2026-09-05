@@ -390,9 +390,9 @@ typedef struct {
                        // the command byte (0x2C POLY_FT4, 0x38 POLY_G4)
     } u;
     /* 0x8 */ union {
-        u16 uvBias;     // func_800D29D4 adds it to the words it stores at
+        u16 uvOffset;   // func_800D29D4 adds it to the words it stores at
                         // the primitive's 0xC/0x14/0x1C, the UV pairs.
-                        // Every caller passes 0
+                        // Every caller passes 0, so this rests on the asm
         u16 frameIndex; // func_800D4D90 skips this many variable-length
                         // blocks to reach the frame's quads. Bit 15 enables
                         // the clut bias at 0xA; the quad count itself is

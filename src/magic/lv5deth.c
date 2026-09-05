@@ -72,7 +72,7 @@ static void Lv5DeathRenderRing(void) {
     desc = (Unk801B0C98*)0x1F800000;
     desc->desc.unk0 = Lv5DeathRingModel;
     desc->desc.u.flags = 0x88;
-    desc->desc.u08.uvBias = 0;
+    desc->desc.u08.uvOffset = 0;
     desc->desc.uA.depthCue = 0x800;
     desc->unkC = 0;
     desc->unkE = 0;
