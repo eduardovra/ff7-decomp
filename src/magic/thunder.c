@@ -13,8 +13,8 @@ typedef struct {
     /* 0x04 */ SVECTOR Pos;
     /* 0x0C */ SVECTOR unk0C;
     /* 0x14 */ s16 unk14;
-    /* 0x16 */ u16 unk16;
-    /* 0x18 */ u16 unk18;
+    /* 0x16 */ u16 Scale;     // 0x1000 == 1.0, grows by ScaleStep
+    /* 0x18 */ u16 ScaleStep; // per-frame growth, seeded 0x200
     /* 0x1A */ u16 unk1A;
     /* 0x1C */ s16 unk1C;
     /* 0x1E */ char pad1E[2];
@@ -24,7 +24,7 @@ typedef struct {
     /* 0x00 */ char pad[0x10000];
 } ThunderPrimPage; // size:0x10000
 
-extern void* ThunderBufferPtr;
+extern void* ThunderBufferPtr; // TODO replace void pointer
 extern ThunderData D_80162978[];
 extern ThunderPrimPage ThunderPrimBuffer[];
 extern u_long ThunderTexture[]; // 8bpp TIM + CLUT, uploaded on setup
@@ -38,8 +38,13 @@ static void ThunderMainSetup(s32 arg0, s32 arg1);
 
 void MAGIC_Thunder(s32 arg0, s32 arg1) { ThunderMainSetup(arg0, arg1); }
 
-// Draws the embedded model through the model path, spinning it up over the
-// first 8 frames and fading it out over the next 8.
+// Draws the embedded model through the model path, growing it from 1.0x to
+// 3.0x across the 16 frames and fading it to black over the last 8.
+//
+// It does not spin. The matrix is a fixed orientation whose magnitude is
+// scaled: m[0][0] and m[2][1] take Scale, m[1][2] takes -Scale, and every
+// other entry stays zero on every frame -- confirmed against a live cast,
+// where a rotation would have driven them sinusoidally.
 static void ThunderRenderModel(void) {
     MATRIX matrix;
     ThunderData* effect = &D_80162978[D_8015169C];
@@ -47,15 +52,15 @@ static void ThunderRenderModel(void) {
     u16* scale; // read through a pointer; a plain field read does not match
 
     if (frame < 8) {
-        ThunderModelDesc.desc.unkA = 0x80;
+        ThunderModelDesc.desc.uA.depthCue = 0x80;
     } else if (frame < 16) {
-        ThunderModelDesc.desc.unkA = 0x80 - ((frame - 8) * 0x10);
+        ThunderModelDesc.desc.uA.depthCue = 0x80 - ((frame - 8) * 0x10);
     } else {
         effect->StartFrame = -1;
         return;
     }
 
-    scale = &effect->unk16;
+    scale = &effect->Scale;
     ThunderModelMatrix.m[0][0] = ThunderModelMatrixM21 = *scale;
     ThunderModelMatrix.m[1][2] = -(s16)*scale;
     ThunderModelMatrix.t[0] = (s32)effect->Pos.vx;
@@ -67,7 +72,7 @@ static void ThunderRenderModel(void) {
     ThunderBufferPtr = func_800D29D4(&ThunderModelDesc, g_cDb->unk70, 0xC, ThunderBufferPtr);
     if (D_80062D98 == 0) {
         effect->AnimationFrame = (u16)effect->AnimationFrame + 1;
-        effect->unk16 += effect->unk18;
+        effect->Scale += effect->ScaleStep;
     }
 }
 
@@ -106,7 +111,7 @@ static void func_801B023C(void) {
     }
     SetRotMatrix(matrix);
     SetTransMatrix(matrix);
-    ThunderRenderDesc1.QuadCount = effect->AnimationFrame;
+    ThunderRenderDesc1.QuadCount = effect->AnimationFrame; // TODO check if this is coherent, looks like assigning 2 different things or the names are wrong
     ThunderBufferPtr = func_800D4D90(&ThunderRenderDesc1, g_cDb->unk70, 0xC, ThunderBufferPtr);
     if (D_80062D98 == 0) {
         nextFrame = (u16)effect->AnimationFrame + 1;
@@ -134,9 +139,9 @@ static void ThunderSpawnBolt(void) {
             if (effect->AnimationFrame == 0) {
                 next = &D_80162978[BattleEffectRegister(ThunderRenderModel)];
                 next->Pos = effect->Pos;
-                next->unk16 = 0x1000;
+                next->Scale = 0x1000;
                 next->Pos.vy = 0;
-                next->unk18 = 0x200;
+                next->ScaleStep = 0x200;
                 next->unk1C = (u16)effect->unk1C;
             }
         }

@@ -389,7 +389,17 @@ typedef struct {
                        // the command byte (0x2C POLY_FT4, 0x38 POLY_G4)
     } u;
     /* 0x8 */ u16 QuadCount; // bit 15 is a flag, low bits the count
-    /* 0xA */ s16 unkA;
+    // Offset 0xA is read by both renderers but means different things, so it
+    // gets the same treatment as offset 4. func_800D4D90 only reads it when
+    // QuadCount's bit 15 is set; its output primitives are 0x28 apart, which
+    // is sizeof(POLY_FT4), so the 0xE and 0x16 it writes are clut and tpage.
+    /* 0xA */ union {
+        s16 depthCue; // func_800D29D4 loads it into GTE IR0 (cop2 data reg 8)
+                      // ahead of dpcs/dpct, so 0x1000 blends the model fully
+                      // into SetFarColor
+        s16 clutBias; // func_800D4D90 adds it to the quad's clut halfword,
+                      // offsetting the palette
+    } uA;
 } ModelRenderDesc; // size:0xC
 
 // Full 0x10 form, read by func_800D29D4. 0x801B0C98 is an address inside the

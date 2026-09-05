@@ -1277,7 +1277,7 @@ extern Unk801B0C98 D_800F14D0;
 // passes.
 void func_800D6394(s32* arg0, s16 arg1) {
     D_800F14D0.desc.unk0 = arg0;
-    D_800F14D0.desc.unkA = arg1;
+    D_800F14D0.desc.uA.depthCue = arg1;
     SetFarColor(0, 0, 0);
     PushMatrix();
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);

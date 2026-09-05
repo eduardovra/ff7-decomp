@@ -114,7 +114,7 @@ static void BarrierRenderBorder(void) {
     SetTransMatrix(matrix);
 
     BorderRenderDesc.desc.u.flags = var_s3 | 0x80;
-    BorderRenderDesc.desc.unkA = var_s4;
+    BorderRenderDesc.desc.uA.depthCue = var_s4;
     BarrierBufferPtr = func_800D29D4(&BorderRenderDesc, g_cDb->unk70, 12, BarrierBufferPtr);
 
     if (D_80062D98 == 0) {
@@ -167,7 +167,7 @@ static void BarrierRenderShield(void) {
     SetTransMatrix(matrix1);
 
     ShieldRenderDesc.desc.u.flags = var_s5 | 0x80;
-    ShieldRenderDesc.desc.unkA = var_s6;
+    ShieldRenderDesc.desc.uA.depthCue = var_s6;
     BarrierBufferPtr = func_800D29D4(&ShieldRenderDesc, g_cDb->unk70, 12, BarrierBufferPtr);
 
     if (D_80062D98 == 0) {

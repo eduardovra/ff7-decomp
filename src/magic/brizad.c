@@ -82,7 +82,7 @@ static void BrizadRenderIce(void) {
     SetRotMatrix(&matrix);
     SetTransMatrix(&matrix);
     SetFarColor(0, 0, 0);
-    BrizadRenderDesc.desc.unkA = fade;
+    BrizadRenderDesc.desc.uA.depthCue = fade;
     BrizadBufferPtr = func_800D29D4(&BrizadRenderDesc, g_cDb->unk70, 12, BrizadBufferPtr);
     if (D_80062D98 == 0) {
         nextFrame = (u16)effect->AnimationFrame + 1;

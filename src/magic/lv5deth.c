@@ -73,16 +73,16 @@ static void Lv5DeathRenderRing(void) {
     desc->desc.unk0 = Lv5DeathRingModel;
     desc->desc.u.flags = 0x88;
     desc->desc.QuadCount = 0;
-    desc->desc.unkA = 0x800;
+    desc->desc.uA.depthCue = 0x800;
     desc->unkC = 0;
     desc->unkE = 0;
 
     val = effect->AnimationFrame;
     if (val < 8) {
         val <<= 8;
-        desc->desc.unkA = 0x1000 - val;
+        desc->desc.uA.depthCue = 0x1000 - val;
     } else if (val >= 37) {
-        desc->desc.unkA = (val << 8) - 0x1D00;
+        desc->desc.uA.depthCue = (val << 8) - 0x1D00;
     }
 
     SetFarColor(0, 0, 0);
