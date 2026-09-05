@@ -98,6 +98,26 @@ def write_png(
     path.write_bytes(png)
 
 
+def decode_screenshot(
+    raw: bytes,
+    width: int,
+    height: int,
+) -> bytearray:
+    """Expand a packed XBGR1555 framebuffer dump to RGB888 rows."""
+    rgb = bytearray(width * height * 3)
+    out = 0
+    for index in range(width * height):
+        pixel = raw[index * 2] | (raw[index * 2 + 1] << 8)
+        red = (pixel & 0x1F) << 3
+        green = ((pixel >> 5) & 0x1F) << 3
+        blue = ((pixel >> 10) & 0x1F) << 3
+        rgb[out] = red | (red >> 5)
+        rgb[out + 1] = green | (green >> 5)
+        rgb[out + 2] = blue | (blue >> 5)
+        out += 3
+    return rgb
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("out", type=Path)
@@ -120,6 +140,20 @@ def main(argv: list[str] | None = None) -> int:
         vram = args.from_file.read_bytes()
     else:
         vram = fetch_vram(args.host)
+    if args.screenshot:
+        rgb = decode_screenshot(
+            raw=vram,
+            width=args.width,
+            height=args.height,
+        )
+        write_png(
+            path=args.out,
+            rgb=bytes(rgb),
+            width=args.width,
+            height=args.height,
+        )
+        print(f"{args.out} {args.width}x{args.height}", file=sys.stderr)
+        return 0
     if args.bpp == 24:
         decode = decode_24bpp
     else:

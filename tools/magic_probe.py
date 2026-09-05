@@ -65,8 +65,14 @@ def build_arm_script(
     address: int,
     head: bytes,
     watches: list[Watch],
+    shots_dir: Path | None = None,
 ) -> str:
-    """Lua that installs the residency-guarded recording breakpoint."""
+    """Lua that installs the residency-guarded recording breakpoint.
+
+    With shots_dir, each hit also writes the framebuffer as raw XBGR1555.
+    The capture is the last completed frame, so it carries the same
+    one-frame lag as the memory read at the function's entry.
+    """
     head_list = ",".join(str(b) for b in head)
     reads = []
     for watch in watches:
@@ -76,6 +82,15 @@ def build_arm_script(
             f" .. hex(mem, {offset}, {watch.size})"
         )
     body = "\n".join(reads)
+    shot = ""
+    if shots_dir is not None:
+        shot = f"""
+    local ss = PCSX.GPU.takeScreenShot()
+    local name = string.format('{shots_dir}/%04d.raw', #{LUA_TABLE}.log)
+    local fh = Support.File.open(name, 'TRUNCATE')
+    fh:writeMoveSlice(ss.data)
+    fh:close()
+    parts[#parts+1] = string.format('shot=%dx%d', ss.width, ss.height)"""
     return f"""
 {LUA_TABLE} = {LUA_TABLE} or {{}}
 {LUA_TABLE}.log = {{}}
@@ -101,7 +116,7 @@ if {LUA_TABLE}.bp ~= nil then {LUA_TABLE}.bp:remove() end
     local mem = PCSX.getMemPtr()
     if not resident(mem) then return true end
     local parts = {{}}
-{body}
+{body}{shot}
     {LUA_TABLE}.log[#{LUA_TABLE}.log+1] = table.concat(parts, ' ')
     return true
   end, 'ff7probe')
@@ -203,6 +218,12 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="NAME[:SIZE]",
     )
     parser.add_argument("--out", type=Path)
+    parser.add_argument(
+        "--shots",
+        type=Path,
+        metavar="DIR",
+        help="capture the framebuffer on every hit, as raw XBGR1555",
+    )
     return parser
 
 
@@ -232,10 +253,13 @@ def main(argv: list[str] | None = None) -> int:
     watches = [parse_watch(spec, symbols) for spec in args.watch]
     if not watches:
         raise SystemExit("arm needs at least one --watch")
+    if args.shots is not None:
+        args.shots.mkdir(parents=True, exist_ok=True)
     script = build_arm_script(
         address=resolve_address(args.overlay, args.at, symbols),
         head=overlay_head(args.overlay, REPO_ROOT / "build" / "us"),
         watches=watches,
+        shots_dir=args.shots,
     )
     print(eval_lua(source=script, host=args.host))
     return 0

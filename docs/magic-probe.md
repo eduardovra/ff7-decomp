@@ -90,6 +90,20 @@ address masked into that space -- so `0x801B0000` is `0x1B0000`.
 
 ## Capturing frames
 
+`magic_probe.py arm --shots DIR` writes the framebuffer on every breakpoint
+hit, from inside the emulator via `PCSX.GPU.takeScreenShot()`, so there is
+no per-frame HTTP cost and no sampling race. Each dump is packed XBGR1555
+at the size the record's `shot=WxH` field gives; decode with
+`vram_png.py --screenshot --width W --height H`.
+
+The image is the last *completed* frame, so it carries the same one-frame
+lag as a memory read taken at the render function's entry. Pair image N
+with record N and both describe the state going into that frame.
+
+`/api/v1/screen/still` uses the same capture and works too, but only while
+the window is actually rendering -- it returns solid black otherwise, which
+is what makes it useless for unattended runs.
+
 ```shell
 .venv/bin/python3 tools/vram_png.py out.png            # 15bpp, the default
 .venv/bin/python3 tools/vram_png.py out.png --bpp 24   # FMV
@@ -123,10 +137,10 @@ memory and is shared by every spell.
 
 ## Do not poll for per-frame data
 
-A RAM snapshot is all 2MB and takes ~34ms, giving 29.6 per second against
-a 30fps game: **1.0 samples per frame**. Polling cannot reliably capture a
-16-frame animation, and no client-side tuning changes that -- the cost is
-the full-RAM `memcpy` and transfer, not the request.
+A RAM snapshot is all 2MB and takes ~34ms, giving 29.6 per second. Battle
+runs at about 15fps, so that is **2 samples per frame** -- enough to alias
+badly across a 15-frame animation, and no client-side tuning changes it:
+the cost is the full-RAM `memcpy` and transfer, not the request.
 
 Use a breakpoint instead. `PCSX.addBreakpoint(address, 'Exec', 4, cause,
 callback, label)` fires the callback once per execution, so a breakpoint on
@@ -149,3 +163,11 @@ only have replayed arithmetic already settled on paper.
 
 Reach for the emulator when the question is about behaviour over time, or
 about what actually reaches the screen.
+
+And prefer memory to pixels wherever both could answer. Confirming that
+brizad's ice block does not rotate is impossible from the images: the
+crystal is an eight-pointed symmetric star, so a 45-degree rotation is
+indistinguishable from none. `Rot` reading `(0,0,0)` every frame settles
+it outright. Screenshots earn their place on the complementary question --
+whether a value that provably reaches `IR0` actually darkens the picture --
+which no memory read can answer.

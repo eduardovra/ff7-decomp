@@ -185,6 +185,13 @@ a different scale. That is what justifies one name for it across the
 struct. The 17th entry takes the `frame >= 16` branch, sets `StartFrame` to
 `-1` and returns without drawing.
 
+**The depth cue is visible, not just plumbed.** Capturing the framebuffer
+alongside the memory on a brizad cast: the model grows every frame, yet
+bright pixels peak at 1809 on frame 9 and fall to 288 by frame 14. A larger
+object with six times fewer bright pixels means per-pixel luminance
+dropped, which is the cue blending toward a black `SetFarColor`. Tracing
+the field to `IR0` shows where it goes; only the picture shows it works.
+
 **Neither spell rotates, and both were once said to.** brizad's `spin`
 naming was caught by reading the code (`how-a-spell-is-drawn.md` section
 13). thunder's comment claimed the model "spins up over the first 8
@@ -197,7 +204,9 @@ because a scaled basis and a rotation matrix look alike.
 
 That is the same wrong guess made twice, independently, in two overlays.
 When a magic overlay appears to spin, check whether the off-diagonal terms
-ever move before naming anything.
+ever move before naming anything -- and check it in memory. brizad's ice
+block is an eight-pointed symmetric star, so a 45-degree rotation looks
+exactly like none. No screenshot could have settled it.
 
 ## Where overlay data lives
 
