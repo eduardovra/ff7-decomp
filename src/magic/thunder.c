@@ -24,7 +24,10 @@ typedef struct {
     /* 0x00 */ char pad[0x10000];
 } ThunderPrimPage; // size:0x10000
 
-extern void* ThunderBufferPtr; // TODO replace void pointer
+// void* is the right type: the renderers write several primitive kinds at
+// varying sizes and hand back the next write position, which C never
+// dereferences. Every magic overlay declares it this way.
+extern void* ThunderBufferPtr;
 extern ThunderData D_80162978[];
 extern ThunderPrimPage ThunderPrimBuffer[];
 extern u_long ThunderTexture[]; // 8bpp TIM + CLUT, uploaded on setup
@@ -89,7 +92,7 @@ static void func_801B0180(void) {
 
     effect = &D_80162978[D_8015169C];
     func_800D4368(&effect->Pos, 0x2000, effect->unk1C);
-    ThunderRenderDesc0.QuadCount = (s16)(u16)effect->AnimationFrame >> 1;
+    ThunderRenderDesc0.u08.frameIndex = (s16)(u16)effect->AnimationFrame >> 1;
     ThunderBufferPtr = func_800D4D90(&ThunderRenderDesc0, g_cDb->unk70, 0xC, ThunderBufferPtr);
     if (D_80062D98 == 0) {
         nextFrame = (u16)effect->AnimationFrame + 1;
@@ -116,7 +119,7 @@ static void func_801B023C(void) {
     }
     SetRotMatrix(matrix);
     SetTransMatrix(matrix);
-    ThunderRenderDesc1.QuadCount = effect->AnimationFrame; // TODO check if this is coherent, looks like assigning 2 different things or the names are wrong
+    ThunderRenderDesc1.u08.frameIndex = effect->AnimationFrame;
     ThunderBufferPtr = func_800D4D90(&ThunderRenderDesc1, g_cDb->unk70, 0xC, ThunderBufferPtr);
     if (D_80062D98 == 0) {
         nextFrame = (u16)effect->AnimationFrame + 1;

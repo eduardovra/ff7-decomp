@@ -378,9 +378,10 @@ typedef struct {
 } Unk800BB75C; // size:0x38
 
 // func_800D4D90 reads only these 0xC bytes, so its instances in ROM are
-// truncated to 0xC and packed 0xC apart. QuadCount is named after q-gears'
-// note on func_800D4D90, "create number of quads according to data in
-// effect" (github.com/q-gears/q-gears-reversing-data).
+// truncated to 0xC and packed 0xC apart.
+//
+// Offsets 4, 8 and A all mean different things in the two renderers, so
+// each is a union and the flags at 4 decide which arm applies.
 typedef struct {
     /* 0x0 */ s32* unk0;
     /* 0x4 */ union {
@@ -388,11 +389,22 @@ typedef struct {
         CVECTOR color; // func_800D4D90 stores it as a GPU packet word; cd is
                        // the command byte (0x2C POLY_FT4, 0x38 POLY_G4)
     } u;
-    /* 0x8 */ u16 QuadCount; // bit 15 is a flag, low bits the count
+    /* 0x8 */ union {
+        u16 uvBias;     // func_800D29D4 adds it to the words it stores at
+                        // the primitive's 0xC/0x14/0x1C, the UV pairs.
+                        // Every caller passes 0
+        u16 frameIndex; // func_800D4D90 skips this many variable-length
+                        // blocks to reach the frame's quads. Bit 15 enables
+                        // the clut bias at 0xA; the quad count itself is
+                        // read from the chosen block's own header at +2,
+                        // which is what q-gears meant by "create number of
+                        // quads according to data in effect"
+    } u08;
     // Offset 0xA is read by both renderers but means different things, so it
     // gets the same treatment as offset 4. func_800D4D90 only reads it when
-    // QuadCount's bit 15 is set; its output primitives are 0x28 apart, which
-    // is sizeof(POLY_FT4), so the 0xE and 0x16 it writes are clut and tpage.
+    // the frameIndex's bit 15 is set; its output primitives are 0x28 apart,
+    // which is sizeof(POLY_FT4), so the 0xE and 0x16 it writes are clut and
+    // tpage.
     /* 0xA */ union {
         s16 depthCue;  // func_800D29D4 with flags & 0x80: loaded into GTE IR0
                        // (cop2 data reg 8) ahead of dpcs/dpct, so 0x1000
