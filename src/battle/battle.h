@@ -393,6 +393,10 @@ typedef struct {
         //   0x8          sets the primitive's semi-transparency bit: the
         //                flag is shifted left 22 into bit 25 of the colour
         //                word, i.e. bit 1 of the GPU code byte
+        //   0x20         draw both faces. Without it the nclip area in MAC0
+        //                is tested and back-facing polygons dropped; that
+        //                test is XORed with the mirror parity above, so
+        //                mirroring does not turn the model inside out
         //   0x80         take the depth-cue path; see offset 0xA below
         // 0x10, 0x40 and 0x100 are tested but not yet established.
         s32 flags;

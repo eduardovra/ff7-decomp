@@ -237,6 +237,30 @@ the same thing explicitly, toggling `|= 1` and `|= 2` across four passes.
 Bit `0x8` is semi-transparency: it is shifted left 22 into bit 25 of the
 colour word, which is bit 1 of the GPU code byte.
 
+**The recurring barrier flash is not in the overlay.** A unit under Barrier
+shows a shell every time it is hit, long after `BARRIER.BIN` has been
+replaced at `0x801B0000` by the next spell -- confirmed by reading the
+resident bytes mid-battle and matching them against no overlay we build. It
+comes from the battle overlay: `battle2.c`'s `func_800CE75C` tests the two
+coverage masks q-gears named, `D_800FA69C` for MBarrier and `D_80163608`
+for physical Barrier, and calls `func_800D67E8` or `func_800D67BC`. Those
+differ in one line each:
+
+```c
+D_800F14D4 = 0x88;  func_800D6734(unit, 0);   // Barrier
+D_800F14D4 = 0xA8;  func_800D6734(unit, 1);   // MBarrier
+```
+
+`D_800F14D4` is the flags word of `D_800F14D0`, the engine's own render
+descriptor. So the only rendering difference between the two flashes is bit
+`0x20`, backface culling: MBarrier shows both faces of the shell, Barrier
+culls. Note the `else if` -- a unit under both statuses only shows the
+MBarrier flash. `func_800D6734`, which does the drawing, is still
+`INCLUDE_ASM`.
+
+So a spell splits across two places: the overlay draws the cast, and the
+engine draws whatever the resulting status does on every later hit.
+
 ## Where overlay data lives
 
 barrier brought its whole data segment into C as initialised arrays.
