@@ -66,6 +66,10 @@ gdb-multiarch -ex 'target remote localhost:3333' \
     -ex 'add-symbol-file build/us/savemenu.elf'
 ```
 
+`magic-probe.md` builds on this loop: it samples RAM and captures
+frames while a spell plays, guarding every read against the overlay
+residency problem that shared load addresses create.
+
 ## Limits
 
 Read this before planning a change that adds code.

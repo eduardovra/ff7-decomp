@@ -12,6 +12,8 @@ valid if the sha1 still matches.
   `src/magic/`.
 - `docs/emulator-loop.md` -- `./mako.sh redux`, which runs a rebuilt overlay
   in PCSX-Redux. Use it when sha1 cannot answer the question.
+- `docs/magic-probe.md` -- sampling RAM and frames from a running spell,
+  and the residency guard the shared `0x801B0000` load address needs.
 
 ## Verify every change
 

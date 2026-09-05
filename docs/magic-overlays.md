@@ -166,6 +166,39 @@ previously claimed; `func_800D4D90` instead reads it as a CLUT addend.
 also build one in scratchpad RAM at `0x1F800000`; brizad uses stack locals.
 Both appear in matching code, so it is an authoring choice rather than a rule.
 
+## Verified against a running game
+
+`magic-probe.md` describes the setup. A Lua breakpoint on an overlay's
+render function records one entry per frame from inside the emulator, which
+is how these were checked rather than argued.
+
+**brizad, 15 frames.** `Rot` stayed `(0,0,0)` on every frame, and the
+descriptor's depth cue stepped by exactly `0x124` fourteen times --
+`FADE_PER_FRAME`, `FIXED_ONE / (BRIZAD_LIFETIME - 1)`. The values lag one
+frame behind the source because the breakpoint sits at the function's entry
+and samples before that frame's write, which is itself a check that the
+capture is aligned.
+
+**thunder, 17 frames.** Depth cue held `0x80` and then stepped down by
+`0x10` to `0x10` -- the same field as brizad's, over a different range, on
+a different scale. That is what justifies one name for it across the
+struct. The 17th entry takes the `frame >= 16` branch, sets `StartFrame` to
+`-1` and returns without drawing.
+
+**Neither spell rotates, and both were once said to.** brizad's `spin`
+naming was caught by reading the code (`how-a-spell-is-drawn.md` section
+13). thunder's comment claimed the model "spins up over the first 8
+frames"; the trace shows `ThunderModelMatrix` holding `m[0][0]` and
+`m[2][1]` at `Scale`, `m[1][2]` at `-Scale`, and the other six entries at
+zero on all 17 frames, while `Scale` grows a flat `0x200` per frame from
+`0x1000` to `0x3000`. A rotation would drive those six sinusoidally. It is
+a fixed orientation being scaled, and it reads as a rotation in source
+because a scaled basis and a rotation matrix look alike.
+
+That is the same wrong guess made twice, independently, in two overlays.
+When a magic overlay appears to spin, check whether the off-diagonal terms
+ever move before naming anything.
+
 ## Where overlay data lives
 
 barrier brought its whole data segment into C as initialised arrays.
