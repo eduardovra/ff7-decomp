@@ -1,3 +1,5 @@
+//! PSYQ=3.3 CC1=2.6.3
+
 #include "common.h"
 
 INCLUDE_ASM("asm/us/magic/nonmatchings/refrec", func_801B0000);
