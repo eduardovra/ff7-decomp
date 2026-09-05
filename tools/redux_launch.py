@@ -67,11 +67,16 @@ def stop_running(timeout: float = 10.0) -> int:
     return stopped
 
 
-def apply_settings() -> dict[str, object]:
+def apply_settings(
+    extra: dict[tuple[str, ...], object] | None = None,
+) -> dict[str, object]:
     """Write the required settings. Redux must not be running."""
     config = json.loads(CONFIG.read_text())
     changed = {}
-    for path, wanted in REQUIRED.items():
+    wanted_all = dict(REQUIRED)
+    if extra is not None:
+        wanted_all.update(extra)
+    for path, wanted in wanted_all.items():
         node = config
         for key in path[:-1]:
             node = node.setdefault(key, {})
@@ -105,6 +110,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--host", default="localhost:8080")
     parser.add_argument("--disc", type=Path, default=DISC)
     parser.add_argument("--no-launch", action="store_true")
+    parser.add_argument(
+        "--mcd1",
+        type=Path,
+        metavar="FILE",
+        help="memory card for slot 1; .mcr and .mcd are the same raw format",
+    )
+    parser.add_argument("--mcd2", type=Path, metavar="FILE")
     args = parser.parse_args(argv)
 
     if args.no_launch:
@@ -125,7 +137,12 @@ def main(argv: list[str] | None = None) -> int:
     stopped = stop_running()
     if stopped:
         print(f"stopped {stopped} running emulator process(es)")
-    changed = apply_settings()
+    cards: dict[tuple[str, ...], object] = {}
+    if args.mcd1 is not None:
+        cards[("emulator", "Mcd1")] = str(args.mcd1.expanduser().resolve())
+    if args.mcd2 is not None:
+        cards[("emulator", "Mcd2")] = str(args.mcd2.expanduser().resolve())
+    changed = apply_settings(extra=cards)
     for key, transition in changed.items():
         print(f"setting {key}: {transition}")
     if not changed:
