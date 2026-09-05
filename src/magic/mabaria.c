@@ -50,9 +50,8 @@ void MabariaRenderModel(void)
 
     scale.vx = scale.vy = scale.vz = ((growth + 0x400) * D_801B0CA0) >> 12;
     // Depth cue toward SetFarColor, black here: the last 8 frames fade the
-    // model out, peaking at 0xE00 on frame 15 since it retires before the
-    // 8 * 0x200 == 0x1000 endpoint. D_801B0CA4 is always 0, so the lerp
-    // below is inert in the shipped game.
+    // model out, reaching 0xE00 on frame 15. D_801B0CA4 holds 0, so the
+    // lerp below passes the value through.
     if (effect->AnimationFrame < 8) {
         fade = 0;
     } else {

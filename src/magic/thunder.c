@@ -24,9 +24,8 @@ typedef struct {
     /* 0x00 */ char pad[0x10000];
 } ThunderPrimPage; // size:0x10000
 
-// void* is the right type: the renderers write several primitive kinds at
-// varying sizes and hand back the next write position, which C never
-// dereferences. Every magic overlay declares it this way.
+// The renderers write several primitive kinds at varying sizes and hand
+// back the next write position. Every magic overlay declares it this way.
 extern void* ThunderBufferPtr;
 extern ThunderData D_80162978[];
 extern ThunderPrimPage ThunderPrimBuffer[];
@@ -44,15 +43,13 @@ void MAGIC_Thunder(s32 arg0, s32 arg1) { ThunderMainSetup(arg0, arg1); }
 // Draws the embedded model through the model path, growing it from 1.0x to
 // 3.0x across the 16 frames and dimming it over the last 8.
 //
-// The descriptor's flags are 0x08, not 0x88, so func_800D29D4 takes the
-// path with no depth cue: offset 0xA is replicated into RGB and written to
-// the primitive's colour word. 0x80 down to 0x10 is grey 128 to 16, a fade
-// by dimming the vertex colour rather than by blending to SetFarColor.
+// Flags 0x08 take the plain path: offset 0xA is replicated into RGB and
+// written to the primitive's colour word, so 0x80 down to 0x10 dims the
+// vertex colour from grey 128 to 16.
 //
-// It does not spin. The matrix is a fixed orientation whose magnitude is
-// scaled: m[0][0] and m[2][1] take Scale, m[1][2] takes -Scale, and every
-// other entry stays zero on every frame -- confirmed against a live cast,
-// where a rotation would have driven them sinusoidally.
+// The matrix holds a fixed orientation scaled by Scale -- m[0][0] and
+// m[2][1] take Scale, m[1][2] takes -Scale. Confirmed live: the other six
+// entries hold zero on all 17 frames.
 static void ThunderRenderModel(void) {
     MATRIX matrix;
     ThunderData* effect = &D_80162978[D_8015169C];

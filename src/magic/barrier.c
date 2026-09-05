@@ -11,8 +11,8 @@ typedef struct BarrierData {
     s16 unk6;
     SVECTOR Pos;
     SVECTOR Rot;
-    u16 FaceIndex; // 0..3, straight into the descriptor's mirror
-                   // bits 0x1 and 0x2; one instance per quadrant
+    u16 FaceIndex; // 0..3, straight into the descriptor's mirror bits
+                   // 0x1 and 0x2; one instance per quadrant
     char pad1[0x6];
 } BarrierData;
 
@@ -80,12 +80,9 @@ static void BarrierMainSetup(int arg0, int arg1);
 
 void MAGIC_Barrier(int arg0, int arg1) { BarrierMainSetup(arg0, arg1); }
 
-// Four instances run per cast, spawned two frames apart with FaceIndex
-// 0, 1, 3, 2 -- Gray code, so each differs from the last by one mirror axis
-// and the shell grows through adjacent quadrants. Each draws the same
-// quarter model; the mirror bits assemble the other three quadrants, so a
-// live capture of the flags shows exactly 0x80..0x83, and 0x88..0x8b once
-// the fade adds semi-transparency below.
+// Four instances per cast, two frames apart, FaceIndex 0, 1, 3, 2 -- Gray
+// code, so the shell grows through adjacent quadrants. Each draws the same
+// quarter model and the mirror bits assemble the other three.
 static void BarrierRenderBorder(void) {
     MATRIX* matrix = (MATRIX*)0x1F800000;
     VECTOR* scale = (VECTOR*)0x1F800020;
@@ -94,8 +91,8 @@ static void BarrierRenderBorder(void) {
     int fade;
     int faceFlags;
 
-    // temp_a0 counts from the fade's start: negative is the opaque phase,
-    // 0..7 the eight-frame fade, past 7 retires the instance.
+    // temp_a0 counts from the fade: below 0 opaque, 0..7 fading, past 7
+    // retires the instance.
     if (temp_a0 < 0) {
         scale->vx = scale->vy = scale->vz = (BarrierBaseScale * 0xC00) >> 12;
         faceFlags = barrier->FaceIndex;
@@ -104,8 +101,8 @@ static void BarrierRenderBorder(void) {
         barrier->StartFrame = -1;
         return;
     } else {
-        // 0x8 is semi-transparency, added only for the fade, and the cue
-        // ramps 0x200 a frame to 0xE00 -- the same ramp mabaria uses.
+        // 0x8 turns on semi-transparency for the fade; the cue ramps
+        // 0x200 a frame to 0xE00.
         faceFlags = barrier->FaceIndex | 8;
         fade = temp_a0 << 9;
         scale->vx = scale->vy = scale->vz = (((temp_a0 * 0x180) + 0xC00) * BarrierBaseScale) >> 12;

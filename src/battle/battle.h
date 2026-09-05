@@ -386,47 +386,35 @@ typedef struct {
     /* 0x0 */ s32* unk0;
     /* 0x4 */ union {
         // func_800D29D4 tests bits 0x1..0x100. Established so far:
-        //   0x1/0x2/0x4  mirror X/Y/Z, by negating that column of the GTE
-        //                rotation matrix through control registers 0-4.
-        //                Each also flips an internal parity, which is the
-        //                winding an odd number of mirrors needs
-        //   0x8          sets the primitive's semi-transparency bit: the
-        //                flag is shifted left 22 into bit 25 of the colour
-        //                word, i.e. bit 1 of the GPU code byte
-        //   0x20         draw both faces. Without it the nclip area in MAC0
-        //                is tested and back-facing polygons dropped; that
-        //                test is XORed with the mirror parity above, so
-        //                mirroring does not turn the model inside out
-        //   0x80         take the depth-cue path; see offset 0xA below
-        // 0x10, 0x40 and 0x100 are tested but not yet established.
+        //   0x1/0x2/0x4  mirror X/Y/Z, negating that column of the GTE
+        //                rotation matrix; each flips the winding parity
+        //   0x8          semi-transparency: shifted left 22 into bit 25 of
+        //                the colour word, bit 1 of the GPU code byte
+        //   0x20         draw both faces. The cull it skips reads the
+        //                nclip area from MAC0 and XORs the mirror parity
+        //   0x80         depth-cue path; see offset 0xA below
+        // 0x10, 0x40 and 0x100 are tested; their meaning is open.
         s32 flags;
         CVECTOR color; // func_800D4D90 stores it as a GPU packet word; cd is
                        // the command byte (0x2C POLY_FT4, 0x38 POLY_G4)
     } u;
     /* 0x8 */ union {
-        u16 uvOffset;   // func_800D29D4 adds it to the words it stores at
-                        // the primitive's 0xC/0x14/0x1C, the UV pairs.
-                        // Every caller passes 0, so this rests on the asm
-        u16 frameIndex; // func_800D4D90 skips this many variable-length
-                        // blocks to reach the frame's quads. Bit 15 enables
-                        // the clut bias at 0xA; the quad count itself is
-                        // read from the chosen block's own header at +2,
-                        // which is what q-gears meant by "create number of
-                        // quads according to data in effect"
+        u16 uvOffset;   // func_800D29D4 adds it to the words at the
+                        // primitive's 0xC/0x14/0x1C, the UV pairs. Every
+                        // caller passes 0; read from the asm
+        u16 frameIndex; // func_800D4D90 skips this many blocks to reach
+                        // the frame's quads; bit 15 enables the clut bias
+                        // at 0xA. The quad count lives in the block header
     } u08;
-    // Offset 0xA is read by both renderers but means different things, so it
-    // gets the same treatment as offset 4. func_800D4D90 only reads it when
-    // the frameIndex's bit 15 is set; its output primitives are 0x28 apart,
-    // which is sizeof(POLY_FT4), so the 0xE and 0x16 it writes are clut and
-    // tpage.
+    // func_800D4D90 reads 0xA when frameIndex's bit 15 is set. Its
+    // primitives are 0x28 apart, sizeof(POLY_FT4), so the 0xE and 0x16 it
+    // writes are clut and tpage.
     /* 0xA */ union {
         s16 depthCue;  // func_800D29D4 with flags & 0x80: loaded into GTE IR0
                        // (cop2 data reg 8) ahead of dpcs/dpct, so 0x1000
                        // blends the model fully into SetFarColor
-        s16 greyLevel; // func_800D29D4 without flags & 0x80: replicated as
-                       // v | v<<8 | v<<16 and OR'd straight into the
-                       // primitive's colour word -- a flat grey, no depth
-                       // cue runs at all on this path
+        s16 greyLevel; // func_800D29D4 on the plain path: replicated as
+                       // v | v<<8 | v<<16 into the primitive's colour word
         s16 clutBias;  // func_800D4D90 adds it to the quad's clut halfword,
                        // offsetting the palette
     } uA;
