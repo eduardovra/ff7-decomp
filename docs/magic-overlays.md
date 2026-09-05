@@ -237,6 +237,34 @@ the same thing explicitly, toggling `|= 1` and `|= 2` across four passes.
 Bit `0x8` is semi-transparency: it is shifted left 22 into bit 25 of the
 colour word, which is bit 1 of the GPU code byte.
 
+**barrier's four instances are the four mirror combinations.** Capturing
+`BarrierRenderShield` shows four effect slots, each holding a distinct
+`FaceIndex`, spawned two frames apart:
+
+```
+slot  5: FaceIndex 0   StartFrame 1
+slot  7: FaceIndex 1   StartFrame 3
+slot  9: FaceIndex 3   StartFrame 5
+slot 11: FaceIndex 2   StartFrame 7
+```
+
+`barrier.c` feeds `FaceIndex` straight into the flags as `var_s3 | 0x80`,
+so those are the mirror bits: one instance per quadrant, assembling the
+shell from a quarter model. The spawn order `0, 1, 3, 2` is Gray code, so
+successive instances differ by one mirror axis and the shell grows through
+adjacent quadrants rather than jumping diagonally.
+
+The same source explains the flag range a capture shows. Semi-transparency
+is not constant: `| 8` is added only once `AnimationFrame + StartFrame`
+passes 17, the fade phase, which is why `0x80`-`0x83` appear first and
+`0x88`-`0x8b` later. `depthCue` is `temp_a0 << 9` over those last eight
+frames, the same `0x200` ramp mabaria uses.
+
+Border rendered into slots 4/6/8/10 on one cast and Shield into 5/7/9/11 on
+another, which suggests each instance takes a consecutive pair, Border even
+and Shield odd. That is inference from two separate casts; proving it needs
+one capture recording both passes at once.
+
 **The recurring barrier flash is not in the overlay.** A unit under Barrier
 shows a shell every time it is hit, long after `BARRIER.BIN` has been
 replaced at `0x801B0000` by the next spell -- confirmed by reading the
