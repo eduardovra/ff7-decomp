@@ -279,6 +279,14 @@ static void func_800CE638(void) {
     }
 }
 
+// The barrier shell a protected unit shows on every hit. It is drawn here,
+// in the battle overlay, not by BARRIER.BIN -- that overlay has long been
+// replaced at 0x801B0000 by whatever spell was cast since. The spell
+// overlay draws the cast; the engine draws what the resulting status does.
+//
+// D_800FA69C and D_80163608 are the MBarrier and physical Barrier coverage
+// masks, one bit per unit. The else-if means a unit under both shows only
+// the MBarrier shell.
 static void func_800CE75C(void) {
     if ((D_800FA69C >> D_80162978[D_8015169C].D_80162980) & 1) {
         func_800D67E8(D_80162978[D_8015169C].D_80162980);
@@ -1274,7 +1282,9 @@ extern Unk801B0C98 D_800F14D0;
 
 // Draw a model 4 times through func_800D29D4 (same request-struct pattern as
 // barrier.c's D_801B0C98/D_801B0CB0), toggling the 0x1/0x2 flag bits between
-// passes.
+// passes. Those bits mirror on X and Y, so the four passes are the four
+// quadrants of a symmetric model built from one quarter -- the same trick
+// barrier.c plays with its FaceIndex.
 void func_800D6394(s32* arg0, s16 arg1) {
     D_800F14D0.desc.unk0 = arg0;
     D_800F14D0.desc.uA.depthCue = arg1;
@@ -1306,6 +1316,10 @@ INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D6734);
 void func_800D6734(s32, s32);
 extern s32 D_800F14D4;
 
+// D_800F14D4 is the flags word of D_800F14D0, the engine's own render
+// descriptor. The two shells differ by one bit: 0xA8 sets 0x20, which skips
+// the backface test, so MBarrier shows both faces of the shell where
+// physical Barrier culls.
 static void func_800D67BC(s32 arg0) {
     D_800F14D4 = 0x88;
     func_800D6734(arg0, 0);
