@@ -39,7 +39,12 @@ static void ThunderMainSetup(s32 arg0, s32 arg1);
 void MAGIC_Thunder(s32 arg0, s32 arg1) { ThunderMainSetup(arg0, arg1); }
 
 // Draws the embedded model through the model path, growing it from 1.0x to
-// 3.0x across the 16 frames and fading it to black over the last 8.
+// 3.0x across the 16 frames and dimming it over the last 8.
+//
+// The descriptor's flags are 0x08, not 0x88, so func_800D29D4 takes the
+// path with no depth cue: offset 0xA is replicated into RGB and written to
+// the primitive's colour word. 0x80 down to 0x10 is grey 128 to 16, a fade
+// by dimming the vertex colour rather than by blending to SetFarColor.
 //
 // It does not spin. The matrix is a fixed orientation whose magnitude is
 // scaled: m[0][0] and m[2][1] take Scale, m[1][2] takes -Scale, and every
@@ -52,9 +57,9 @@ static void ThunderRenderModel(void) {
     u16* scale; // read through a pointer; a plain field read does not match
 
     if (frame < 8) {
-        ThunderModelDesc.desc.uA.depthCue = 0x80;
+        ThunderModelDesc.desc.uA.greyLevel = 0x80;
     } else if (frame < 16) {
-        ThunderModelDesc.desc.uA.depthCue = 0x80 - ((frame - 8) * 0x10);
+        ThunderModelDesc.desc.uA.greyLevel = 0x80 - ((frame - 8) * 0x10);
     } else {
         effect->StartFrame = -1;
         return;

@@ -394,11 +394,15 @@ typedef struct {
     // QuadCount's bit 15 is set; its output primitives are 0x28 apart, which
     // is sizeof(POLY_FT4), so the 0xE and 0x16 it writes are clut and tpage.
     /* 0xA */ union {
-        s16 depthCue; // func_800D29D4 loads it into GTE IR0 (cop2 data reg 8)
-                      // ahead of dpcs/dpct, so 0x1000 blends the model fully
-                      // into SetFarColor
-        s16 clutBias; // func_800D4D90 adds it to the quad's clut halfword,
-                      // offsetting the palette
+        s16 depthCue;  // func_800D29D4 with flags & 0x80: loaded into GTE IR0
+                       // (cop2 data reg 8) ahead of dpcs/dpct, so 0x1000
+                       // blends the model fully into SetFarColor
+        s16 greyLevel; // func_800D29D4 without flags & 0x80: replicated as
+                       // v | v<<8 | v<<16 and OR'd straight into the
+                       // primitive's colour word -- a flat grey, no depth
+                       // cue runs at all on this path
+        s16 clutBias;  // func_800D4D90 adds it to the quad's clut halfword,
+                       // offsetting the palette
     } uA;
 } ModelRenderDesc; // size:0xC
 

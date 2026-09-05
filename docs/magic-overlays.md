@@ -179,11 +179,23 @@ frame behind the source because the breakpoint sits at the function's entry
 and samples before that frame's write, which is itself a check that the
 capture is aligned.
 
-**thunder, 17 frames.** Depth cue held `0x80` and then stepped down by
-`0x10` to `0x10` -- the same field as brizad's, over a different range, on
-a different scale. That is what justifies one name for it across the
-struct. The 17th entry takes the `frame >= 16` branch, sets `StartFrame` to
-`-1` and returns without drawing.
+**thunder, 17 frames.** Offset `0xA` held `0x80` and then stepped down by
+`0x10` to `0x10`. The 17th entry takes the `frame >= 16` branch, sets
+`StartFrame` to `-1` and returns without drawing.
+
+**But thunder is not depth-cued.** Its descriptor flags are `0x08`, not
+`0x88`, and bit `0x80` is what selects the depth-cue path. With that bit
+clear, `func_800D29D4` replicates offset `0xA` as `v | v<<8 | v<<16` and
+ORs it straight into the primitive's colour word: a flat grey, with no
+`dpcs` at all. thunder's `0x80` to `0x10` is grey 128 to 16 -- it fades by
+dimming the vertex colour, not by blending toward `SetFarColor`.
+
+So the field is one offset with three readings, and the flags decide:
+`depthCue` with `0x80` set, `greyLevel` without it, `clutBias` in
+`func_800D4D90`. Every other caller -- barrier, lv5deth, brizad and
+battle2's `D_800F14D0` -- sets `0x80`, so thunder is the only one on the
+grey path. The tell was the range: `0x80` is 3% of `0x1000`, far too small
+to be a visible depth-cue blend, which is what prompted checking the flags.
 
 **The depth cue is visible, not just plumbed.** Capturing the framebuffer
 alongside the memory on a brizad cast: the model grows every frame, yet
