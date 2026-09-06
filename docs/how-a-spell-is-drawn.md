@@ -230,7 +230,7 @@ a local named `spin` and a file comment claiming the block "spins through
 exactly one revolution". All three were wrong. The actual rotation is carried
 separately in `effect->Rot`, which stays at zero for the whole animation
 because `BrizadSpawnIce` seeds it to zero and nothing ever writes it again.
-The ice block does not spin at all. Section 13 has the evidence.
+The ice model does not spin at all. Section 13 has the evidence.
 
 ---
 
@@ -399,6 +399,46 @@ transform for it:
 `swc2` stores a coprocessor register directly to memory, so the last result
 never passes through a general register at all. It goes from the GTE into the
 GPU packet in one instruction.
+
+### The other form: straight from the vertex table
+
+That is the quad builder, which synthesises its corners in general registers
+and has to `mtc2` them across. The model renderer brizad uses does not. It has
+a real vertex table in memory, so it loads the coprocessor from RAM directly,
+at `0x800D2AFC` in `asm/us/battle/nonmatchings/battle2/func_800D29D4.s`:
+
+```
+    lwc2  $0, 0x0($t4)     # VXY0 <- vertex A, x and y
+    lwc2  $1, 0x4($t4)     # VZ0  <- vertex A, z
+    lwc2  $2, 0x0($t5)     # VXY1
+    lwc2  $3, 0x4($t5)     # VZ1
+    lwc2  $4, 0x0($t6)     # VXY2
+    lwc2  $5, 0x4($t6)     # VZ2
+    addiu $a0, $a0, 0x10
+    rtpt
+```
+
+`lwc2` is a load *into* a coprocessor register, the mirror of the `swc2` above.
+The vertex data never passes through a general-purpose register at all: it goes
+from the model in the overlay's data segment into the GTE in one instruction
+per word. That is also why a vertex is 8 bytes with a padding halfword — the
+two loads have to be word-aligned and the format has to match `VXY`/`VZ`
+exactly.
+
+The three pointers are computed just above it:
+
+```
+    lh    $t4, 0x0($a0)    # the record's three vertex indices,
+    lh    $t5, 0x2($a0)    # each a byte offset
+    lh    $t6, 0x4($a0)
+    addu  $t4, $s5, $t4    # $s5 = base of the vertex table
+    addu  $t5, $s5, $t5
+    addu  $t6, $s5, $t6
+```
+
+which is section 11's "byte offsets, not element numbers" seen from the other
+side: `addu` with no shift, because the multiply is already baked into the
+data.
 
 The GTE data registers used across the battle code:
 
@@ -679,6 +719,28 @@ frame.
 model pass all go through `func_800D29D4`, which is 609 lines and does a great
 deal more. The differences are the interesting part.
 
+**It unpacks the whole descriptor up front.** The first dozen instructions
+read every field of `Unk801B0C98` into a saved register and then follow the
+pointer, which is the cleanest confirmation of the struct in `battle.h`:
+
+```
+    lw    $s0, 0x4($a0)    # desc.u.flags
+    lhu   $s1, 0x8($a0)    # desc.u08.uvOffset
+    lhu   $s2, 0xA($a0)    # desc.uA.depthCue
+    lhu   $s3, 0xC($a0)    # unkC
+    lhu   $s4, 0xE($a0)    # unkE
+    lw    $a0, 0x0($a0)    # -> the model data
+    ...
+    lw    $v0, 0x0($a0)    # vertex table size, in bytes
+    addiu $s5, $a0, 0x4    # $s5 = base of the vertex table
+    addu  $a0, $s5, $v0    # $a0 = first primitive list, just past the table
+```
+
+Those three lines at the end *are* the model format from section 11, executed:
+a size word, the table, then the lists. `$s5` stays put for the whole call and
+`$a0` walks forward through the four lists. `$s3` is later stored to `0x16` of
+the textured packets, so `unkC` is a texture-page base; brizad's is `0x20`.
+
 **It emits four primitive types, in four separate passes.** The model data
 carries four independent lists and the renderer walks them in a fixed order.
 Each pass hard-codes its own tag length and packet stride, and all four agree
@@ -728,6 +790,36 @@ the rotation matrix to mirror the model on an axis, and each one toggles
 `$s6`. An odd number of mirrors reverses the winding of every polygon, so the
 sign test has to invert with it.
 
+**It reads the screen coordinates back and links the packet.** This is the
+whole hand-off, at `0x800D2B70`, and it is worth reading beside the `POLY_FT3`
+layout in section 7:
+
+```
+    mfc2  $t0, $12             # SXY0
+    mfc2  $t1, $13             # SXY1
+    mfc2  $t2, $14             # SXY2
+    jal   func_800D32B4        # off-screen reject
+    sw    $t0, 0x8($a3)        # -> x0,y0
+    sw    $t1, 0x10($a3)       # -> x1,y1
+    sw    $t2, 0x18($a3)       # -> x2,y2
+    avsz3                      # average the three depths
+    mfc2  $t0, $7              # OTZ
+    srav  $t0, $t0, $a2        # >> 2
+    sll   $t0, $t0, 2
+    addu  $t0, $t0, $a1        # &ot[OTZ >> 2]
+    lw    $t1, 0x0($t0)        # old head of that bucket
+    and   $t1, $t1, 0xFFFFFF
+    or    $t1, $t1, 0x7000000  # payload length 7 words = POLY_FT3
+    sw    $t1, 0x0($a3)        # this packet's tag
+    and   $v0, $a3, 0xFFFFFF
+    sw    $v0, 0x0($t0)        # bucket head now points here
+```
+
+`$a3` is the packet cursor, which is the fourth argument — the overlay's own
+`BrizadBufferPtr`. So a vertex enters the GTE as model-space `s16`s and leaves
+it as packed screen coordinates written straight into the primitive page; the
+GPU is never shown a vertex, only a packet.
+
 **It does the fade.** This is what `SetFarColor(0, 0, 0)` was for. The GTE has
 depth-cue instructions that blend a colour toward the far colour:
 
@@ -763,7 +855,7 @@ same function.
 Brizad's descriptor confirms it from the other side. Its flag word, read out
 of the overlay's data segment, is `0x00000088`: bit `0x08` for
 semi-transparency and bit `0x80` for the depth-cued path. Its `0x124` per
-frame ramps `IR0` from zero to 4096 across the animation. The ice block grows
+frame ramps `IR0` from zero to 4096 across the animation. The ice model grows
 to three times size while fading to black, and never turns.
 
 ---
@@ -859,6 +951,173 @@ sit immediately after the array in memory, so it is declared immediately after
 it in the source. The border model does the same thing in reverse, opening
 with three zero counts before its six Gouraud quads.
 
+### Brizad's own model, still in the data segment
+
+Barrier's model is readable because someone typed it into C. Brizad's is not.
+The overlay only names the descriptor, at `src/magic/brizad.c:48`:
+
+```c
+extern Unk801B0C98 BrizadRenderDesc;
+```
+
+`extern` with no definition anywhere in `src/` means the symbol is resolved out
+of the raw data blob. `build/us/brizad.yaml` shows the split:
+
+```yaml
+  subsegments:
+  - - 0
+    - c
+    - brizad          # code, file offset 0      -> 0x801B0000
+  - - 1008
+    - data
+    - brizad          # data, file offset 0x3F0  -> 0x801B03F0
+  - - 4116
+    - .bss
+    - brizad          #                             0x801B1014
+```
+
+So everything between the end of the code and `0x801B1014` is data, and
+`config/symbols.magic-brizad.us.txt` brackets it without naming any of it:
+
+```
+MAGIC_Brizad = 0x801B037C;
+BrizadRenderDesc = 0x801B1004; // size:0x10
+BrizadPrimBuffer = 0x801B1014;
+```
+
+The model is the unnamed `0xC14` bytes in between. Dumping it against the
+format above, with the same annotation style as `bari_a1`:
+
+```c
+// 0x801B03F0, not yet in C. If it were, it would read:
+static s32 brizad_model[] = {
+    0x000002A0,             // vertex table: 672 bytes = 84 verts x 8
+    0x02490000, 0x00000000, // vert  0: (0, 585, 0)
+    0x0152006E, 0x0000FFDD, // vert  1: (110, 338, -35)
+    0x01520044, 0x0000005D, // vert  2: (68, 338, 93)
+    0x01520000, 0x0000FF8D, // vert  3: (0, 338, -115)
+    /* ... 80 more ... */
+
+    0x00200000,             // 0x801B0694  FT3 count 0, tpage 0x20
+    0x00000000,             // 0x801B0698  FT4 count 0
+    0x00000078,             // 0x801B069C  G3  count 120
+
+    0x010000F8, 0x000000F0, // verts 0xF8, 0x100, 0xF0 -> 31, 32, 30
+    0x30E76161,             // POLY_G3, rgb 61/61/E7 -- ice blue
+    0x00FFB2B2, 0x00FFCFCF, // the other two vertex colours
+    0x00F80108, 0x000000F0,
+    0x30FFD3D3, 0x00E76161, 0x00FFCFCF,
+    /* ... 118 more, 0x14 bytes each ... */
+
+    0x00000000};            // 0x801B1000  G4 count 0
+```
+
+**84 vertices, 120 Gouraud triangles, no textures.** Three of the four lists
+are empty, so the ice model only ever exercises pass 3 of the renderer. The
+colour bytes read `r=0x61, g=0x61, b=0xE7` in memory order, which is the blue
+the whole model is tinted with before the depth cue starts pulling it to
+black.
+
+### What the ice block actually is
+
+Plotting those 84 vertices settles what the effect looks like, which no amount
+of reading the render path will tell you:
+
+![Brizad's model: a twelve-spike burst, and one spike with its vertex indices](brizad-model.svg)
+
+It is not a block. It is a **twelve-spike burst**, and the 120 triangles fall
+into twelve identical pieces of ten, one per spike, with no vertex shared
+between them. Each spike is a pentagonal bipyramid: an outer tip at radius
+585, a pentagon ring at radius 357, and a point at the model origin, giving
+five triangles out to the tip and five back to the centre.
+
+```
+vertex   coordinate       role
+  0      (0, 585, 0)      the tip
+  1      (110, 338, -35)  \
+  2      (68, 338, 93)     |
+  3      (0, 338, -115)    |  pentagon ring, 338 out
+  4      (-110, 338, -35)  |
+  5      (-68, 338, 93)   /
+ 75      (0, 0, 0)         the model origin
+```
+
+The twelve tips all sit within a unit of radius 585, and the angles between
+them come out as thirty pairs at 63.4°, thirty at 116.6° and six at 180°.
+That is exactly the icosahedron vertex figure — its adjacent-vertex angle is
+`arccos(1/sqrt 5)` = 63.43° — so the spikes point at the twelve vertices of an
+icosahedron. That is why section 3's growth ramp reads the way it does: the
+model is authored at a fixed radius and `func_800D55A4` scales it to the
+target, so "three times the target's size" is a sphere of spikes swelling
+through it, not a cube.
+
+One quirk falls out of the plot. Vertices `72` through `83` are twelve
+identical copies of `(0, 0, 0)`. The spikes are vertex-disjoint, so each one
+carries its own centre point rather than sharing a single index — which is
+also why the piece in the right-hand panel is numbered `0..5` and then jumps
+to `75`.
+
+The figure is generated, not drawn, by `tools/dump_model.py`:
+
+```shell
+.venv/bin/python3 tools/dump_model.py disks/us/MAGIC/BRIZAD.BIN \
+    docs/brizad-model.svg
+```
+
+It parses the format above straight out of the ROM, so it will drift if the
+reading of the format is ever wrong. Two honest caveats about the picture:
+faces are sorted back-to-front and filled flat with the average of their three
+Gouraud colours, because SVG has no Gouraud triangle; and it is drawn in model
+space, before the depth cue that fades the whole thing to black.
+
+The last count word lands at `0x801B1000` and the descriptor begins on the
+very next word, which is how you know the dump is right:
+
+```c
+// 0x801B1004, in the same never-typed data segment:
+//   { { brizad_model, .flags = 0x88, .uvOffset = 0, .depthCue = 0 }, 0x20 }
+```
+
+Compare barrier, which does have it in C at `src/magic/barrier.c:71`:
+
+```c
+static Unk801B0C98 BorderRenderDesc = {{bari_a1, {0}, 0, 0}, 0x20};
+```
+
+Same shape, same trailing `0x20`. And the type it fills, from
+`src/battle/battle.h`, is what section 10's prologue reads field by field:
+
+```c
+typedef struct {
+    /* 0x0 */ ModelRenderDesc desc;   // model pointer, flags, uv, depth cue
+    /* 0xC */ s16 unkC;
+    /* 0xE */ s16 unkE;
+} Unk801B0C98; // size:0x10
+```
+
+### The whole path, in six addresses
+
+Putting sections 4 through 11 in order, for one triangle of the ice model:
+
+| step         | where          | what                                    |
+|--------------|----------------|-----------------------------------------|
+| model data   | `0x801B03F0`   | 84 verts, 120 `POLY_G3` records         |
+| the handle   | `0x801B1004`   | `BrizadRenderDesc`: pointer + flags     |
+| into the GTE | `0x800D2AFC`   | `lwc2 $0..$5` from the table, then `rtpt` |
+| out of it    | `0x800D2B70`   | `mfc2 $12..$14` into the packet         |
+| the packet   | `0x801B1014`   | `BrizadPrimBuffer`, two 64 KB pages     |
+| the sort     | `g_cDb->unk70` | linked into `ot[OTZ >> 2]`              |
+
+`BrizadRenderIce` itself only supplies the first two and the matrix. Line 86 is
+the entire draw:
+
+```c
+BrizadBufferPtr = func_800D29D4(&BrizadRenderDesc, g_cDb->unk70, 12,
+                                BrizadBufferPtr);
+```
+
+Descriptor, ordering table, `otLen`, and the bump pointer in and out.
+
 ---
 
 ## 12. Two pages, and the hand-off
@@ -926,7 +1185,7 @@ rotation of any kind. Three independent lines of evidence agree:
 The knock-on was inside `brizad.c` itself: `SPIN_PER_FRAME`, the local named
 `spin`, and the comment claiming the effect "spins through exactly one
 revolution" all described something that does not happen. `effect->Rot` is
-seeded to zero by `BrizadSpawnIce` and never written again, so the ice block
+seeded to zero by `BrizadSpawnIce` and never written again, so the ice model
 has no rotation at all.
 
 Those three are now `FADE_PER_FRAME`, `fade`, and a comment naming the
