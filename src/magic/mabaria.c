@@ -3,18 +3,12 @@
 #include "common.h"
 #include "../battle/battle.h"
 
-// Growth is spread across the animation: the notional frame MABARIA_LIFETIME
-// lands on (GROWTH_TOTAL + SCALE_BASE) * 2 == 0x7FFE, one short of the 0x7FFF
-// ceiling ScaleMatrix's s16 matrix entries allow.
+// Frame 16 would land on 0x7FFE, just under ScaleMatrix's 0x7FFF s16 ceiling.
 #define GROWTH_TOTAL 0x3BFF
 #define SCALE_BASE 0x400
 
-// The model renders on frames 0..15 and retires after the last one, fading
-// out over the second half. func_800D29D4 loads the fade as the GTE's
-// depth-cue factor, driving the vertex colour toward SetFarColor, black
-// here, and reaching 0xE00 on the last frame. The primitive is drawn
-// semi-transparent and the GPU blends additively, so black adds nothing and
-// the model fades to invisible rather than to a dark shape.
+// Fade is the GTE depth cue toward SetFarColor, black here, reaching 0xE00 on
+// frame 15. Drawn semi-transparent and blended additively, so black vanishes.
 #define MABARIA_LIFETIME 16
 #define FADE_START_FRAME 8
 #define FADE_PER_FRAME 0x200
@@ -25,17 +19,14 @@ typedef struct {
     /* 0x04 */ SVECTOR Pos;
     /* 0x0C */ SVECTOR Rot;
     /* 0x14 */ s16 TargetIndex;
-    // Nothing in the overlay reads or writes past 0x16.
-    /* 0x16 */ char pad16[0xA];
-} MabariaData; // size:0x20
+    /* 0x16 */ char pad16[0xA]; // untouched by the overlay
+} MabariaData;                  // size:0x20
 
 // PSX fixed point: 1.0 == 1 << FIXED_SHIFT.
 #define FIXED_SHIFT 12
 #define FIXED_ONE (1 << FIXED_SHIFT)
 
-// The primitive buffer holds two pages; MabariaDoubleBufferFlip alternates
-// between them so the GPU can read last frame's primitives while this one
-// builds.
+// Two pages; MabariaDoubleBufferFlip alternates between them.
 #define MABARIA_PAGE_SIZE 0x10000
 
 typedef struct {
@@ -49,16 +40,14 @@ extern Unk801B0C98 MabariaRenderDesc;
 extern MabariaPrimPage MabariaPrimBuffer[];
 extern void* MabariaBufferPtr;
 
-void MabariaMainSetup(s32 arg0, s32 arg1);
+static void MabariaMainSetup(s32 arg0, s32 arg1);
 
 void MAGIC_MBarrier(s32 arg0, s32 arg1) { MabariaMainSetup(arg0, arg1); }
 
-// Draws the embedded model through the model path, growing it over the 16
-// animation frames and fading it out over the last 8.
-void MabariaRenderModel(void) {
+// Grows over the 16 frames, fading out over the last 8.
+static void MabariaRenderModel(void) {
     MabariaData* effect = &D_80162978[D_8015169C];
-    // D_801B0CA0 is always 0x2000, making the scale (growth + SCALE_BASE) * 2:
-    // 0.5x on frame 0 to 7.5x on frame 15.
+    // D_801B0CA0 is always 0x2000: scale runs 0.5x on frame 0 to 7.5x on 15.
     s32 growth = effect->AnimationFrame * GROWTH_TOTAL / MABARIA_LIFETIME;
     MATRIX matrix;
     s32 fade;
@@ -66,7 +55,7 @@ void MabariaRenderModel(void) {
     VECTOR scale;
 
     scale.vx = scale.vy = scale.vz = ((growth + SCALE_BASE) * D_801B0CA0) >> FIXED_SHIFT;
-    // D_801B0CA4 holds 0, so the lerp below passes the fade through.
+    // D_801B0CA4 holds 0, so the lerp passes the fade through.
     if (effect->AnimationFrame < FADE_START_FRAME) {
         fade = 0;
     } else {
@@ -93,22 +82,52 @@ void MabariaRenderModel(void) {
     }
 }
 
-INCLUDE_ASM("asm/us/magic/nonmatchings/mabaria", func_801B01C0);
-void func_801B01C0();
+// Spawns a render instance on frames 0, 4 and 8; retires on 16.
+static void MabariaAnimationUpdate(void) {
+    MabariaData* effect = &D_80162978[D_8015169C];
+    MabariaData* next;
 
-void MabariaAttachToTarget(s32 target) {
-    MabariaData* temp_s1 = &D_80162978[BattleEffectRegister(func_801B01C0)];
+    if (D_80062D98 != 0) {
+        return;
+    }
 
-    BattleGetPartPosition(target, D_801518E4[target].D_8015190F, &temp_s1->Pos);
-    temp_s1->Pos.vx =
-        temp_s1->Pos.vx - ((rsin(D_801518E4[target].unk160.vy) * D_801518E4[target].unk12) >> FIXED_SHIFT);
-    temp_s1->Pos.vz =
-        temp_s1->Pos.vz - ((rcos(D_801518E4[target].unk160.vy) * D_801518E4[target].unk12) >> FIXED_SHIFT);
-    temp_s1->Rot = D_801518E4[target].unk160;
-    temp_s1->TargetIndex = target;
+    if (effect->AnimationFrame == 0) {
+        next = &D_80162978[BattleEffectRegister(MabariaRenderModel)];
+        next->Pos = effect->Pos;
+        next->Rot = effect->Rot;
+    }
+
+    if (effect->AnimationFrame == 4) {
+        next = &D_80162978[BattleEffectRegister(MabariaRenderModel)];
+        next->Pos = effect->Pos;
+        next->Rot = effect->Rot;
+    }
+
+    if (effect->AnimationFrame == 8) {
+        next = &D_80162978[BattleEffectRegister(MabariaRenderModel)];
+        next->Pos = effect->Pos;
+        next->Rot = effect->Rot;
+    }
+
+    if (effect->AnimationFrame == 16) {
+        func_800D5774(effect->TargetIndex);
+        effect->StartFrame = -1;
+    }
+
+    effect->AnimationFrame++;
 }
 
-void MabariaDoubleBufferFlip(void) {
+static void MabariaAttachToTarget(s32 target) {
+    MabariaData* effect = &D_80162978[BattleEffectRegister(MabariaAnimationUpdate)];
+
+    BattleGetPartPosition(target, D_801518E4[target].D_8015190F, &effect->Pos);
+    effect->Pos.vx = effect->Pos.vx - ((rsin(D_801518E4[target].unk160.vy) * D_801518E4[target].unk12) >> FIXED_SHIFT);
+    effect->Pos.vz = effect->Pos.vz - ((rcos(D_801518E4[target].unk160.vy) * D_801518E4[target].unk12) >> FIXED_SHIFT);
+    effect->Rot = D_801518E4[target].unk160;
+    effect->TargetIndex = target;
+}
+
+static void MabariaDoubleBufferFlip(void) {
     MabariaData* effect = &D_80162978[D_8015169C];
 
     MabariaBufferPtr = &MabariaPrimBuffer[effect->AnimationFrame];
@@ -118,7 +137,7 @@ void MabariaDoubleBufferFlip(void) {
     }
 }
 
-void MabariaMainSetup(s32 arg0, s32 arg1) {
+static void MabariaMainSetup(s32 arg0, s32 arg1) {
     D_801B0CA0 = 0x2000;
     D_801B0CA4 = 0;
     BattleEffectRegister(MabariaDoubleBufferFlip);
