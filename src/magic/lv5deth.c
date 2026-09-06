@@ -9,6 +9,19 @@ extern CVECTOR D_800F5B70;
 extern s16 D_800F5B74;
 extern u8 D_80062D98; // set while the battle is paused
 
+// Ring and sprite, spawned together per target: fade in over FADE_IN_FRAMES,
+// hold, fade out from FADE_OUT_START_FRAME, retire at TARGET_LIFETIME.
+#define TARGET_LIFETIME 45
+#define FADE_IN_FRAMES 8
+#define FADE_OUT_START_FRAME 37
+#define RESULT_POPUP_FRAME 35
+
+// Screen fade: the far-colour depth ramps by FAR_DEPTH_PER_FRAME to
+// FAR_DEPTH_MAX, holds while targets animate, then eases back down.
+#define FAR_DEPTH_PER_FRAME 320
+#define FAR_DEPTH_MAX 2560
+#define SCREEN_FADE_LIFETIME 53
+
 // One slot of the shared battle effect array, as Lv5 Death lays it out. Only
 // StartFrame/AnimationFrame are common to every magic overlay; the remaining
 // 0x1C bytes are payload each effect defines for itself -- compare BarrierData
@@ -82,17 +95,17 @@ static void Lv5DeathRenderRing(void) {
     desc->unkE = 0;
 
     frame = effect->AnimationFrame;
-    if (frame < 8) {
+    if (frame < FADE_IN_FRAMES) {
         frame <<= 8;
         desc->desc.uA.depthCue = 0x1000 - frame;
-    } else if (frame >= 37) {
+    } else if (frame >= FADE_OUT_START_FRAME) {
         desc->desc.uA.depthCue = (frame << 8) - 0x1D00;
     }
 
     SetFarColor(0, 0, 0);
     Lv5DeathBufferPtr = func_800D29D4(desc, g_cDb->unk70, 12, Lv5DeathBufferPtr);
 
-    if (effect->AnimationFrame >= 45) {
+    if (effect->AnimationFrame >= TARGET_LIFETIME) {
         effect->StartFrame = -1;
     }
     if (D_80062D98 == 0) {
@@ -112,10 +125,10 @@ static void Lv5DeathRenderTargetSprite(void) {
     Lv5DeathSpriteDesc.u08.frameIndex = effect->AnimationFrame & 7;
 
     frame = effect->AnimationFrame;
-    if (frame < 8) {
+    if (frame < FADE_IN_FRAMES) {
         intensity = frame * 16;
-    } else if (frame >= 37) {
-        intensity = -128 - ((frame - 37) * 16);
+    } else if (frame >= FADE_OUT_START_FRAME) {
+        intensity = -128 - ((frame - FADE_OUT_START_FRAME) * 16);
     } else {
         intensity = 128;
     }
@@ -124,12 +137,12 @@ static void Lv5DeathRenderTargetSprite(void) {
     func_800D4368(&effect->Pos, (s16)effect->Scale, -((s16)effect->Scale >> 2));
     Lv5DeathBufferPtr = func_800D4D90(&Lv5DeathSpriteDesc, g_cDb->unk70, 12, Lv5DeathBufferPtr);
 
-    if (effect->AnimationFrame >= 45) {
+    if (effect->AnimationFrame >= TARGET_LIFETIME) {
         effect->StartFrame = -1;
         Lv5DeathTargetsRemaining--;
     }
     if (D_80062D98 == 0) {
-        if (effect->AnimationFrame == 35) {
+        if (effect->AnimationFrame == RESULT_POPUP_FRAME) {
             func_800D5774(effect->u.TargetIndex);
         }
         effect->AnimationFrame++;
@@ -144,22 +157,22 @@ static void Lv5DeathScreenFade(void) {
     s32 farDepth;
 
     effect = &D_80162978[D_8015169C];
-    if (effect->AnimationFrame < 8) {
+    if (effect->AnimationFrame < FADE_IN_FRAMES) {
         D_800F5B70.r = D_800F5B70.g = D_800F5B70.b = 0;
-        farDepth = effect->AnimationFrame * 320;
+        farDepth = effect->AnimationFrame * FAR_DEPTH_PER_FRAME;
     } else if (Lv5DeathTargetsRemaining <= 0) {
         if (effect->u.FadeOutStartFrame == 0) {
             effect->u.FadeOutStartFrame = effect->AnimationFrame;
         }
-        farDepth = 2560 - (effect->AnimationFrame - effect->u.FadeOutStartFrame) * 320;
+        farDepth = FAR_DEPTH_MAX - (effect->AnimationFrame - effect->u.FadeOutStartFrame) * FAR_DEPTH_PER_FRAME;
     } else {
-        farDepth = 2560;
+        farDepth = FAR_DEPTH_MAX;
     }
 
     // Frame 53 closes the slot on 0 wherever the ease-out has reached: it
     // starts where the last target retired, so one target drops from 640
     // and three, retiring on 46/48/50, drop from 1920.
-    if (effect->AnimationFrame >= 53) {
+    if (effect->AnimationFrame >= SCREEN_FADE_LIFETIME) {
         farDepth = 0;
         effect->StartFrame = -1;
     }

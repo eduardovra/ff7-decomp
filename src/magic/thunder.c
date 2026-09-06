@@ -7,6 +7,24 @@
 // a model drawn through func_800D29D4, and two textured-quad passes drawn
 // through func_800D4D90, all double-buffered into a 0x20000 primitive page.
 
+// PSX fixed point: 1.0 == 1 << FIXED_SHIFT.
+#define FIXED_SHIFT 12
+#define FIXED_ONE (1 << FIXED_SHIFT)
+
+// Two pages; ThunderDoubleBufferFlip alternates between them.
+#define THUNDER_PAGE_SIZE 0x10000
+
+// Model pass: full grey for the first half, then dimmed by GREY_PER_FRAME.
+#define MODEL_LIFETIME 16
+#define DIM_START_FRAME 8
+#define GREY_FULL 0x80
+#define GREY_PER_FRAME 0x10
+
+// Bolt pass: registers the renderers on frame 0, scatters a spark from
+// SPARK_START_FRAME on, retires at BOLT_LIFETIME.
+#define BOLT_LIFETIME 16
+#define SPARK_START_FRAME 2
+
 typedef struct {
     /* 0x00 */ s16 StartFrame;
     /* 0x02 */ s16 AnimationFrame;
@@ -21,7 +39,7 @@ typedef struct {
 } ThunderData; // size:0x20
 
 typedef struct {
-    /* 0x00 */ char pad[0x10000];
+    /* 0x00 */ char pad[THUNDER_PAGE_SIZE];
 } ThunderPrimPage; // size:0x10000
 
 // The renderers write several primitive kinds at varying sizes and hand
@@ -56,10 +74,10 @@ static void ThunderRenderModel(void) {
     s16 frame = effect->AnimationFrame;
     u16* scale; // read through a pointer; a plain field read does not match
 
-    if (frame < 8) {
-        ThunderModelDesc.desc.uA.greyLevel = 0x80;
-    } else if (frame < 16) {
-        ThunderModelDesc.desc.uA.greyLevel = 0x80 - ((frame - 8) * 0x10);
+    if (frame < DIM_START_FRAME) {
+        ThunderModelDesc.desc.uA.greyLevel = GREY_FULL;
+    } else if (frame < MODEL_LIFETIME) {
+        ThunderModelDesc.desc.uA.greyLevel = GREY_FULL - ((frame - DIM_START_FRAME) * GREY_PER_FRAME);
     } else {
         effect->StartFrame = -1;
         return;
@@ -144,13 +162,13 @@ static void ThunderSpawnBolt(void) {
             if (effect->AnimationFrame == 0) {
                 next = &D_80162978[BattleEffectRegister(ThunderRenderModel)];
                 next->Pos = effect->Pos;
-                next->Scale = 0x1000;
+                next->Scale = FIXED_ONE;
                 next->Pos.vy = 0;
                 next->ScaleStep = 0x200;
                 next->unk1C = (u16)effect->unk1C;
             }
         }
-        if (effect->AnimationFrame >= 2) {
+        if (effect->AnimationFrame >= SPARK_START_FRAME) {
             next = &D_80162978[BattleEffectRegister(func_801B023C)];
             next->Pos.vx = ((u16)effect->Pos.vx + rand() % 1000) - 500;
             next->Pos.vy = ((u16)effect->Pos.vy + rand() % 1000) - 500;
@@ -160,7 +178,7 @@ static void ThunderSpawnBolt(void) {
         }
         nextFrame = (u16)effect->AnimationFrame + 1;
         effect->AnimationFrame = nextFrame;
-        if (nextFrame == 16) {
+        if (nextFrame == BOLT_LIFETIME) {
             effect->StartFrame = -1;
         }
     }

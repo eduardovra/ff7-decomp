@@ -33,20 +33,20 @@ typedef struct {
     /* 0x1E */ s16 unk1E;
 } BrizadData; // size:0x20
 
-// PSX fixed point: 1.0 == 1 << FIXED_SHIFT. Angles: FIXED_ONE == a full turn.
+// PSX fixed point: 1.0 == 1 << FIXED_SHIFT.
 #define FIXED_SHIFT 12
-#define FIXED_ONE (1 << FIXED_SHIFT)
 
-// The model renders on frames 0..14, retiring after the last one, so both rates
-// are per (BRIZAD_LIFETIME - 1) frames: it grows to 3x the target's size and
-// fades out. The fade is not an angle -- func_800D29D4 loads it as the GTE's
-// depth-cue factor, blending toward SetFarColor, which is black here.
+// Frames 0..14; the model grows and fades out. func_800D29D4 loads the fade
+// as the GTE's depth-cue factor, driving the vertex colour toward
+// SetFarColor, black here. Every primitive is emitted semi-transparent and
+// the GPU blends additively, so black adds nothing and the model fades to
+// invisible rather than to a dark shape. Both rates are shift-add chains in
+// the target: by the last frame growth reaches 0x2FF6 (2.998x), fade 0xFF8.
 #define BRIZAD_LIFETIME 15
-#define GROWTH_PER_FRAME (3 * FIXED_ONE / (BRIZAD_LIFETIME - 1)) // 0x36D
-#define FADE_PER_FRAME (FIXED_ONE / (BRIZAD_LIFETIME - 1))       // 0x124
+#define GROWTH_PER_FRAME 0x36D
+#define FADE_PER_FRAME 0x124
 
-// ScaleMatrix writes into MATRIX.m, which is s16; a scale of 0x7FFF against an
-// identity entry of FIXED_ONE lands exactly on the ceiling, so clamp there.
+// ScaleMatrix writes into MATRIX.m, which is s16, so the scale clamps here.
 #define SCALE_MAX 0x7FFF
 
 extern Unk801B0C98 BrizadRenderDesc;

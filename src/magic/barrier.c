@@ -3,6 +3,19 @@
 #include "common.h"
 #include "../battle/battle.h"
 
+// PSX fixed point: 1.0 == 1 << FIXED_SHIFT.
+#define FIXED_SHIFT 12
+
+// Two pages; BarrierDoubleBufferFlip alternates between them.
+#define BARRIER_PAGE_SIZE 0x10000
+
+// Fade phase: the depth cue ramps by FADE_PER_FRAME to 0xE00 on the last
+// frame, and the scale grows from SCALE_BASE by SCALE_PER_FADE_FRAME.
+#define FADE_LAST_FRAME 7
+#define FADE_PER_FRAME 0x200
+#define SCALE_BASE 0xC00
+#define SCALE_PER_FADE_FRAME 0x180
+
 // This is placeholder for now so I can access the SVECTORs correctly
 typedef struct BarrierData {
     s16 StartFrame;
@@ -72,7 +85,7 @@ static Unk801B0C98 BorderRenderDesc = {{bari_a1, {0}, 0, 0}, 0x20};
 static SVECTOR ShieldPivotOffset = {0, 0, -500};
 static Unk801B0C98 ShieldRenderDesc = {{bari_a2, {0}, 0, 0}, 0x20};
 static int BarrierBaseScale;
-static char BarrierPrimBuffer[0x20000];
+static char BarrierPrimBuffer[2 * BARRIER_PAGE_SIZE];
 static void* BarrierBufferPtr;
 
 // barrier.c forward declarations
@@ -94,18 +107,19 @@ static void BarrierRenderBorder(void) {
     // temp_a0 counts from the fade: below 0 opaque, 0..7 fading, past 7
     // retires the instance.
     if (temp_a0 < 0) {
-        scale->vx = scale->vy = scale->vz = (BarrierBaseScale * 0xC00) >> 12;
+        scale->vx = scale->vy = scale->vz = (BarrierBaseScale * SCALE_BASE) >> FIXED_SHIFT;
         faceFlags = barrier->FaceIndex;
         fade = 0;
-    } else if (temp_a0 > 7) {
+    } else if (temp_a0 > FADE_LAST_FRAME) {
         barrier->StartFrame = -1;
         return;
     } else {
         // 0x8 turns on semi-transparency for the fade; the cue ramps
         // 0x200 a frame to 0xE00.
         faceFlags = barrier->FaceIndex | 8;
-        fade = temp_a0 << 9;
-        scale->vx = scale->vy = scale->vz = (((temp_a0 * 0x180) + 0xC00) * BarrierBaseScale) >> 12;
+        fade = temp_a0 * FADE_PER_FRAME;
+        scale->vx = scale->vy = scale->vz =
+            (((temp_a0 * SCALE_PER_FADE_FRAME) + SCALE_BASE) * BarrierBaseScale) >> FIXED_SHIFT;
     }
 
     SetFarColor(0, 0, 0);
@@ -142,23 +156,23 @@ static void BarrierRenderShield(void) {
 
     if (temp_a0 < 0) {
         if (barrier->AnimationFrame < 6) {
-            scale1->vx = scale1->vy = scale1->vz = (barrier->AnimationFrame * (BarrierBaseScale << 9)) >> 12;
+            scale1->vx = scale1->vy = scale1->vz = (barrier->AnimationFrame * (BarrierBaseScale << 9)) >> FIXED_SHIFT;
         } else {
-            scale1->vx = scale1->vy = scale1->vz = (BarrierBaseScale * 0xC00) >> 12;
+            scale1->vx = scale1->vy = scale1->vz = (BarrierBaseScale * SCALE_BASE) >> FIXED_SHIFT;
         }
 
-        scale2->vx = scale2->vy = scale2->vz = (BarrierBaseScale * 0xC00) >> 12;
+        scale2->vx = scale2->vy = scale2->vz = (BarrierBaseScale * SCALE_BASE) >> FIXED_SHIFT;
 
         faceFlags = barrier->FaceIndex;
         fade = 0;
-    } else if (temp_a0 > 7) {
+    } else if (temp_a0 > FADE_LAST_FRAME) {
         barrier->StartFrame = -1;
         return;
     } else {
         faceFlags = barrier->FaceIndex | 8;
-        fade = temp_a0 << 9;
+        fade = temp_a0 * FADE_PER_FRAME;
         scale1->vx = scale1->vy = scale1->vz = scale2->vx = scale2->vy = scale2->vz =
-            (((temp_a0 * 0x180) + 0xC00) * BarrierBaseScale) >> 12;
+            (((temp_a0 * SCALE_PER_FADE_FRAME) + SCALE_BASE) * BarrierBaseScale) >> FIXED_SHIFT;
     }
 
     SetFarColor(0, 0, 0);
@@ -267,8 +281,8 @@ static void BarrierAttachToTarget(int target) {
     BarrierData* barrier = &D_80162978[BattleEffectRegister(BarrierAnimationUpdate)];
 
     BattleGetPartPosition(target, D_801518E4[target].D_8015190F, &barrier->Pos);
-    barrier->Pos.vx -= (rsin(D_801518E4[target].unk160.vy) * D_801518E4[target].unk12) >> 12;
-    barrier->Pos.vz -= (rcos(D_801518E4[target].unk160.vy) * D_801518E4[target].unk12) >> 12;
+    barrier->Pos.vx -= (rsin(D_801518E4[target].unk160.vy) * D_801518E4[target].unk12) >> FIXED_SHIFT;
+    barrier->Pos.vz -= (rcos(D_801518E4[target].unk160.vy) * D_801518E4[target].unk12) >> FIXED_SHIFT;
     barrier->Rot = D_801518E4[target].unk160;
     barrier->TargetIndex = target;
 }
@@ -276,7 +290,7 @@ static void BarrierAttachToTarget(int target) {
 static void BarrierDoubleBufferFlip(void) {
     BarrierData* barrier = &D_80162978[D_8015169C];
 
-    BarrierBufferPtr = &BarrierPrimBuffer[barrier->AnimationFrame * 65536];
+    BarrierBufferPtr = &BarrierPrimBuffer[barrier->AnimationFrame * BARRIER_PAGE_SIZE];
     barrier->AnimationFrame ^= 1;
 
     if (D_80162080 < 2) {
