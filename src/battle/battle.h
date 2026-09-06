@@ -532,6 +532,8 @@ MATRIX* func_800D4368(SVECTOR* pos, s32 scale, s32 depthBias);
 // renderer; callers that colour the model type offset 4 as a CVECTOR.
 void* func_800D4D90(ModelRenderDesc* desc, u_long** ot, int otLen, void* prim);
 void func_800D5444(int, int, int, void (*func)(int));
+// Returns a scale derived from the target's model size.
+s32 func_800D55A4(s32 target);
 void BattleCommandSend(s32 cmdId, ...);
 int func_800D574C(int);
 void BattleGetPartPosition(s32 arg0, s32 arg1, void* arg2);

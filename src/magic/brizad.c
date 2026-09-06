@@ -6,6 +6,10 @@
 // Ice (ブリザド / Blizzard), tier 1. Structurally a sibling of barrier.c:
 // a 3D model effect built through func_800D29D4 with the PSYQ matrix helpers,
 // double-buffered into a 0x20000 primitive page per frame.
+//
+// The model lives in this overlay's data segment at 0x801B03F0: 84 vertices
+// and 120 Gouraud triangles, no textures, forming a twelve-spike burst whose
+// tips point at the vertices of an icosahedron.
 
 // The primitive buffer holds two pages; the flip slot alternates between them
 // so the GPU can read last frame's primitives while this frame builds.
@@ -33,7 +37,7 @@ typedef struct {
 #define FIXED_SHIFT 12
 #define FIXED_ONE (1 << FIXED_SHIFT)
 
-// The block renders on frames 0..14, retiring after the last one, so both rates
+// The model renders on frames 0..14, retiring after the last one, so both rates
 // are per (BRIZAD_LIFETIME - 1) frames: it grows to 3x the target's size and
 // fades out. The fade is not an angle -- func_800D29D4 loads it as the GTE's
 // depth-cue factor, blending toward SetFarColor, which is black here.
@@ -48,9 +52,6 @@ typedef struct {
 extern Unk801B0C98 BrizadRenderDesc;
 extern BrizadData D_80162978[];
 extern s16 D_80151774;
-
-// Returns a scale derived from the target's model size.
-s32 func_800D55A4(s32 target);
 
 // Render pass; registered by BrizadSpawnIce, so it takes no arguments.
 static void BrizadRenderIce(void) {
@@ -130,7 +131,7 @@ static void BrizadAttachToTarget(s32 target) { D_80162978[BattleEffectRegister(B
 static void BrizadDoubleBufferFlip(void) {
     BrizadData* flip = &D_80162978[D_8015169C];
 
-    BrizadBufferPtr = flip->AnimationFrame * BRIZAD_PAGE_SIZE + BrizadPrimBuffer;
+    BrizadBufferPtr = &BrizadPrimBuffer[flip->AnimationFrame * BRIZAD_PAGE_SIZE];
     flip->AnimationFrame = (u16)flip->AnimationFrame ^ 1;
     if (D_80162080 < 2) {
         flip->StartFrame = -1;
