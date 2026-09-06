@@ -218,10 +218,23 @@ damage; its brightness curve is consistent with the model dimming but
 cannot be attributed to it. Check how many passes an overlay draws before
 planning to prove anything from pixels.
 
-And prefer memory to pixels wherever both could answer. Confirming that
-brizad's ice block does not rotate is impossible from the images: the
-crystal is an eight-pointed symmetric star, so a 45-degree rotation is
-indistinguishable from none. `Rot` reading `(0,0,0)` every frame settles
-it outright. Screenshots earn their place on the complementary question --
-whether a value that provably reaches `IR0` actually darkens the picture --
-which no memory read can answer.
+And prefer memory to pixels wherever both could answer. `Rot` reading
+`(0,0,0)` every frame is what settles that brizad's model does not rotate.
+Screenshots earn their place on the complementary question -- whether a
+value that provably reaches `IR0` actually darkens the picture -- which no
+memory read can answer.
+
+That paragraph used to justify itself with the model's shape: "the crystal
+is an eight-pointed symmetric star, so a 45-degree rotation is
+indistinguishable from none". Decoding the vertex table says otherwise. It
+is a twelve-spike burst on icosahedral axes, and no two spikes carry the
+same colours, so it is not rotation-invariant the way that claim assumed.
+The count was
+eyeballed off a screenshot and written down as fact; the conclusion
+survived, its stated reason did not.
+
+**Check a claim about authored data against the ROM, not against a
+capture.** The vertex table was readable the whole time --
+`tools/dump_model.py` decodes and plots it in one command -- while the
+screenshot shows the model only after the camera transform, the growth
+ramp and the fade have been applied to it.

@@ -216,9 +216,10 @@ because a scaled basis and a rotation matrix look alike.
 
 That is the same wrong guess made twice, independently, in two overlays.
 When a magic overlay appears to spin, check whether the off-diagonal terms
-ever move before naming anything -- and check it in memory. brizad's ice
-block is an eight-pointed symmetric star, so a 45-degree rotation looks
-exactly like none. No screenshot could have settled it.
+ever move before naming anything -- and check it in memory. brizad's model
+is a twelve-spike burst, not the eight-pointed star this doc asserted until
+the vertex table was actually decoded; `how-a-spell-is-drawn.md` section 11
+has the plot.
 
 **barrier reveals what the flag bits do.** Its flags are computed at
 runtime (`var_s3 | 0x80`), unlike the constants the other overlays carry, so
