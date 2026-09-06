@@ -377,6 +377,24 @@ typedef struct {
 
 } Unk800BB75C; // size:0x38
 
+// The flag word at offset 4 of ModelRenderDesc, as func_800D29D4 tests it.
+// Each mirror bit negates one column of the GTE rotation matrix, which
+// reverses the winding of every polygon, so the cull test XORs their parity
+// back out. func_800D29D4 also tests 0x10, 0x40 and 0x100; those are left as
+// literals because their meaning is not established.
+enum ModelRenderFlags {
+    MODEL_MIRROR_X = 0x1, // negates R11/R21/R31
+    MODEL_MIRROR_Y = 0x2, // negates R12/R22/R32
+    MODEL_MIRROR_Z = 0x4, // negates R13/R23/R33
+    // shifted left 22 into bit 25 of the colour word, which is bit 1 of the
+    // GPU command byte: a Gouraud triangle goes from code 0x30 to 0x32
+    MODEL_SEMI_TRANS = 0x8,
+    // skips the nclip backface rejection, so both faces of every polygon are
+    // emitted and the packet count roughly doubles
+    MODEL_NO_CULL = 0x20,
+    MODEL_DEPTH_CUE = 0x80, // offset 0xA feeds GTE IR0; see below
+};
+
 // func_800D4D90 reads only these 0xC bytes, so its instances in ROM are
 // truncated to 0xC and packed 0xC apart.
 //
@@ -385,16 +403,7 @@ typedef struct {
 typedef struct {
     /* 0x0 */ s32* unk0;
     /* 0x4 */ union {
-        // func_800D29D4 tests bits 0x1..0x100. Established so far:
-        //   0x1/0x2/0x4  mirror X/Y/Z, negating that column of the GTE
-        //                rotation matrix; each flips the winding parity
-        //   0x8          semi-transparency: shifted left 22 into bit 25 of
-        //                the colour word, bit 1 of the GPU code byte
-        //   0x20         draw both faces. The cull it skips reads the
-        //                nclip area from MAC0 and XORs the mirror parity
-        //   0x80         depth-cue path; see offset 0xA below
-        // 0x10, 0x40 and 0x100 are tested; their meaning is open.
-        s32 flags;
+        s32 flags;     // ModelRenderFlags
         CVECTOR color; // func_800D4D90 stores it as a GPU packet word; cd is
                        // the command byte (0x2C POLY_FT4, 0x38 POLY_G4)
     } u;

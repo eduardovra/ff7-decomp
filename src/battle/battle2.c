@@ -1286,16 +1286,16 @@ void func_800D6394(s32* arg0, s16 arg1) {
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
     PopMatrix();
     PushMatrix();
-    D_800F14D0.desc.u.flags |= 1;
+    D_800F14D0.desc.u.flags |= MODEL_MIRROR_X;
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
     PopMatrix();
     PushMatrix();
-    D_800F14D0.desc.u.flags |= 2;
+    D_800F14D0.desc.u.flags |= MODEL_MIRROR_Y;
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
     PopMatrix();
-    D_800F14D0.desc.u.flags &= ~1;
+    D_800F14D0.desc.u.flags &= ~MODEL_MIRROR_X;
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
-    D_800F14D0.desc.u.flags &= ~2;
+    D_800F14D0.desc.u.flags &= ~MODEL_MIRROR_Y;
 }
 
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D650C);
@@ -1309,19 +1309,19 @@ INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D6734);
 void func_800D6734(s32, s32);
 extern s32 D_800F14D4;
 
-// D_800F14D4 is D_800F14D0's flags word; 0x20 draws both faces.
+// D_800F14D4 is D_800F14D0's flags word.
 static void func_800D67BC(s32 arg0) {
-    D_800F14D4 = 0x88; // Barrier: cull backfaces
+    D_800F14D4 = MODEL_DEPTH_CUE | MODEL_SEMI_TRANS; // Barrier
     func_800D6734(arg0, 0);
 }
 
 static void func_800D67E8(s32 arg0) {
-    D_800F14D4 = 0xA8; // MBarrier: 0x20 shows both faces of the shell
+    D_800F14D4 = MODEL_DEPTH_CUE | MODEL_NO_CULL | MODEL_SEMI_TRANS; // MBarrier
     func_800D6734(arg0, 1);
 }
 
 void func_800D6814(s32 arg0) {
-    D_800F14D4 = 0x88;
+    D_800F14D4 = MODEL_DEPTH_CUE | MODEL_SEMI_TRANS;
     func_800D6734(arg0, 2);
 }
 

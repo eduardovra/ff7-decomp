@@ -114,9 +114,10 @@ static void BarrierRenderBorder(void) {
         barrier->StartFrame = -1;
         return;
     } else {
-        // 0x8 turns on semi-transparency for the fade; the cue ramps
-        // 0x200 a frame to 0xE00.
-        faceFlags = barrier->FaceIndex | 8;
+        // semi-transparency for the fade; the cue ramps 0x200 a frame
+        // to 0xE00. FaceIndex is 0, 1, 3, 2 across the four instances,
+        // which are the mirror bits that place each quadrant.
+        faceFlags = barrier->FaceIndex | MODEL_SEMI_TRANS;
         fade = temp_a0 * FADE_PER_FRAME;
         scale->vx = scale->vy = scale->vz =
             (((temp_a0 * SCALE_PER_FADE_FRAME) + SCALE_BASE) * BarrierBaseScale) >> FIXED_SHIFT;
@@ -135,7 +136,7 @@ static void BarrierRenderBorder(void) {
     SetRotMatrix(matrix);
     SetTransMatrix(matrix);
 
-    BorderRenderDesc.desc.u.flags = faceFlags | 0x80;
+    BorderRenderDesc.desc.u.flags = faceFlags | MODEL_DEPTH_CUE;
     BorderRenderDesc.desc.uA.depthCue = fade;
     BarrierBufferPtr = func_800D29D4(&BorderRenderDesc, g_cDb->unk70, 12, BarrierBufferPtr);
 
@@ -169,7 +170,7 @@ static void BarrierRenderShield(void) {
         barrier->StartFrame = -1;
         return;
     } else {
-        faceFlags = barrier->FaceIndex | 8;
+        faceFlags = barrier->FaceIndex | MODEL_SEMI_TRANS;
         fade = temp_a0 * FADE_PER_FRAME;
         scale1->vx = scale1->vy = scale1->vz = scale2->vx = scale2->vy = scale2->vz =
             (((temp_a0 * SCALE_PER_FADE_FRAME) + SCALE_BASE) * BarrierBaseScale) >> FIXED_SHIFT;
@@ -188,7 +189,7 @@ static void BarrierRenderShield(void) {
     SetRotMatrix(matrix1);
     SetTransMatrix(matrix1);
 
-    ShieldRenderDesc.desc.u.flags = faceFlags | 0x80;
+    ShieldRenderDesc.desc.u.flags = faceFlags | MODEL_DEPTH_CUE;
     ShieldRenderDesc.desc.uA.depthCue = fade;
     BarrierBufferPtr = func_800D29D4(&ShieldRenderDesc, g_cDb->unk70, 12, BarrierBufferPtr);
 

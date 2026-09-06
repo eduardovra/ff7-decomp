@@ -88,7 +88,7 @@ static void Lv5DeathRenderRing(void) {
     // Render descriptor built in scratchpad RAM.
     desc = (Unk801B0C98*)0x1F800000;
     desc->desc.unk0 = Lv5DeathRingModel;
-    desc->desc.u.flags = 0x88;
+    desc->desc.u.flags = MODEL_DEPTH_CUE | MODEL_SEMI_TRANS;
     desc->desc.u08.uvOffset = 0;
     desc->desc.uA.depthCue = 0x800;
     desc->unkC = 0;
