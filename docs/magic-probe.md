@@ -140,6 +140,47 @@ Addresses outside `0x801B0000`-`0x801D0CAC` are unaffected. The battle
 effect slot (`D_80162978`, indexed by `D_8015169C`) lives in battle's own
 memory and is shared by every spell.
 
+## Reaching a spell the party cannot cast
+
+Most magic overlays sit behind progression. `LV5DETH.BIN` is on Disc 1 and
+`build/us/lv5deth.exe` matches it, but Lv5 Death is an Enemy Skill learned
+in the Northern Crater, so a Disc 1 save never casts it.
+
+`--force TYPE:ID` puts any overlay on screen from any action:
+
+```shell
+python3 tools/magic_probe.py lv5deth arm --at 0x801B0074 \
+    --watch D_8015169C:4 --watch D_80162978:0x200 --force 13:19
+```
+
+Two bytes decide which overlay a queued command uses, at `0x22` and `0x23`
+of the acting unit's `BattleModel` (`D_801518E4`, stride `0xB9C`).
+`func_800D1110` turns them into a disc read and `func_800D0C80` calls the
+entry point the loaded overlay exposes, so a breakpoint on the entry to
+each, rewriting both bytes from `a0`, is enough: the game does the load
+itself and the animation runs on real disc data. `drain` reports how many
+commands were rewritten.
+
+The patch rewrites every unit's command while armed, enemies included, so
+`disarm` when the capture is done.
+
+### Finding the pair
+
+Command type is the `D_80151907` case in `func_800D0C80`: 2 is Magic, 13
+Enemy Skill, 4/8/20/32 the other tables. The id indexes that type's
+dispatch table, and the parallel table in `func_800D1110` maps it to a
+file record in `D_800EEBB8`, whose `loc` is an LBA. So read the LBA of the
+overlay out of the ISO directory and find the record that carries it:
+
+| overlay | LBA | record | table | id |
+| --- | --- | --- | --- | --- |
+| `LV5DETH.BIN` | `0x8897` | 76 | `D_800EF6A8` (E.Skill) | 19 |
+| `BARRIER.BIN` | `0x7980` | 11 | `D_800EF63C` (Magic) | 15 |
+| `BRIZAD.BIN` | `0x7913` | 7 | `D_800EF63C` (Magic) | 30 |
+
+The two magic rows are the check on the method: both were captured by
+casting them normally, before the force patch existed.
+
 ## Do not poll for per-frame data
 
 A RAM snapshot is all 2MB and takes ~34ms, giving 29.6 per second. Battle

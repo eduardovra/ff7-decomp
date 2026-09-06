@@ -82,6 +82,53 @@ def test_default_address_is_overlay_entry_plus_20() -> None:
     assert mp.resolve_address("mabaria", None, {}) == 0x801B0020
 
 
+def test_parse_force_reads_type_and_id() -> None:
+    assert mp.parse_force("13:19") == (13, 19)
+    assert mp.parse_force("0xD:0x13") == (13, 19)
+
+
+def test_parse_force_rejects_a_missing_id() -> None:
+    try:
+        mp.parse_force("13")
+    except SystemExit:
+        return
+    raise AssertionError("expected SystemExit")
+
+
+def test_force_script_writes_id_then_type() -> None:
+    script = mp.build_force_script(
+        command_type=13,
+        command_id=19,
+        sites=[0x800D1110, 0x800D0C80],
+    )
+    slot = mp.BATTLE_MODEL_BASE & mp.RAM_MASK
+    assert f"local at = {slot} + slot * {mp.BATTLE_MODEL_STRIDE}" in script
+    assert f"mem[at + {mp.COMMAND_ID_OFFSET}] = 19" in script
+    assert f"mem[at + {mp.COMMAND_TYPE_OFFSET}] = 13" in script
+    # The invoker must return true; returning false deletes the breakpoint.
+    assert "return true" in script
+
+
+def test_force_script_installs_one_breakpoint_per_site() -> None:
+    script = mp.build_force_script(
+        command_type=13,
+        command_id=19,
+        sites=[0x800D1110, 0x800D0C80],
+    )
+    assert script.count("PCSX.addBreakpoint") == 2
+    assert str(0x800D1110) in script
+    assert str(0x800D0C80) in script
+
+
+def test_force_script_ignores_an_out_of_range_slot() -> None:
+    script = mp.build_force_script(13, 19, [0x800D1110])
+    assert f"if slot < {mp.BATTLE_MODEL_COUNT} then" in script
+
+
+def test_disarm_removes_the_force_breakpoints() -> None:
+    assert "FF7Probe.force" in mp.build_disarm_script()
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_"):

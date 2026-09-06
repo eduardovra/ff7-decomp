@@ -37,6 +37,12 @@ MAGIC_VRAM_START = 0x801B0000
 RAM_MASK = 0x1FFFFF
 RESIDENCY_BYTES = 16
 EFFECT_SLOT_STRIDE = 0x20
+BATTLE_MODEL_BASE = 0x801518E4
+BATTLE_MODEL_STRIDE = 0xB9C
+BATTLE_MODEL_COUNT = 7
+COMMAND_ID_OFFSET = 0x22
+COMMAND_TYPE_OFFSET = 0x23
+FORCE_SITES = ("func_800D1110", "func_800D0C80")
 SYMBOL_RE = re.compile(r"^\s*(\w+)\s*=\s*(0x[0-9A-Fa-f]+)\s*;")
 LUA_TABLE = "FF7Probe"
 
@@ -128,6 +134,56 @@ return 'armed at ' .. string.format('0x%08X', {address})
 """
 
 
+def build_force_script(
+    command_type: int,
+    command_id: int,
+    sites: list[int],
+) -> str:
+    """Lua that rewrites the acting unit's queued command before it runs.
+
+    func_800D1110 turns the pair into a disc read and func_800D0C80 calls
+    the entry point the loaded overlay exposes, both from the same two
+    bytes at the unit's 0x22/0x23. Patching them at the entry to each puts
+    any overlay on screen from any cast: the game does the load itself.
+    """
+    installs = []
+    for index, site in enumerate(sites, start=1):
+        installs.append(
+            f"{LUA_TABLE}.force[{index}] = PCSX.addBreakpoint({site},"
+            f" 'Exec', 4, 'ff7force', patch, 'ff7force')"
+        )
+    body = "\n".join(installs)
+    return f"""
+{LUA_TABLE} = {LUA_TABLE} or {{}}
+{LUA_TABLE}.forced = 0
+local function patch()
+  local slot = bit.band(PCSX.getRegisters().GPR.n.a0, 0xFF)
+  if slot < {BATTLE_MODEL_COUNT} then
+    local mem = PCSX.getMemPtr()
+    local at = {BATTLE_MODEL_BASE & RAM_MASK} + slot * {BATTLE_MODEL_STRIDE}
+    mem[at + {COMMAND_ID_OFFSET}] = {command_id}
+    mem[at + {COMMAND_TYPE_OFFSET}] = {command_type}
+    {LUA_TABLE}.forced = {LUA_TABLE}.forced + 1
+  end
+  return true
+end
+if {LUA_TABLE}.force ~= nil then
+  for _, bp in ipairs({LUA_TABLE}.force) do bp:remove() end
+end
+{LUA_TABLE}.force = {{}}
+{body}
+return 'forcing type {command_type} id {command_id}'
+"""
+
+
+def parse_force(spec: str) -> tuple[int, int]:
+    """Parse `TYPE:ID` into the command type and command id."""
+    type_text, sep, id_text = spec.partition(":")
+    if not sep:
+        raise SystemExit(f"--force wants TYPE:ID, got: {spec}")
+    return int(type_text, 0), int(id_text, 0)
+
+
 def build_rejected_script() -> str:
     """Lua returning how many hits the residency guard dropped."""
     return f"""
@@ -146,11 +202,23 @@ return text
 """
 
 
+def build_forced_script() -> str:
+    """Lua returning how many commands the force patch rewrote."""
+    return f"""
+if {LUA_TABLE} == nil then return '0' end
+return tostring({LUA_TABLE}.forced or 0)
+"""
+
+
 def build_disarm_script() -> str:
     return f"""
 if {LUA_TABLE} ~= nil and {LUA_TABLE}.bp ~= nil then
   {LUA_TABLE}.bp:remove()
   {LUA_TABLE}.bp = nil
+end
+if {LUA_TABLE} ~= nil and {LUA_TABLE}.force ~= nil then
+  for _, bp in ipairs({LUA_TABLE}.force) do bp:remove() end
+  {LUA_TABLE}.force = nil
 end
 return 'disarmed'
 """
@@ -236,6 +304,12 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="DIR",
         help="capture the framebuffer on every hit, as raw XBGR1555",
     )
+    parser.add_argument(
+        "--force",
+        metavar="TYPE:ID",
+        help="rewrite every queued command to this type and id, so any"
+             " cast loads and plays this overlay (13:19 is Lv5 Death)",
+    )
     return parser
 
 
@@ -253,6 +327,7 @@ def main(argv: list[str] | None = None) -> int:
             print(text, file=sys.stderr)
             return 1
         rejected = eval_lua(source=build_rejected_script(), host=args.host)
+        forced = eval_lua(source=build_forced_script(), host=args.host)
         records = parse_records(text)
         lines = [json.dumps(record) for record in records]
         payload = "\n".join(lines)
@@ -261,21 +336,32 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(payload)
         print(f"{len(records)} records, {rejected.strip()} hits rejected "
-              f"by the residency guard", file=sys.stderr)
+              f"by the residency guard, {forced.strip()} commands forced",
+              file=sys.stderr)
         return 0
 
     watches = [parse_watch(spec, symbols) for spec in args.watch]
-    if not watches:
-        raise SystemExit("arm needs at least one --watch")
+    if not watches and args.force is None:
+        raise SystemExit("arm needs at least one --watch or --force")
     if args.shots is not None:
         args.shots.mkdir(parents=True, exist_ok=True)
-    script = build_arm_script(
-        address=resolve_address(args.overlay, args.at, symbols),
-        head=overlay_head(args.overlay, REPO_ROOT / "build" / "us"),
-        watches=watches,
-        shots_dir=args.shots,
-    )
-    print(eval_lua(source=script, host=args.host))
+    if watches:
+        script = build_arm_script(
+            address=resolve_address(args.overlay, args.at, symbols),
+            head=overlay_head(args.overlay, REPO_ROOT / "build" / "us"),
+            watches=watches,
+            shots_dir=args.shots,
+        )
+        print(eval_lua(source=script, host=args.host))
+    if args.force is not None:
+        command_type, command_id = parse_force(args.force)
+        sites = [symbols[name] for name in FORCE_SITES]
+        script = build_force_script(
+            command_type=command_type,
+            command_id=command_id,
+            sites=sites,
+        )
+        print(eval_lua(source=script, host=args.host))
     return 0
 
 
