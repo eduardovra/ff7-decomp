@@ -285,3 +285,84 @@ capture.** The vertex table was readable the whole time --
 `tools/dump_model.py` decodes and plots it in one command -- while the
 screenshot shows the model only after the camera transform, the growth
 ramp and the fade have been applied to it.
+
+## Driving the game
+
+A save state parked on the battle command menu will sit there forever.
+`tools/pad_input.py` presses buttons on controller 1 through Redux's
+`setOverride`/`clearOverride`, so a capture that needs the party to act
+does not need a human at the keyboard:
+
+```shell
+.venv/bin/python3 tools/pad_input.py CROSS 4
+```
+
+Hold long enough for the game to sample the pad. Battle runs near 15fps
+and samples about once a frame, so the 0.12s default is two frames; a
+shorter tap can fall between two samples and do nothing.
+
+**Check the emulator is not paused before concluding a probe is broken.**
+A paused emulator answers Lua, accepts breakpoints, serves RAM and returns
+a screenshot of the last frame -- everything looks healthy. What it does
+not do is execute, so no breakpoint fires and the log stays empty. That
+presents exactly like a wrong breakpoint address, and cost a run of forty
+tap-and-poll rounds here before anyone looked at the window.
+
+## Establishing what a flag bit does
+
+Reading `func_800D29D4` says which bits it tests. It does not say what a
+bit does to a drawn model, and CONTRIBUTING asks for symbol names to be
+confirmed against a debugger. `tools/flag_probe.py` runs that
+confirmation on brizad, whose descriptor is static data at a known
+address:
+
+```shell
+.venv/bin/python3 tools/magic_probe.py brizad arm --force 2:30
+.venv/bin/python3 tools/flag_probe.py arm 0xA8 0xA9 --freeze 8
+.venv/bin/python3 tools/pad_input.py CROSS 8      # until it casts
+.venv/bin/python3 tools/flag_probe.py drain
+.venv/bin/python3 tools/flag_probe.py disarm
+```
+
+Three things together make the comparison mean something:
+
+- the flag word is rewritten at the top of every render frame, so it
+  survives the overlay reload that begins each cast;
+- two values alternate frame by frame, so both arms happen inside one
+  cast. Counts and geometry are **not** comparable across two casts --
+  a different target sits at a different distance, and the packet count
+  moves with it;
+- `--freeze` pins the effect's animation frame, so consecutive frames
+  are identical apart from the flag word. Without it the model grows
+  between the two arms and every measurement drifts.
+
+Results, brizad, frozen at frame 8:
+
+| bit | measured | reading |
+| --- | --- | --- |
+| `0x1` | `R11 -5642->5642`, `R21 1073->-1073`, `R31 -9351->9351` | negates matrix column 1 |
+| `0x2` | `R12`/`R22`/`R32` negated | column 2 |
+| `0x4` | `R13`/`R23`/`R33` negated | column 3 |
+| `0x8` | every packet's code `32` -> `30`, nothing else moves | GPU semi-transparency bit |
+| `0x20` | 109-120 packets against 47-58, same centroid | skips the backface cull |
+| `0x80` | colour `6D4747/6D5656/581F1F` -> near black | selects the depth-cue path |
+
+**Read the mirror bits off the GTE, not off the screen.** The first
+attempt compared screen coordinates and found nothing: brizad's model is
+symmetric about that plane, so mirroring it moved no vertex and only
+swapped two of the triangle's corners. Aggregate extents were identical
+and the bit looked inert. Logging the GTE control registers at the point
+of the draw shows the negated column directly, whatever the model's
+symmetry -- and separates *model* axes from *screen* axes, which the
+camera matrix mixes freely. Here `R12` was 0, so mirroring model Y could
+not move screen X at all; the screen X shift that did appear came from
+row 3 changing the perspective divide.
+
+`0x10`, `0x40` and `0x100` are tested by the renderer and remain open.
+
+**One prediction that did not reproduce.** `battle.h` describes offset
+`0xA` on the non-depth-cued path as a grey level replicated as
+`v | v<<8 | v<<16`. Frozen at fade `0x920`, that predicts a colour word of
+`0x202020`; the measured words were `290000/000000/000000`. One
+measurement is not a refutation, but the `greyLevel` union arm should not
+be trusted until someone repeats this.

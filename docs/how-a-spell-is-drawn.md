@@ -1280,6 +1280,48 @@ line numbers quoted here are reproducible rather than committed.
 
 ---
 
+## 15. The flag bits, confirmed against the running game
+
+Sections 9 and 10 read the flag bits out of `func_800D29D4`'s assembly.
+That establishes which bits the renderer tests and what it does with
+them, but not that a named bit produces the named effect on screen, which
+is the standard `CONTRIBUTING.md` sets for naming a symbol.
+
+`tools/flag_probe.py` closes that gap. The method is in `magic-probe.md`;
+what matters here is that six bits are now measured, not inferred, and
+`battle.h` names them:
+
+| bit | name | measured |
+| --- | --- | --- |
+| `0x1` | `MODEL_MIRROR_X` | negates `R11`/`R21`/`R31` |
+| `0x2` | `MODEL_MIRROR_Y` | negates `R12`/`R22`/`R32` |
+| `0x4` | `MODEL_MIRROR_Z` | negates `R13`/`R23`/`R33` |
+| `0x8` | `MODEL_SEMI_TRANS` | every packet's code byte `0x32` -> `0x30` |
+| `0x20` | `MODEL_NO_CULL` | packet count roughly doubles, centroid unmoved |
+| `0x80` | `MODEL_DEPTH_CUE` | vertex colours stop tracking the cue ramp |
+
+The mirror rows come from the GTE control registers read at the point of
+the draw, so they say which *model* axis each bit mirrors. Screen
+coordinates cannot answer that: the camera matrix mixes the axes, and on
+the frame measured here `R12` was 0, so mirroring model Y could not move
+screen X even though the mirror was plainly in effect.
+
+**`0x20` is a cull switch, not a "draw both faces" instruction.** Section 9
+already showed it branching past the `nclip` rejection. The measurement
+agrees -- 109 to 120 packets with the bit set against 47 to 58 without,
+from the same model on the same frame -- so the name records the cull
+being skipped and leaves the visible consequence to the reader. Two faces
+appearing is what that looks like; it is not what the bit says.
+
+**Offset `0xA`'s second arm is still unconfirmed.** Section 10 settled the
+depth-cue arm. The other one, which this doc and `battle.h` describe as a
+grey level replicated as `v | v<<8 | v<<16`, did not reproduce: frozen at
+fade `0x920` it predicts a colour word of `0x202020` and the measured
+words were `290000/000000/000000`. That is one measurement against a
+reading nobody has repeated, so it is recorded as open rather than wrong.
+
+---
+
 ## Appendix: the unused twin
 
 The file contains a byte-identical copy of the per-target callback that

@@ -134,6 +134,11 @@ def main(argv: list[str] | None = None) -> int:
         default=15,
         help="15 for battle and field, 24 for FMV",
     )
+    parser.add_argument(
+        "--screenshot",
+        action="store_true",
+        help="decode a packed XBGR1555 screenshot dump, not a VRAM image",
+    )
     args = parser.parse_args(argv)
 
     if args.from_file is not None:
