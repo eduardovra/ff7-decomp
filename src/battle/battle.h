@@ -378,56 +378,47 @@ typedef struct {
 } Unk800BB75C; // size:0x38
 
 // The flag word at offset 4 of ModelRenderDesc, as func_800D29D4 tests it.
-// Each mirror bit negates one column of the GTE rotation matrix, which
-// reverses the winding of every polygon, so the cull test XORs their parity
-// back out. func_800D29D4 also tests 0x10, 0x40 and 0x100; those are left as
-// literals because their meaning is not established.
+// Each mirror bit negates one column of the GTE rotation matrix, reversing
+// polygon winding; the cull test XORs their parity back out. 0x10, 0x40 and
+// 0x100 are tested too, but their meaning is not established.
 enum ModelRenderFlags {
-    MODEL_MIRROR_X = 0x1, // negates R11/R21/R31
-    MODEL_MIRROR_Y = 0x2, // negates R12/R22/R32
-    MODEL_MIRROR_Z = 0x4, // negates R13/R23/R33
-    // shifted left 22 into bit 25 of the colour word, which is bit 1 of the
-    // GPU command byte: a Gouraud triangle goes from code 0x30 to 0x32
-    MODEL_SEMI_TRANS = 0x8,
-    // skips the nclip backface rejection, so both faces of every polygon are
-    // emitted and the packet count roughly doubles
-    MODEL_NO_CULL = 0x20,
-    MODEL_DEPTH_CUE = 0x80, // offset 0xA feeds GTE IR0; see below
+    MODEL_MIRROR_X = 0x1,   // negates R11/R21/R31
+    MODEL_MIRROR_Y = 0x2,   // negates R12/R22/R32
+    MODEL_MIRROR_Z = 0x4,   // negates R13/R23/R33
+    MODEL_SEMI_TRANS = 0x8, // sets bit 1 of the GPU command byte: 0x30 -> 0x32
+    MODEL_NO_CULL = 0x20,   // skips the nclip backface rejection
+    MODEL_DEPTH_CUE = 0x80, // selects depthCue over greyLevel at 0xA
 };
 
-// func_800D4D90 reads only these 0xC bytes, so its instances in ROM are
-// truncated to 0xC and packed 0xC apart.
-//
-// Offsets 4, 8 and A all mean different things in the two renderers, so
-// each is a union and the flags at 4 decide which arm applies.
+// The two renderers each take a 0xC-byte descriptor and share only the
+// pointer at 0x0, so each gets its own type. Split on what the five
+// decompiled overlays do; if one descriptor ever feeds both renderers,
+// these collapse back into a single type with unions.
+
+// func_800D29D4's. Always embedded in the 0x10 form below.
 typedef struct {
     /* 0x0 */ s32* unk0;
-    /* 0x4 */ union {
-        s32 flags;     // ModelRenderFlags
-        CVECTOR color; // func_800D4D90 stores it as a GPU packet word; cd is
-                       // the command byte (0x2C POLY_FT4, 0x38 POLY_G4)
-    } u;
-    /* 0x8 */ union {
-        u16 uvOffset;   // func_800D29D4 adds it to the words at the
-                        // primitive's 0xC/0x14/0x1C, the UV pairs. Every
-                        // caller passes 0; read from the asm
-        u16 frameIndex; // func_800D4D90 skips this many blocks to reach
-                        // the frame's quads; bit 15 enables the clut bias
-                        // at 0xA. The quad count lives in the block header
-    } u08;
-    // func_800D4D90 reads 0xA when frameIndex's bit 15 is set. Its
-    // primitives are 0x28 apart, sizeof(POLY_FT4), so the 0xE and 0x16 it
-    // writes are clut and tpage.
-    /* 0xA */ union {
-        s16 depthCue;  // func_800D29D4 with flags & 0x80: loaded into GTE IR0
-                       // (cop2 data reg 8) ahead of dpcs/dpct, so 0x1000
-                       // blends the model fully into SetFarColor
-        s16 greyLevel; // func_800D29D4 on the plain path: replicated as
-                       // v | v<<8 | v<<16 into the primitive's colour word
-        s16 clutBias;  // func_800D4D90 adds it to the quad's clut halfword,
-                       // offsetting the palette
+    /* 0x4 */ s32 flags;    // ModelRenderFlags
+    /* 0x8 */ u16 uvOffset; // added to the primitive's UV pairs; every
+                            // caller passes 0
+    /* 0xA */ union {       // MODEL_DEPTH_CUE picks the arm
+        s16 depthCue;       // into GTE IR0 ahead of dpcs/dpct; 0x1000 blends
+                            // fully into SetFarColor
+        s16 greyLevel;      // replicated as v | v<<8 | v<<16 into the colour
+                            // word
     } uA;
 } ModelRenderDesc; // size:0xC
+
+// func_800D4D90's. It writes POLY_FT4 quads, 0x28 apart. Instances in ROM
+// are truncated to these 0xC bytes and packed 0xC apart.
+typedef struct {
+    /* 0x0 */ s32* unk0;
+    /* 0x4 */ CVECTOR color;  // stored as a GPU packet word; cd is the
+                              // command byte (0x2C POLY_FT4, 0x38 POLY_G4)
+    /* 0x8 */ u16 frameIndex; // blocks skipped to reach this frame's quads;
+                              // bit 15 enables clutBias
+    /* 0xA */ s16 clutBias;   // added to the quad's clut halfword
+} Unk800D4D90Desc;            // size:0xC
 
 // Full 0x10 form, read by func_800D29D4. 0x801B0C98 is an address inside the
 // barrier overlay, not a global one -- every magic overlay loads at
@@ -539,7 +530,7 @@ void* func_800D29D4(Unk801B0C98*, u_long**, int, void*);
 MATRIX* func_800D4368(SVECTOR* pos, s32 scale, s32 depthBias);
 // Same descriptor layout as func_800D29D4 (offsets 0/4/8/A), different
 // renderer; callers that colour the model type offset 4 as a CVECTOR.
-void* func_800D4D90(ModelRenderDesc* desc, u_long** ot, int otLen, void* prim);
+void* func_800D4D90(Unk800D4D90Desc* desc, u_long** ot, int otLen, void* prim);
 // Returns a scale derived from the target's model size.
 s32 func_800D55A4(s32 target);
 void BattleCommandSend(s32 cmdId, ...);

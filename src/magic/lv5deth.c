@@ -53,7 +53,7 @@ extern u_long Lv5DeathTexture[]; // 8bpp TIM + 256-colour CLUT, uploaded on setu
 extern s32 Lv5DeathRingModel[];
 
 // .color.cd holds the GPU primitive code (0x2E).
-extern ModelRenderDesc Lv5DeathSpriteDesc;
+extern Unk800D4D90Desc Lv5DeathSpriteDesc;
 
 static void Lv5DeathBufferFlip(void) {
     Lv5DeathBufferPtr = g_dbIndex == 0 ? Lv5DeathPrimBuffer0 : Lv5DeathPrimBuffer1;
@@ -88,8 +88,8 @@ static void Lv5DeathRenderRing(void) {
     // Render descriptor built in scratchpad RAM.
     desc = (Unk801B0C98*)0x1F800000;
     desc->desc.unk0 = Lv5DeathRingModel;
-    desc->desc.u.flags = MODEL_DEPTH_CUE | MODEL_SEMI_TRANS;
-    desc->desc.u08.uvOffset = 0;
+    desc->desc.flags = MODEL_DEPTH_CUE | MODEL_SEMI_TRANS;
+    desc->desc.uvOffset = 0;
     desc->desc.uA.depthCue = 0x800;
     desc->unkC = 0;
     desc->unkE = 0;
@@ -122,7 +122,7 @@ static void Lv5DeathRenderTargetSprite(void) {
     u8 intensity;
 
     effect = &D_80162978[D_8015169C];
-    Lv5DeathSpriteDesc.u08.frameIndex = effect->AnimationFrame & 7;
+    Lv5DeathSpriteDesc.frameIndex = effect->AnimationFrame & 7;
 
     frame = effect->AnimationFrame;
     if (frame < FADE_IN_FRAMES) {
@@ -132,7 +132,7 @@ static void Lv5DeathRenderTargetSprite(void) {
     } else {
         intensity = 128;
     }
-    Lv5DeathSpriteDesc.u.color.r = Lv5DeathSpriteDesc.u.color.g = Lv5DeathSpriteDesc.u.color.b = intensity;
+    Lv5DeathSpriteDesc.color.r = Lv5DeathSpriteDesc.color.g = Lv5DeathSpriteDesc.color.b = intensity;
 
     func_800D4368(&effect->Pos, (s16)effect->Scale, -((s16)effect->Scale >> 2));
     Lv5DeathBufferPtr = func_800D4D90(&Lv5DeathSpriteDesc, g_cDb->unk70, 12, Lv5DeathBufferPtr);

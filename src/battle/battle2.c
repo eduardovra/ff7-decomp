@@ -1286,16 +1286,16 @@ void func_800D6394(s32* arg0, s16 arg1) {
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
     PopMatrix();
     PushMatrix();
-    D_800F14D0.desc.u.flags |= MODEL_MIRROR_X;
+    D_800F14D0.desc.flags |= MODEL_MIRROR_X;
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
     PopMatrix();
     PushMatrix();
-    D_800F14D0.desc.u.flags |= MODEL_MIRROR_Y;
+    D_800F14D0.desc.flags |= MODEL_MIRROR_Y;
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
     PopMatrix();
-    D_800F14D0.desc.u.flags &= ~MODEL_MIRROR_X;
+    D_800F14D0.desc.flags &= ~MODEL_MIRROR_X;
     D_80163C74 = func_800D29D4(&D_800F14D0, g_cDb->unk70, 0xC, D_80163C74);
-    D_800F14D0.desc.u.flags &= ~MODEL_MIRROR_Y;
+    D_800F14D0.desc.flags &= ~MODEL_MIRROR_Y;
 }
 
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D650C);

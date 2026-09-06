@@ -48,8 +48,8 @@ extern void* ThunderBufferPtr;
 extern ThunderData D_80162978[];
 extern ThunderPrimPage ThunderPrimBuffer[];
 extern u_long ThunderTexture[]; // 8bpp TIM + CLUT, uploaded on setup
-extern ModelRenderDesc ThunderRenderDesc0;
-extern ModelRenderDesc ThunderRenderDesc1;
+extern Unk800D4D90Desc ThunderRenderDesc0;
+extern Unk800D4D90Desc ThunderRenderDesc1;
 extern MATRIX ThunderModelMatrix;
 extern s16 ThunderModelMatrixM21; // = ThunderModelMatrix.m[2][1]
 extern Unk801B0C98 ThunderModelDesc;
@@ -107,7 +107,7 @@ static void func_801B0180(void) {
 
     effect = &D_80162978[D_8015169C];
     func_800D4368(&effect->Pos, 0x2000, effect->unk1C);
-    ThunderRenderDesc0.u08.frameIndex = (s16)(u16)effect->AnimationFrame >> 1;
+    ThunderRenderDesc0.frameIndex = (s16)(u16)effect->AnimationFrame >> 1;
     ThunderBufferPtr = func_800D4D90(&ThunderRenderDesc0, g_cDb->unk70, 0xC, ThunderBufferPtr);
     if (D_80062D98 == 0) {
         nextFrame = (u16)effect->AnimationFrame + 1;
@@ -134,7 +134,7 @@ static void func_801B023C(void) {
     }
     SetRotMatrix(matrix);
     SetTransMatrix(matrix);
-    ThunderRenderDesc1.u08.frameIndex = effect->AnimationFrame;
+    ThunderRenderDesc1.frameIndex = effect->AnimationFrame;
     ThunderBufferPtr = func_800D4D90(&ThunderRenderDesc1, g_cDb->unk70, 0xC, ThunderBufferPtr);
     if (D_80062D98 == 0) {
         nextFrame = (u16)effect->AnimationFrame + 1;

@@ -136,7 +136,7 @@ static void BarrierRenderBorder(void) {
     SetRotMatrix(matrix);
     SetTransMatrix(matrix);
 
-    BorderRenderDesc.desc.u.flags = faceFlags | MODEL_DEPTH_CUE;
+    BorderRenderDesc.desc.flags = faceFlags | MODEL_DEPTH_CUE;
     BorderRenderDesc.desc.uA.depthCue = fade;
     BarrierBufferPtr = func_800D29D4(&BorderRenderDesc, g_cDb->unk70, 12, BarrierBufferPtr);
 
@@ -189,7 +189,7 @@ static void BarrierRenderShield(void) {
     SetRotMatrix(matrix1);
     SetTransMatrix(matrix1);
 
-    ShieldRenderDesc.desc.u.flags = faceFlags | MODEL_DEPTH_CUE;
+    ShieldRenderDesc.desc.flags = faceFlags | MODEL_DEPTH_CUE;
     ShieldRenderDesc.desc.uA.depthCue = fade;
     BarrierBufferPtr = func_800D29D4(&ShieldRenderDesc, g_cDb->unk70, 12, BarrierBufferPtr);
 

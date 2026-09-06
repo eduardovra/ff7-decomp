@@ -738,8 +738,8 @@ static void func_800BB030(s16 arg0) {
         if (!D_800FA6D8[arg0].unk4[i])
             continue;
         unk->desc.unk0 = D_800FA6D8[arg0].unk4[i];
-        unk->desc.u.flags = D_800FA6D8[arg0].unk3E[i] | 0x100 | MODEL_DEPTH_CUE;
-        unk->desc.u08.uvOffset = 0;
+        unk->desc.flags = D_800FA6D8[arg0].unk3E[i] | 0x100 | MODEL_DEPTH_CUE;
+        unk->desc.uvOffset = 0;
         unk->desc.uA.depthCue = D_801518E4[arg0].unk14[0];
         unk->unkC = 0x20;
         unk->unkE = D_801518E4[arg0].unk14[1];
