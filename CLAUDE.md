@@ -43,6 +43,10 @@ Never claim a match without running `make build`.
   re-tests are usually load-bearing -- they exist because the target's
   instructions require them. Add a comment instead of removing them.
 - Restore the working tree after experiments, and say so.
+- `docs/`, `CLAUDE.md` and the probe tooling are fork-only -- none of them
+  exist on `main`. Never cite them from anything that goes upstream (`src/`,
+  `include/`, `config/`). A code comment has to stand on its own, so put the
+  finding in the comment rather than a pointer to where it was written up.
 - `config/sym_ovl_export.us.txt` and `config/sym_export_battle.us.txt` are
   build-generated. Do not hand-edit them.
 - Use `./mako.sh symbols add` rather than editing symbol files by hand.
