@@ -855,8 +855,45 @@ same function.
 Brizad's descriptor confirms it from the other side. Its flag word, read out
 of the overlay's data segment, is `0x00000088`: bit `0x08` for
 semi-transparency and bit `0x80` for the depth-cued path. Its `0x124` per
-frame ramps `IR0` from zero to 4096 across the animation. The ice model grows
-to three times size while fading to black, and never turns.
+frame ramps `IR0` from zero to 4088 across the animation. The ice model grows
+to just under three times size while fading to black, and never turns.
+
+**"Fading to black" is only half the mechanism.** On screen a spell does not
+darken into a black shape, it disappears -- and both halves of that are in
+the same statement. The depth cue drives the vertex colour to the far colour,
+and the `0x08` flag makes the primitive semi-transparent, so the colour that
+reaches the GPU is blended with what is already in the framebuffer.
+
+Under additive blending a black source contributes nothing, which is exactly
+a fade-out. Under the averaging mode it would instead smear a dark shape over
+the background, which is not what the game does.
+
+**Measured, on a real cast of Ice.** `tools/blend_probe.py` walked the
+ordering table on all 15 frames of the animation:
+
+| observation | count |
+| --- | --- |
+| texpage fields, every one rate `1` (`B+F`) | 218 |
+| standalone `0xE1` draw-mode commands | 0 |
+| brizad's own packets, every one code `0x32` | 821 |
+
+`0x32` is `0x30` (Gouraud triangle) plus the `0x02` semi-transparency bit, so
+every primitive the spell emits is translucent, on every frame it draws. The
+rate is additive and nothing in the scene sets a competing one. The fade to
+black is a fade to nothing.
+
+One qualification. An untextured primitive has no texpage of its own, so it
+inherits whatever the last one set. That the rate is `B+F` at the moment
+these polygons draw follows from `1` being the only value present anywhere in
+the table, not from reading the GPU at each draw.
+
+Two things not to over-read. The `0x08` flag is dropped on depth-cued
+`POLY_FT4` primitives, described in section 13, so this applies to the
+Gouraud model passes and not to the textured-quad path. And the far colour is
+per-cast state: it is black here only because these overlays call
+`SetFarColor(0, 0, 0)` before drawing. `lv5deth.c` drives the battle far
+colour for the whole battlefield instead, and darkening really is what it
+wants.
 
 ---
 
@@ -1214,6 +1251,12 @@ likely to be misdescribed.
 - **The off-screen reject bounds are unexplained.** The helper that rejects
   primitives entirely outside the screen tests X against 320 and Y against
   166. The 320 is the display width. The 166 has not been matched to anything.
+- **Where the semi-transparency rate comes from is only half-traced.** It is
+  measured as additive in section 10, but no magic overlay sets it and no
+  draw-mode command carries it: it arrives on the texpage field of textured
+  primitives belonging to other passes entirely. What writes those, and
+  whether anything could ever set a different rate mid-scene, has not been
+  followed.
 - **`QuadCount` was named after the wrong function.** In `func_800D4D90` the
   field selects a block of animation. In `func_800D29D4` it is added to every
   texture coordinate instead, making it a UV offset. No caller of the latter

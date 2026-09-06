@@ -200,6 +200,53 @@ a spell that rendered a single frame rather than as a broken probe. `true`
 keeps it armed and does *not* pause the emulator: measured at 940k hits
 over three seconds on a hot address with emulation still running.
 
+## Reading the semi-transparency rate
+
+`tools/blend_probe.py` answers the one question section 14 of
+`how-a-spell-is-drawn.md` leaves open: which of the GPU's four blend
+rates a spell's semi-transparent primitives draw under. It matters
+because the fade only reads as a fade under `B+F`, where a black source
+contributes nothing -- under `B/2+F/2` the same packets would smear a
+dark shape over the background.
+
+```shell
+.venv/bin/python3 tools/blend_probe.py mabaria arm
+# cast the spell
+.venv/bin/python3 tools/blend_probe.py mabaria drain
+.venv/bin/python3 tools/blend_probe.py mabaria disarm
+```
+
+It walks the ordering table -- `g_cDb->unk70`, 0x1000 buckets of packets
+chained by `(len << 24) | next` -- and tallies every GP0 `0xE1` draw-mode
+command's bits 5-6, plus the command byte of every packet. Packets
+landing inside the overlay's own primitive page are counted separately,
+so the spell's own primitives are distinguishable from the rest of the
+scene. `--raw` gives the per-frame records instead of the summary.
+
+The table is **reverse-ordered**: entry `i` chains to entry `i-1`, so the
+head is the last bucket and one descent covers every packet in draw
+order. Walking per bucket instead re-walks the whole list from each one
+and buries the result under its own cap -- which is how this was first
+written, and it reported a clean empty answer rather than an error.
+
+Run on Ice, it gave 218 texpage fields over 15 frames, every one rate
+`1` (`B+F`), no `0xE1` commands at all, and 821 packets of brizad's own,
+every one code `0x32` -- Gouraud triangle plus the semi-transparency
+bit. That settles section 10 of `how-a-spell-is-drawn.md`.
+
+An empty `e1=` tally is a result, not a failure: it means no draw-mode
+command reaches the table and the rate rides on textured primitives'
+texpage fields instead.
+
+The same walk covers the section 13 claim that the `0x8` flag is dropped
+on depth-cued `POLY_FT4` primitives, which has never been confirmed
+against the running game: arm on thunder, whose quad passes go through
+`func_800D4D90`, and read whether `ovlcodes` carries `2C` or `2E`.
+
+Attribution needs `<Overlay>PrimBuffer` and `<Overlay>BufferPtr`, which
+exist for mabaria, brizad, thunder and barrier. lv5deth has two separate
+pages, so pass `--page`/`--page-ptr` there or accept a scene-wide tally.
+
 ## Static reading first
 
 `D_801B0CA0` and `D_801B0CA4` in `mabaria` look like animation parameters,
