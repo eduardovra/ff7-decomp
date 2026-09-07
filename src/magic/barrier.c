@@ -2,12 +2,7 @@
 
 #include "common.h"
 #include "../battle/battle.h"
-
-// PSX fixed point: 1.0 == 1 << FIXED_SHIFT.
-#define FIXED_SHIFT 12
-
-// Two pages; BarrierDoubleBufferFlip alternates between them.
-#define BARRIER_PAGE_SIZE 0x10000
+#include "magic_private.h"
 
 // Fade phase: the depth cue ramps by FADE_PER_FRAME to 0xE00 on the last
 // frame, and the scale grows from SCALE_BASE by SCALE_PER_FADE_FRAME.
@@ -81,11 +76,11 @@ static s32 bari_a2[] = {    // Embedded Model
     0x003F3F3F}; // Triangle 1: vertex 2 color, RGB 3F3F3F
 static int emptyPoly = 0x00000000;
 static SVECTOR BorderPivotOffset = {0, 0, -500};
-static Unk801B0C98 BorderRenderDesc = {{bari_a1, {0}, 0, 0}, 0x20};
+static ModelRenderDesc BorderRenderDesc = {bari_a1, 0, 0, 0, 0x20};
 static SVECTOR ShieldPivotOffset = {0, 0, -500};
-static Unk801B0C98 ShieldRenderDesc = {{bari_a2, {0}, 0, 0}, 0x20};
+static ModelRenderDesc ShieldRenderDesc = {bari_a2, 0, 0, 0, 0x20};
 static int BarrierBaseScale;
-static char BarrierPrimBuffer[2 * BARRIER_PAGE_SIZE];
+static char BarrierPrimBuffer[2 * MAGIC_PAGE_SIZE];
 static void* BarrierBufferPtr;
 
 // barrier.c forward declarations
@@ -136,8 +131,8 @@ static void BarrierRenderBorder(void) {
     SetRotMatrix(matrix);
     SetTransMatrix(matrix);
 
-    BorderRenderDesc.desc.flags = faceFlags | MODEL_DEPTH_CUE;
-    BorderRenderDesc.desc.uA.depthCue = fade;
+    BorderRenderDesc.flags = faceFlags | MODEL_DEPTH_CUE;
+    BorderRenderDesc.color = fade;
     BarrierBufferPtr = func_800D29D4(&BorderRenderDesc, g_cDb->unk70, 12, BarrierBufferPtr);
 
     if (D_80062D98 == 0) {
@@ -189,8 +184,8 @@ static void BarrierRenderShield(void) {
     SetRotMatrix(matrix1);
     SetTransMatrix(matrix1);
 
-    ShieldRenderDesc.desc.flags = faceFlags | MODEL_DEPTH_CUE;
-    ShieldRenderDesc.desc.uA.depthCue = fade;
+    ShieldRenderDesc.flags = faceFlags | MODEL_DEPTH_CUE;
+    ShieldRenderDesc.color = fade;
     BarrierBufferPtr = func_800D29D4(&ShieldRenderDesc, g_cDb->unk70, 12, BarrierBufferPtr);
 
     if (D_80062D98 == 0) {
@@ -291,7 +286,7 @@ static void BarrierAttachToTarget(int target) {
 static void BarrierDoubleBufferFlip(void) {
     BarrierData* barrier = &D_80162978[D_8015169C];
 
-    BarrierBufferPtr = &BarrierPrimBuffer[barrier->AnimationFrame * BARRIER_PAGE_SIZE];
+    BarrierBufferPtr = &BarrierPrimBuffer[barrier->AnimationFrame * MAGIC_PAGE_SIZE];
     barrier->AnimationFrame ^= 1;
 
     if (D_80162080 < 2) {

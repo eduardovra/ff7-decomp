@@ -53,7 +53,7 @@ extern u_long Lv5DeathTexture[]; // 8bpp TIM + 256-colour CLUT, uploaded on setu
 extern s32 Lv5DeathRingModel[];
 
 // .color.cd holds the GPU primitive code (0x2E).
-extern Unk800D4D90Desc Lv5DeathSpriteDesc;
+extern SpriteRenderDesc Lv5DeathSpriteDesc;
 
 static void Lv5DeathBufferFlip(void) {
     Lv5DeathBufferPtr = g_dbIndex == 0 ? Lv5DeathPrimBuffer0 : Lv5DeathPrimBuffer1;
@@ -69,7 +69,7 @@ static void Lv5DeathMainSetup(s32 targetMask, s32 arg1);
 void MAGIC_Lv5Death(s32 targetMask, s32 arg1) { Lv5DeathMainSetup(targetMask, arg1); }
 
 // One fixed-size ring held at the target for 46 frames. The depth cue carries
-// the animation: 0x1000 down to 0x800 over frames 0..7, held to 36, back to
+// the animation: 0x1000 down to 0x800 over frames 0..8, held to 36, back to
 // 0x1000 by 45, fading the ring up to half intensity and out again.
 static void Lv5DeathRenderRing(void) {
     // Unused, but required for the match; it gives the function its 0x58 frame.
@@ -77,7 +77,7 @@ static void Lv5DeathRenderRing(void) {
     Lv5DeathEffect* effect;
     s32 scale;
     s32 frame;
-    Unk801B0C98* desc;
+    ModelRenderDesc* desc;
 
     effect = &D_80162978[D_8015169C];
     // The shift pair sign-extends Scale; the bias pulls the ring an eighth
@@ -86,20 +86,20 @@ static void Lv5DeathRenderRing(void) {
     func_800D4368(&effect->Pos, scale >> 16, -(scale >> 19));
 
     // Render descriptor built in scratchpad RAM.
-    desc = (Unk801B0C98*)0x1F800000;
-    desc->desc.unk0 = Lv5DeathRingModel;
-    desc->desc.flags = MODEL_DEPTH_CUE | MODEL_SEMI_TRANS;
-    desc->desc.uvOffset = 0;
-    desc->desc.uA.depthCue = 0x800;
-    desc->unkC = 0;
-    desc->unkE = 0;
+    desc = (ModelRenderDesc*)0x1F800000;
+    desc->model = Lv5DeathRingModel;
+    desc->flags = MODEL_DEPTH_CUE | MODEL_SEMI_TRANS;
+    desc->uvOffset = 0;
+    desc->color = 0x800;
+    desc->tpage = 0;
+    desc->clut = 0;
 
     frame = effect->AnimationFrame;
     if (frame < FADE_IN_FRAMES) {
         frame <<= 8;
-        desc->desc.uA.depthCue = 0x1000 - frame;
+        desc->color = 0x1000 - frame;
     } else if (frame >= FADE_OUT_START_FRAME) {
-        desc->desc.uA.depthCue = (frame << 8) - 0x1D00;
+        desc->color = (frame << 8) - 0x1D00;
     }
 
     SetFarColor(0, 0, 0);

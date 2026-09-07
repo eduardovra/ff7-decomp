@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "../battle/battle.h"
+#include "magic_private.h"
 
 // Frame 16 would land on 0x7FFE, just under ScaleMatrix's 0x7FFF s16 ceiling.
 #define GROWTH_TOTAL 0x3BFF
@@ -22,21 +23,14 @@ typedef struct {
     /* 0x16 */ char pad16[0xA]; // untouched by the overlay
 } MabariaData;                  // size:0x20
 
-// PSX fixed point: 1.0 == 1 << FIXED_SHIFT.
-#define FIXED_SHIFT 12
-#define FIXED_ONE (1 << FIXED_SHIFT)
-
-// Two pages; MabariaDoubleBufferFlip alternates between them.
-#define MABARIA_PAGE_SIZE 0x10000
-
 typedef struct {
-    /* 0x0000 */ char pad[MABARIA_PAGE_SIZE];
+    /* 0x0000 */ char pad[MAGIC_PAGE_SIZE];
 } MabariaPrimPage;
 
 extern s32 D_801B0CA0;
 extern s32 D_801B0CA4;
 extern MabariaData D_80162978[];
-extern Unk801B0C98 MabariaRenderDesc;
+extern ModelRenderDesc MabariaRenderDesc;
 extern MabariaPrimPage MabariaPrimBuffer[];
 extern void* MabariaBufferPtr;
 
@@ -67,11 +61,11 @@ static void MabariaRenderModel(void) {
     matrix.t[1] = (s32)effect->Pos.vy;
     matrix.t[2] = (s32)effect->Pos.vz;
     ScaleMatrix(&matrix, &scale);
-    CompMatrix(&D_800FA63C, &matrix, &matrix);
+    CompMatrix(&D_800FA63C.m, &matrix, &matrix);
     SetRotMatrix(&matrix);
     SetTransMatrix(&matrix);
     SetFarColor(0, 0, 0);
-    MabariaRenderDesc.desc.uA.depthCue = fade;
+    MabariaRenderDesc.color = fade;
     MabariaBufferPtr = func_800D29D4(&MabariaRenderDesc, g_cDb->unk70, 0xC, MabariaBufferPtr);
     if (D_80062D98 == 0) {
         nextFrame = effect->AnimationFrame + 1;

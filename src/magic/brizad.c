@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "../battle/battle.h"
+#include "magic_private.h"
 
 // Ice (ブリザド / Blizzard), tier 1. Structurally a sibling of barrier.c:
 // a 3D model effect built through func_800D29D4 with the PSYQ matrix helpers,
@@ -11,13 +12,9 @@
 // and 120 Gouraud triangles, no textures, forming a twelve-spike burst whose
 // tips point at the vertices of an icosahedron.
 
-// The primitive buffer holds two pages; the flip slot alternates between them
-// so the GPU can read last frame's primitives while this frame builds.
-#define BRIZAD_PAGE_SIZE 0x10000
-
 // .bss -- laid out so BrizadBufferPtr lands immediately after the buffer, at
 // 0x801B1014 + 0x20000. Matches the BarrierPrimBuffer/BarrierBufferPtr pair.
-static char BrizadPrimBuffer[2 * BRIZAD_PAGE_SIZE];
+static char BrizadPrimBuffer[2 * MAGIC_PAGE_SIZE];
 static void* BrizadBufferPtr; // current write pointer into the above
 
 typedef struct {
@@ -33,23 +30,22 @@ typedef struct {
     /* 0x1E */ s16 unk1E;
 } BrizadData; // size:0x20
 
-// PSX fixed point: 1.0 == 1 << FIXED_SHIFT.
-#define FIXED_SHIFT 12
-
 // Frames 0..14; the model grows and fades out. func_800D29D4 loads the fade
 // as the GTE's depth-cue factor, driving the vertex colour toward
 // SetFarColor, black here. Every primitive is emitted semi-transparent and
 // the GPU blends additively, so black adds nothing and the model fades to
-// invisible rather than to a dark shape. Both rates are shift-add chains in
-// the target: by the last frame growth reaches 0x2FF6 (2.998x), fade 0xFF8.
+// invisible rather than to a dark shape. Both rates are per (BRIZAD_LIFETIME
+// - 1) frames and the divisions truncate exactly; the compiler emits them as
+// shift-add chains. By the last frame growth reaches 0x2FF6 (2.998x), fade
+// 0xFF8.
 #define BRIZAD_LIFETIME 15
-#define GROWTH_PER_FRAME 0x36D
-#define FADE_PER_FRAME 0x124
+#define GROWTH_PER_FRAME (3 * FIXED_ONE / (BRIZAD_LIFETIME - 1)) // 0x36D
+#define FADE_PER_FRAME (FIXED_ONE / (BRIZAD_LIFETIME - 1))       // 0x124
 
 // ScaleMatrix writes into MATRIX.m, which is s16, so the scale clamps here.
 #define SCALE_MAX 0x7FFF
 
-extern Unk801B0C98 BrizadRenderDesc;
+extern ModelRenderDesc BrizadRenderDesc;
 extern BrizadData D_80162978[];
 extern s16 D_80151774;
 
@@ -83,7 +79,7 @@ static void BrizadRenderIce(void) {
     SetRotMatrix(&matrix);
     SetTransMatrix(&matrix);
     SetFarColor(0, 0, 0);
-    BrizadRenderDesc.desc.uA.depthCue = fade;
+    BrizadRenderDesc.color = fade;
     BrizadBufferPtr = func_800D29D4(&BrizadRenderDesc, g_cDb->unk70, 12, BrizadBufferPtr);
     if (D_80062D98 == 0) {
         nextFrame = (u16)effect->AnimationFrame + 1;
@@ -131,7 +127,7 @@ static void BrizadAttachToTarget(s32 target) { D_80162978[BattleEffectRegister(B
 static void BrizadDoubleBufferFlip(void) {
     BrizadData* flip = &D_80162978[D_8015169C];
 
-    BrizadBufferPtr = &BrizadPrimBuffer[flip->AnimationFrame * BRIZAD_PAGE_SIZE];
+    BrizadBufferPtr = &BrizadPrimBuffer[flip->AnimationFrame * MAGIC_PAGE_SIZE];
     flip->AnimationFrame = (u16)flip->AnimationFrame ^ 1;
     if (D_80162080 < 2) {
         flip->StartFrame = -1;

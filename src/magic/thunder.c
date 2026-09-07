@@ -2,17 +2,11 @@
 
 #include "common.h"
 #include "../battle/battle.h"
+#include "magic_private.h"
 
 // Bolt (サンダー / Thunder), tier 1. Three passes share the effect slot array:
 // a model drawn through func_800D29D4, and two textured-quad passes drawn
 // through func_800D4D90, all double-buffered into a 0x20000 primitive page.
-
-// PSX fixed point: 1.0 == 1 << FIXED_SHIFT.
-#define FIXED_SHIFT 12
-#define FIXED_ONE (1 << FIXED_SHIFT)
-
-// Two pages; ThunderDoubleBufferFlip alternates between them.
-#define THUNDER_PAGE_SIZE 0x10000
 
 // Model pass: full grey for the first half, then dimmed by GREY_PER_FRAME.
 #define MODEL_LIFETIME 16
@@ -39,7 +33,7 @@ typedef struct {
 } ThunderData; // size:0x20
 
 typedef struct {
-    /* 0x00 */ char pad[THUNDER_PAGE_SIZE];
+    /* 0x00 */ char pad[MAGIC_PAGE_SIZE];
 } ThunderPrimPage; // size:0x10000
 
 // The renderers write several primitive kinds at varying sizes and hand
@@ -48,26 +42,25 @@ extern void* ThunderBufferPtr;
 extern ThunderData D_80162978[];
 extern ThunderPrimPage ThunderPrimBuffer[];
 extern u_long ThunderTexture[]; // 8bpp TIM + CLUT, uploaded on setup
-extern Unk800D4D90Desc ThunderRenderDesc0;
-extern Unk800D4D90Desc ThunderRenderDesc1;
+extern SpriteRenderDesc ThunderRenderDesc0;
+extern SpriteRenderDesc ThunderRenderDesc1;
 extern MATRIX ThunderModelMatrix;
-extern s16 ThunderModelMatrixM21; // = ThunderModelMatrix.m[2][1]
-extern Unk801B0C98 ThunderModelDesc;
+extern ModelRenderDesc ThunderModelDesc;
 
 static void ThunderMainSetup(s32 arg0, s32 arg1);
 
 void MAGIC_Thunder(s32 arg0, s32 arg1) { ThunderMainSetup(arg0, arg1); }
 
-// Draws the embedded model through the model path, growing it from 1.0x to
-// 3.0x across the 16 frames and dimming it over the last 8.
+// Draws the embedded model through the model path, growing it by 0x200 a
+// frame from 1.0x to 2.875x across the 16 frames and dimming it over the
+// last 8.
 //
-// Flags 0x08 take the plain path: offset 0xA is replicated into RGB and
-// written to the primitive's colour word, so 0x80 down to 0x10 dims the
-// vertex colour from grey 128 to 16.
+// Flags 0x08 leave MODEL_DEPTH_CUE clear, so color is a grey level: it
+// steps from 0x80 down to 0x10, dimming the model from grey 128 to 16.
 //
 // The matrix holds a fixed orientation scaled by Scale -- m[0][0] and
 // m[2][1] take Scale, m[1][2] takes -Scale. Confirmed live: the other six
-// entries hold zero on all 17 frames.
+// entries hold zero on all 16 frames.
 static void ThunderRenderModel(void) {
     MATRIX matrix;
     ThunderData* effect = &D_80162978[D_8015169C];
@@ -75,16 +68,16 @@ static void ThunderRenderModel(void) {
     u16* scale; // read through a pointer; a plain field read does not match
 
     if (frame < DIM_START_FRAME) {
-        ThunderModelDesc.desc.uA.greyLevel = GREY_FULL;
+        ThunderModelDesc.color = GREY_FULL;
     } else if (frame < MODEL_LIFETIME) {
-        ThunderModelDesc.desc.uA.greyLevel = GREY_FULL - ((frame - DIM_START_FRAME) * GREY_PER_FRAME);
+        ThunderModelDesc.color = GREY_FULL - ((frame - DIM_START_FRAME) * GREY_PER_FRAME);
     } else {
         effect->StartFrame = -1;
         return;
     }
 
     scale = &effect->Scale;
-    ThunderModelMatrix.m[0][0] = ThunderModelMatrixM21 = *scale;
+    ThunderModelMatrix.m[0][0] = ThunderModelMatrix.m[2][1] = *scale;
     ThunderModelMatrix.m[1][2] = -(s16)*scale;
     ThunderModelMatrix.t[0] = (s32)effect->Pos.vx;
     ThunderModelMatrix.t[1] = (s32)effect->Pos.vy;
@@ -99,15 +92,16 @@ static void ThunderRenderModel(void) {
     }
 }
 
-// Quad pass over ThunderRenderDesc0, 9 frames, quad count ramping with the
-// frame. Not renamed: what it draws is not established.
+// Quad pass over ThunderRenderDesc0, 9 frames. Each block in the data draws
+// one quad at a stepped position offset, two on the last frame. Not renamed:
+// what it draws is not established.
 static void func_801B0180(void) {
     ThunderData* effect;
     s16 nextFrame;
 
     effect = &D_80162978[D_8015169C];
     func_800D4368(&effect->Pos, 0x2000, effect->unk1C);
-    ThunderRenderDesc0.frameIndex = (s16)(u16)effect->AnimationFrame >> 1;
+    ThunderRenderDesc0.frameIndex = effect->AnimationFrame >> 1;
     ThunderBufferPtr = func_800D4D90(&ThunderRenderDesc0, g_cDb->unk70, 0xC, ThunderBufferPtr);
     if (D_80062D98 == 0) {
         nextFrame = (u16)effect->AnimationFrame + 1;
@@ -127,10 +121,10 @@ static void func_801B023C(void) {
 
     matrix = func_800D4368(&effect->Pos, 0x2000, effect->unk1C);
     if (effect->unk1A & 1) {
-        matrix->m[0][0] = (u16) - (s32)matrix->m[0][0];
+        matrix->m[0][0] = -matrix->m[0][0];
     }
     if (effect->unk1A & 2) {
-        matrix->m[1][1] = (u16) - (s32)matrix->m[1][1];
+        matrix->m[1][1] = -matrix->m[1][1];
     }
     SetRotMatrix(matrix);
     SetTransMatrix(matrix);
@@ -159,6 +153,8 @@ static void ThunderSpawnBolt(void) {
             next->Pos.vy = 0;
             next->unk1C = (u16)effect->unk1C;
             func_800D5774(effect->unk14);
+            // Re-tested after the call; the original re-loads the frame here
+            // and the match needs it.
             if (effect->AnimationFrame == 0) {
                 next = &D_80162978[BattleEffectRegister(ThunderRenderModel)];
                 next->Pos = effect->Pos;
