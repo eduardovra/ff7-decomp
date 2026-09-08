@@ -98,9 +98,7 @@ static void BrizadSpawnIce(void) {
         if (effect->AnimationFrame == 0) {
             next = &D_80162978[BattleEffectRegister(BrizadRenderIce)];
             BattleGetPartPosition(effect->TargetIndex, D_801518E4[effect->TargetIndex].D_8015190F, &next->Pos);
-            next->Rot.vz = 0;
-            next->Rot.vy = 0;
-            next->Rot.vx = 0;
+            next->Rot.vx = next->Rot.vy = next->Rot.vz = 0;
             next->Scale = func_800D55A4(effect->TargetIndex);
             func_800D5774(effect->TargetIndex);
             if (effect->AnimationFrame == 0) {
