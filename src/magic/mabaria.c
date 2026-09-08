@@ -111,7 +111,7 @@ static void MabariaAnimationUpdate(void) {
     effect->AnimationFrame++;
 }
 
-static void MabariaAttachToTarget(s32 target) {
+static void MabariaAttachToTarget(s32 target, s32 arg1) {
     MabariaData* effect = &D_80162978[BattleEffectRegister(MabariaAnimationUpdate)];
 
     BattleGetPartPosition(target, D_801518E4[target].D_8015190F, &effect->Pos);

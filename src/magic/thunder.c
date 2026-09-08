@@ -180,7 +180,7 @@ static void ThunderSpawnBolt(void) {
     }
 }
 
-static void ThunderAttachToTarget(s32 target) {
+static void ThunderAttachToTarget(s32 target, s32 arg1) {
     ThunderData* effect = &D_80162978[BattleEffectRegister(ThunderSpawnBolt)];
 
     BattleGetPartPosition(target, D_801518E4[target].D_8015190F, &effect->Pos);

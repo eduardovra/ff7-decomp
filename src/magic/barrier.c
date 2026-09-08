@@ -273,7 +273,7 @@ static void BarrierAnimationUpdate(void) {
     barrier->AnimationFrame++;
 }
 
-static void BarrierAttachToTarget(int target) {
+static void BarrierAttachToTarget(int target, int arg1) {
     BarrierData* barrier = &D_80162978[BattleEffectRegister(BarrierAnimationUpdate)];
 
     BattleGetPartPosition(target, D_801518E4[target].D_8015190F, &barrier->Pos);

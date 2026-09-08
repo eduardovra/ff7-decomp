@@ -113,13 +113,13 @@ static void BrizadSpawnIce(void) {
 
 // Byte-identical twin of BrizadAttachToTarget below, present in the original
 // and never registered by this overlay. Kept so the layout matches.
-static void BrizadAttachToTargetUnused(s32 target) {
+static void BrizadAttachToTargetUnused(s32 target, s32 arg1) {
     D_80162978[BattleEffectRegister(BrizadSpawnIce)].TargetIndex = target;
 }
 
 // Registered as the MagicAnimationRegister per-target callback by MAGIC_Brizad.
 // Spawns a BrizadSpawnIce slot and tells it which target it belongs to.
-static void BrizadAttachToTarget(s32 target) { D_80162978[BattleEffectRegister(BrizadSpawnIce)].TargetIndex = target; }
+static void BrizadAttachToTarget(s32 target, s32 arg1) { D_80162978[BattleEffectRegister(BrizadSpawnIce)].TargetIndex = target; }
 
 // Points the write pointer at this frame's page, then toggles to the other one.
 // This slot uses AnimationFrame as a 0/1 page index, not as a frame counter.
