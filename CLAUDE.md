@@ -43,6 +43,8 @@ Never claim a match without running `make build`.
   re-tests are usually load-bearing -- they exist because the target's
   instructions require them. Add a comment instead of removing them.
 - Restore the working tree after experiments, and say so.
+- Keep code comments to one or two lines. Anything longer belongs in a
+  `docs/` file; leave the standalone one-liner in the code.
 - `docs/`, `CLAUDE.md` and the probe tooling are fork-only -- none of them
   exist on `main`. Never cite them from anything that goes upstream (`src/`,
   `include/`, `config/`). A code comment has to stand on its own, so put the
