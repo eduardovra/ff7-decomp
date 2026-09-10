@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+# The cheap half of pre-push: formatting only. `make build` is left to the
+# pre-push hook. Skip with `git commit --no-verify`.
+set -e
+
+cd "$(git rev-parse --show-toplevel)"
+
+inputs="src include config tools"
+
+make format >/dev/null
+if ! git diff --quiet -- $inputs; then
+	echo "pre-commit: the formatter rewrote these, stage them and retry:"
+	git diff --name-only -- $inputs
+	exit 1
+fi

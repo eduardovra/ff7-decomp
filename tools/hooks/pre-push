@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+# Runs the checks .github/workflows/build.yaml gates on: formatting, the
+# sha1 build, and the generated ovl export being committed.
+# Skip with `git push --no-verify`.
+set -e
+
+cd "$(git rev-parse --show-toplevel)"
+
+# Everything `mako.sh format` rewrites or `mako.sh build` reads. Edits
+# outside these (docs, README) cannot make CI disagree with this hook.
+inputs="src include config tools asm"
+
+# Tracked edits only: untracked files are not part of the push either way.
+dirty=$(git status --porcelain -uno -- $inputs)
+if [ -n "$dirty" ]; then
+	echo "pre-push: build inputs are dirty, so CI would test different"
+	echo "          code than this hook does:"
+	echo "$dirty"
+	exit 1
+fi
+
+echo "pre-push: format"
+make format >/dev/null
+if ! git diff --quiet -- $inputs; then
+	echo "pre-push: the formatter rewrote these, commit them:"
+	git diff --name-only -- $inputs
+	exit 1
+fi
+
+echo "pre-push: build"
+make build
+
+if ! git diff --quiet -- config/sym_ovl_export.us.txt; then
+	echo "pre-push: config/sym_ovl_export.us.txt is stale, commit it"
+	exit 1
+fi

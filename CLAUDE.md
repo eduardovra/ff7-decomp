@@ -26,6 +26,7 @@ valid if the sha1 still matches.
 ninja build/us/src/<path>.c.o                              # fast syntax check
 .venv/bin/python3 tools/asm-differ/diff.py -mows <func>    # score, 0 = match
 make build                                                 # sha1, the real test
+./mako.sh format                                           # CI checks this too
 ```
 
 `<overlay>.exe: OK` is the only proof a change is correct. Per-function
@@ -33,6 +34,13 @@ scores of 0 are necessary but not sufficient -- data layout can still be
 wrong.
 
 Never claim a match without running `make build`.
+
+`tools/hooks/` mirrors CI, once enabled with
+`git config core.hooksPath tools/hooks`: pre-commit checks formatting,
+pre-push adds `make build` and the ovl-export check. Format mid-work too --
+`make build` cannot catch it, since reflowing a line leaves every object
+byte-identical, so the sha1 still matches. Renames are the usual culprit --
+a longer identifier pushes lines past the 120-column limit.
 
 ## Working rules
 
