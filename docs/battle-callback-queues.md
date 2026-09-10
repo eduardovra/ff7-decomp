@@ -2,7 +2,7 @@
 
 Four per-frame callback queues live in the resident battle module. They
 share one shape, and ten functions in `battle1.c` implement them: four
-register, four dispatch, two reset.
+register, four dispatch, two reset. All ten match.
 
 ## The shape
 
@@ -10,21 +10,27 @@ Each queue is four globals:
 
 | queue | fn pointers | data slots | live count | iterator |
 |---|---|---|---|---|
-| 0x64 | `D_80161EF0` | `D_80162978` | `D_80162080` | `D_8015169C` |
-| 0xA | `D_80163B48` | `D_801620AC` | `D_80163B7C` | `D_801590D0` |
+| 0x64 | `g_BattleEffectCallbacks` | `g_BattleEffectSlots` | `g_BattleEffectCount` | `g_BattleEffectCursor` |
+| 0xA | `g_BattleMovementCallbacks` | `g_BattleMovementSlots` | `g_BattleMovementCount` | `g_BattleMovementCursor` |
 | 0x3C | `D_80163B84` | `D_801621F0` | `D_80163C78` | `D_801590D4` |
-| 0x10 | `D_800FA978` | `D_800F7ED8` | `D_800FA9BC` | `D_800F8360` |
+| 0x10 | `g_BattleCameraCallbacks` | `g_BattleCameraSlots` | `g_BattleCameraCount` | `g_BattleCameraCursor` |
 
 Data slots are 0x20 bytes each, except the 0x10 queue's, which are 0x28.
 
 The register function scans for a free function-pointer entry, stores the
 callback there, writes the current iterator value into field 0 of the
 matching data slot, bumps the count, and **returns the slot index** --
-callers do their own `index * 0x20`. Three of the four also refuse a slot
-below the current iterator, so a callback registered during dispatch does
-not run in the same frame. If no slot is free the function does not
-return: it runs `PadStop` / `ResetGraph` / `StopCallback` and then
-`SystemError(0x61, n)`, with a different `n` per queue.
+callers do their own `index * 0x20`. Three of the four also refuse any
+slot below the current iterator. Outside dispatch that test is vacuous,
+because the iterator is 0. During dispatch it forces the new entry ahead
+of the cursor -- the slot being dispatched is still occupied, so the index
+taken is strictly greater -- and since the dispatcher counts upward, the
+newly registered callback runs in the same frame. The camera queue has no
+such test, so a camera callback registered from inside another one can
+land behind the cursor and wait until the next frame. If no slot is free
+the function does not return: it runs `PadStop` / `ResetGraph` /
+`StopCallback` and then `SystemError('a', n)`, with `n` of 1, 2, 3 and 4
+for the 0x64, 0xA, 0x10 and 0x3C queues respectively.
 
 The dispatch function resets the iterator to 0, walks every entry calling
 the non-null ones, and after each call re-reads the iterator (the callback
@@ -75,13 +81,39 @@ So `BattleEffectRegister` keeps its existing name and `func_800BC348`,
 are two draw-phase queues. The q-gears wording is recorded in one-line
 comments beside each so nobody re-derives it.
 
+### "Effect" is a label for the traffic, not a property of the queue
+
+`BattleEffectRegister` is not ours. Halkun introduced it in "Barrier deep
+dive" (#121, 2026-08-19), and that commit message calls `0x80162978` an
+"entity slot" -- so the author who wrote "Effect" read the slots as
+something more general in the same breath.
+
+It describes the majority of the traffic honestly: every magic overlay
+entry point in the game registers here, and no overlay registers into any
+of the other three queues. It also mislabels real users. The HP-counter
+tick animation allocates a slot through it (see the case-4 note above
+`func_800B798C`), `BattleAnimationUpdate` arrives through
+`MagicAnimationData`, and both Brizad and Thunder register a
+double-buffer flip. This is the general-purpose per-frame callback queue;
+"Effect" names its biggest customer.
+
+The `g_BattleEffect*` globals inherit that looseness deliberately. The
+array should share a family name with the function that fills it, and
+`BattleEffectRegister` is an exported symbol in `battle.h` that five
+overlays call, so renaming it fork-side would diverge from upstream on a
+public name. If the label is worth fixing, it is worth fixing upstream.
+
 ## Corrections to the source
 
-- `D_800F7ED8` slots are 0x28 = 40 bytes. Reading that "0x28" as decimal
+- `g_BattleCameraSlots` entries are 0x28 = 40 bytes. Reading that "0x28" as decimal
   28 has caused confusion; `Unk800F7ED8` in `battle_private.h` is right.
 - The register functions return an index, not a pointer to the block.
   Akari's own pseudocode for `funcb88cc` agrees: `funcbbeac; S0 = V0;`
   then `[0x80162978 + S0 * 0x20 + ...]`.
+- An earlier version of this file had the iterator guard backwards, saying
+  it kept a callback registered during dispatch from running in the same
+  frame. It does the opposite, and the queue without the guard is the one
+  that can lose a frame.
 
 ## Field layouts
 
