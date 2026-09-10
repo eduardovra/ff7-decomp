@@ -66,6 +66,8 @@ set(FF7_SOURCES
     src/magic/lv5deth.c
     src/magic/mabaria.c
     src/magic/thunder.c
+    src/magic/refrec.c
+    src/magic/fire.c
 )
 
 add_executable(str tools/str.c)

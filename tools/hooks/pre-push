@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # Runs the checks .github/workflows/build.yaml gates on: formatting, the
-# sha1 build, and the generated ovl export being committed.
+# sha1 build, the generated ovl export being committed, and the modern
+# host build that enforces warnings as errors.
 # Skip with `git push --no-verify`.
 set -e
 
@@ -8,7 +9,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 # Everything `mako.sh format` rewrites or `mako.sh build` reads. Edits
 # outside these (docs, README) cannot make CI disagree with this hook.
-inputs="src include config tools asm"
+inputs="src include config tools asm CMakeLists.txt"
 
 # Tracked edits only: untracked files are not part of the push either way.
 dirty=$(git status --porcelain -uno -- $inputs)
@@ -34,3 +35,15 @@ if ! git diff --quiet -- config/sym_ovl_export.us.txt; then
 	echo "pre-push: config/sym_ovl_export.us.txt is stale, commit it"
 	exit 1
 fi
+
+# The build-modern job: a host compiler with -Werror on the warnings CI
+# enforces. Quiet unless it fails, since it warns plenty on its way through.
+echo "pre-push: modern build"
+log=$(mktemp)
+if ! { cmake -B build/pc -GNinja && cmake --build build/pc; } >"$log" 2>&1; then
+	cat "$log"
+	rm -f "$log"
+	echo "pre-push: the modern build failed, fix the errors above"
+	exit 1
+fi
+rm -f "$log"
