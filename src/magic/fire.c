@@ -2,14 +2,17 @@
 
 #include "common.h"
 #include "../battle/battle.h"
-#include "../battle/battle_private.h"
 #include "magic_private.h"
+
+extern s32 g_dbIndex;
 
 typedef struct {
     /* 0x00 */ s16 StartFrame;
     /* 0x02 */ s16 AnimationFrame;
     /* 0x04 */ char pad4[0x1C];
 } FireData; // size:0x20
+
+extern FireData g_BattleEffectSlots[];
 
 typedef struct {
     /* 0x00 */ char pad[0x4000];
