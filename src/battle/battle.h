@@ -74,6 +74,11 @@ typedef enum {
 } BattleStatusFlags;
 
 typedef struct {
+    /* 0x0 */ u16 isMultiBattle;
+    /* 0x2 */ u16 characterMask[NUM_PARTY];
+} BattleMultiInfo; /* size = 0x8 */
+
+typedef struct {
     // condition/status bitmask; see BattleStatusFlags above for the bits
     // confirmed live here
     /* 0x00 */ s32 status;
@@ -268,7 +273,9 @@ typedef struct {
     /* 0x1E72 */ u16 D_800F7DC6;
     /* 0x1E84 */ u16 battleType;
     /* 0x1E84 */ u16 D_800F7DCA;
-    /* 0x1E88 */ u8 unk1E88[0x12];
+    /* 0x1E88 */ u8 unk1E88[6];
+    /* 0x1E8E */ u16 reviveMask;
+    /* 0x1E90 */ u8 unk1E90[0xA];
     /* 0x1E9A */ s16 D_800F7DDE;
 } Unk800F5F44; // size:0x1E9C
 
@@ -510,14 +517,10 @@ typedef struct {
 
 extern BattleWork g_BattleWork;
 extern Unk800F5F44 D_800F5F44;
-extern u8 D_800F6934[0x40][8];
-extern s8 D_800F6936[0x40][8];
-extern u8 D_800F6B34[10][8];
 extern s8 D_800F6B86[2][8];
 extern u16 D_800F7DE8;
 extern u8 D_800F83A8;
 extern BattleState g_BattleState;
-extern s8 D_800F90B4[][0x240];
 extern Unk800BB75C D_800FA63C;
 extern DB* g_cDb;
 extern short g_BattleEffectCursor;
@@ -527,7 +530,8 @@ extern s32 D_801620A8;
 extern Unk8016360C D_8016360C;
 extern Unk801636B8 D_801636B8[NUM_BATTLE_ACTOR];
 extern u16 D_8016376A;
-extern u16 g_IsMutiBattle;
+
+extern BattleMultiInfo g_BattleMultiInfo;
 
 s32 BattleEffectRegister(void (*func)(void));
 void func_800D2980(u_long* addr, s16 imgXY, s16 clutX, s16 clutY);

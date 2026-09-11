@@ -45,10 +45,10 @@ void BATINI_Main(s32 sceneID) {
     func_800A283C();
     func_800AD480();
     for (i = 0; i < 0x40; i++) {
-        D_800F6934[i][0] = 0xFF;
+        D_800F5F44.messageQueue[i].unk0 = 0xFF;
     }
     for (i = 0; i < 10; i++) {
-        D_800F6B34[i][0] = 0xFF;
+        D_800F5F44.unkBF0[i].unk0 = 0xFF;
     }
     for (i = 0; i < 2; i++) {
         D_800F6B86[i][0] = 0xFF;
@@ -150,20 +150,20 @@ static void BattleInitSetup(s32 sceneID) {
     s32 var_s1;
 
     var_s1 = 4;
-    if (g_IsMutiBattle) {
+    if (g_BattleMultiInfo.isMultiBattle) {
         var_s1 = 0;
         BattleQueueEvent(0, 0, 15, 0);
         BattleQueueEvent(0, 0, 14, 0);
     }
     for (i = 0; i < 0x40; i++) {
-        if (D_800F6936[i][0] >= var_s1) {
-            D_800F6936[i][0] = -1;
+        if (D_800F5F44.messageQueue[i].unk2 >= var_s1) {
+            D_800F5F44.messageQueue[i].unk2 = -1;
         }
     }
     for (i = 0; i < NUM_PARTY; i++) {
         g_BattleWork.party[i].unk6 = 0;
     }
-    if (g_IsMutiBattle) {
+    if (g_BattleMultiInfo.isMultiBattle) {
         BattleInitPartyFromSavemap();
     }
     BattleInitLoadSceneData(sceneID, BATTLE_RunFrame);
@@ -287,7 +287,7 @@ void BattleInitPartyFromSavemap(void) {
         rec = &g_ActiveCharacters[i];
         c = &g_BattleState.combatant[i];
         setup = &g_BattleWork.setup[i];
-        id = D_8009CBDC[i];
+        id = Savemap.partyID[i];
         if (id != 0xFF) {
             for (j = 0; j < 9; j++) {
                 m = &Savemap.party[j];
@@ -335,9 +335,6 @@ static void BattleInitPartyScripts(void) {
     }
 }
 
-extern u8 D_800707C5[][8];    // command table, 8-byte stride
-extern u8 D_800708D0[][0x1C]; // attack table, 0x1C stride
-
 // Fixes up party member sceneID's battle command list: each of the 16 command
 // slots gets its target flags from the command table (falling back to the
 // formation setup), with extra flags for the Enemy Skill / W- commands, and
@@ -357,7 +354,7 @@ static void BattleInitCharCmdMenu(s32 sceneID) {
         flags = 0xFF;
         cmd = e->commandMenu[i].id;
         if (cmd != 0xFF) {
-            flags = D_800707C5[cmd][0];
+            flags = D_800707C4[cmd].targetFlags;
             if (flags == 0xFF) {
                 flags = g_BattleWork.setup[sceneID].targetFlags;
             }
@@ -396,7 +393,7 @@ static void BattleInitCharCmdMenu(s32 sceneID) {
                 id += 0x38;
             }
             if (i < 0x38) {
-                if (!(D_800708D0[id][0] & 8)) {
+                if (!(D_800708C4[id].targetFlags & 8)) {
                     e->enabledMagic[i].quadraAttacksLeft = 0;
                 }
             }
@@ -468,7 +465,7 @@ static s32 BattleGetMateriaValue(u32 sceneID) {
 
     temp_v1 = sceneID;
     ret = 0;
-    if (temp_v1 != 0xFF && (D_800730CC[temp_v1].unk11 & 0xF) == 7) {
+    if (temp_v1 != 0xFF && (g_MateriaData[temp_v1].materiaType & 0xF) == 7) {
         ret = (sceneID >> 8) | 0x80000000;
     }
     return ret;
@@ -485,8 +482,6 @@ static s32 BattleGetEquipMateriaVal(u32* equipment) {
     }
     return ret;
 }
-
-extern u8 D_80071C29[][0x10]; // accessory table, 0x10 stride
 
 // Applies party member `slot`'s equipped accessory: the status the previously
 // equipped one granted is cleared first, then the new accessory's permanent
@@ -505,7 +500,7 @@ static void BattleInitApplyAccStatus(s32 slot, s32 accessory) {
     party->accessoryStatusMask = 0;
     t->unkD = 0xFF;
     if (accessory != 0xFF) {
-        effect = D_80071C29[accessory][0];
+        effect = g_AccessoryTable[accessory].specialEffect;
         t->unkD = effect;
         switch (effect) {
         case 0:
@@ -600,7 +595,6 @@ static void BattleInitCharStats(ActiveCharacterData* character, BattlePartyWork*
 }
 
 const u8 D_801B003C[] = {0xFF, 0x32, 0x33, 0x34, 0x35, 0xFF, 0x48, 0x07};
-extern u16 g_CharacterMask[3];
 void func_800B1060(s32);
 
 // Lays out the two sides for the opening of the battle. D_801B003C picks the
@@ -697,18 +691,13 @@ static void BattleInitFormation(void) {
         }
         D_801636B8[i].D_801636BE = back;
     }
-    g_CharacterMask[0] = row[0];
-    g_CharacterMask[1] = row[1];
-    g_CharacterMask[2] = row[2];
+    g_BattleMultiInfo.characterMask[0] = row[0];
+    g_BattleMultiInfo.characterMask[1] = row[1];
+    g_BattleMultiInfo.characterMask[2] = row[2];
 }
 
 extern u16 D_8009CBE0[];     // item inventory (320 slots; (count << 9) | id)
-extern u16 D_800722D6[][14]; // item table, stride 0x1C
-extern u8 D_800722D8[][28];
-extern u16 D_800738CA[][22]; // weapon table, stride 0x2C
-extern u8 D_800738A0[][44];
 extern u16 D_80071E64[][18]; // armor table, stride 0x24
-extern u16 D_80071C32[][8];  // accessory table, stride 0x10
 extern u8 D_80166F74;
 extern BattleItemEntry D_801671B8[];
 
@@ -738,16 +727,16 @@ static void BattleInitItemList(void) {
             count = (u32)id >> 9;
             id &= 0x1FF;
             if (id < 0x80) {
-                flags = D_800722D6[id][0] & 0xB;
-                targetFlags = D_800722D8[id][0];
+                flags = D_800722CC[id].cameraMultiID & 0xB;
+                targetFlags = D_800722CC[id].targetFlags;
             } else if (id < 0x100) {
-                flags = D_800738CA[id - 0x80][0] & 0xB;
-                targetFlags = D_800738A0[id - 0x80][0];
+                flags = g_WeaponTable[id - 0x80].restrictionMask & 0xB;
+                targetFlags = g_WeaponTable[id - 0x80].targetFlags;
             } else if (id < 0x120) {
                 flags = D_80071E64[id - 0x100][0] & 0xB;
                 targetFlags = 3;
             } else if (id < 0x140) {
-                flags = D_80071C32[id - 0x120][0] & 0xB;
+                flags = g_AccessoryTable[id - 0x120].restrictionMask & 0xB;
                 targetFlags = 3;
             }
             last = i + 1;
