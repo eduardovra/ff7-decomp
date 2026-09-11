@@ -9,25 +9,36 @@ extern s32 g_dbIndex;
 typedef struct {
     /* 0x00 */ s16 StartFrame;
     /* 0x02 */ s16 AnimationFrame;
-    /* 0x04 */ char pad4[0x1C];
-} FireData; // size:0x20
-
-extern FireData g_BattleEffectSlots[];
+    /* 0x04 */ s16 unk4;        // inferred
+    /* 0x06 */ s16 unk6;        // inferred
+    /* 0x08 */ char pad8[0xA];  // maybe part of unk6[6]?
+    /* 0x12 */ s16 unk12;       // inferred
+    /* 0x14 */ char pad14[0xC]; // maybe part of unk12[7]?
+} FireData;                     // size:0x20
 
 typedef struct {
     /* 0x00 */ char pad[0x4000];
 } FirePrimPage; // size:0x4000
 
+extern FireData g_BattleEffectSlots[];
 static FirePrimPage fire_prim_buffer[2];
 static void* fire_buffer_ptr;
-
-void func_801B0210(s32, s32);
+extern s16 D_80151774;
+extern u_long g_FireTexture[]; // 4bpp TIM + four 16-colour CLUTs, uploaded on setup
 
 INCLUDE_ASM("asm/us/magic/nonmatchings/fire", func_801B0000);
 
+void func_801B00B8(); // extern
 INCLUDE_ASM("asm/us/magic/nonmatchings/fire", func_801B00B8);
 
-INCLUDE_ASM("asm/us/magic/nonmatchings/fire", func_801B0210);
+void func_801B0210(s32 arg0, s32 arg1) {
+    FireData* effect;
+
+    effect = &g_BattleEffectSlots[BattleEffectRegister(func_801B00B8)];
+    effect->unk4 = arg0;
+    effect->unk6 = 0;
+    effect->unk12 = -D_801518E4[arg0].unk12;
+}
 
 void func_801B0294(void) {
     FireData* effect;
@@ -44,9 +55,6 @@ void func_801B0294(void) {
         effect->StartFrame = -1;
     }
 }
-
-extern s16 D_80151774;
-extern u_long g_FireTexture[]; // 4bpp TIM + four 16-colour CLUTs, uploaded on setup
 
 void func_801B02EC(s32 arg0, s32 arg1) {
     func_800D2980(g_FireTexture, 0, 0, 0);
