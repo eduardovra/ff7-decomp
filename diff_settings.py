@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+import bisect
 import glob
 import os
 import re
 import sys
 import yaml
+from typing import Callable
 
 sys.path.insert(0, "tools")
 try:
@@ -42,6 +44,13 @@ def add_custom_arguments(parser):
             default=None,
             dest="overlay",
         )
+
+    parser.add_argument(
+        "--raw-relocs",
+        action="store_true",
+        dest="raw_relocs",
+        help="keep objdump's relocation symbols instead of canonicalising them",
+    )
 
     parser.add_argument(
         "--annotate",
@@ -98,7 +107,178 @@ def apply(config, args):
     config["objdump_executable"] = "mipsel-linux-gnu-objdump"
     config["arch"] = "mipsel"
     config["makeflags"] = []
+    install_reloc_normalizer(args, ovl_cfg.get("symbol_addrs_path", []))
     install_annotator(args)
+
+
+# gcc relocates against the symbol it can see plus an addend, while splat's
+# generated asm names whatever symbol sits at the final address. Both encode
+# the same instruction, so canonicalise each operand to one spelling.
+
+_RELOC_OPERAND = re.compile(
+    r"%(hi|lo)\(([A-Za-z_.$][\w.$]*)((?:[+-]0x[0-9a-fA-F]+)?)\)"
+)
+_SYMBOL_DEF = re.compile(r"^\s*(\w+)\s*=\s*0x([0-9A-Fa-f]+)\s*;(.*)$")
+_SYMBOL_SIZE = re.compile(r"size:\s*0x([0-9A-Fa-f]+)")
+_ADDRESS_IN_NAME = re.compile(r"(?:D|func|jtbl|jpt)_([0-9A-Fa-f]{8})$")
+
+_symbol_paths: "list[str]" = []
+_symbol_table: "SymbolTable | None" = None
+
+
+class SymbolTable:
+    """One overlay's symbols, plus the ranges of the sized ones.
+
+    Scoped to a single overlay on purpose: they share load addresses, so a
+    table built from every config/*.txt spells fire's functions with
+    mabaria's names.
+    """
+
+    def __init__(self, paths: "list[str]") -> None:
+        self.by_name: dict[str, int] = {}
+        self.by_address: dict[int, str] = {}
+        self.ranges: list[tuple[int, int, str]] = []
+        for path in paths:
+            self._read(path, self._add_symbol)
+        # Only symbols.*.txt annotates sizes, and an overlay's list rarely
+        # includes the one that owns the symbol it imports.
+        for path in sorted(glob.glob("config/*.txt")):
+            self._read(path, self._add_size)
+        self.ranges.sort()
+        self._range_starts = [start for start, _, _ in self.ranges]
+
+    def _read(
+        self,
+        path: str,
+        handler: "Callable[[re.Match[str]], None]",
+    ) -> None:
+        if not os.path.isfile(path):
+            return
+        with open(path) as f:
+            for line in f:
+                match = _SYMBOL_DEF.match(line)
+                if match:
+                    handler(match)
+
+    def _add_symbol(self, match: "re.Match[str]") -> None:
+        name, address_text, _ = match.groups()
+        address = int(address_text, 16)
+        self.by_name.setdefault(name, address)
+        # A generated name carries no information the address lacks, so let a
+        # hand-written name for the same address win.
+        known = self.by_address.get(address)
+        if known is None or _ADDRESS_IN_NAME.match(known):
+            self.by_address[address] = name
+
+    def _add_size(self, match: "re.Match[str]") -> None:
+        name, address_text, tail = match.groups()
+        size_match = _SYMBOL_SIZE.search(tail)
+        if not size_match:
+            return
+        address = int(address_text, 16)
+        # Adopt the size only for a symbol this overlay already agrees on,
+        # so a colliding address in another overlay cannot leak in.
+        if self.by_name.get(name) != address:
+            return
+        size = int(size_match.group(1), 16)
+        self.ranges.append((address, address + size, name))
+
+    def resolve(self, name: str) -> "int | None":
+        address = self.by_name.get(name)
+        if address is not None:
+            return address
+        match = _ADDRESS_IN_NAME.match(name)
+        if match:
+            return int(match.group(1), 16)
+        return None
+
+    def containing(self, address: int) -> "tuple[int, str] | None":
+        index = bisect.bisect_right(self._range_starts, address) - 1
+        if index < 0:
+            return None
+        start, end, name = self.ranges[index]
+        if address >= end:
+            return None
+        return start, name
+
+    def spell(self, address: int, keep_offset: bool) -> "str | None":
+        name = self.by_address.get(address)
+        if name is not None:
+            return name
+        found = self.containing(address)
+        if found is None:
+            return None
+        start, name = found
+        if not keep_offset:
+            return name
+        return f"{name}+{hex(address - start)}"
+
+
+def _symbols() -> SymbolTable:
+    global _symbol_table
+    if _symbol_table is None:
+        _symbol_table = SymbolTable(_symbol_paths)
+    return _symbol_table
+
+
+def _canonical_operand(match: "re.Match[str]") -> str:
+    kind, name, addend = match.groups()
+    symbols = _symbols()
+    base = symbols.resolve(name)
+    if base is None:
+        return match.group(0)
+    address = base
+    if addend:
+        address += int(addend, 16)
+    # objdump loses the order of paired relocations, so asm-differ can only
+    # recover an addend for %lo. Compare %hi by its symbol alone.
+    spelling = symbols.spell(address, keep_offset=kind == "lo")
+    if spelling is None:
+        return match.group(0)
+    return f"%{kind}({spelling})"
+
+
+def _canonicalize_relocs(text: str) -> str:
+    return _RELOC_OPERAND.sub(_canonical_operand, text)
+
+
+def _rewrite_line(line) -> None:
+    fields = ("original", "normalized_original", "scorable_line", "symbol")
+    for name in fields:
+        value = getattr(line, name, None)
+        if value:
+            setattr(line, name, _canonicalize_relocs(value))
+
+
+def install_reloc_normalizer(args, symbol_paths: "list[str]") -> None:
+    """Make both sides spell a relocated address the same way.
+
+    asm-differ compares objdump text, so `D_801518F6` and `D_801518E4+0x12`
+    read as a difference even though they assemble to identical bytes.
+    """
+    if getattr(args, "raw_relocs", False):
+        return
+
+    module = sys.modules.get("__main__")
+    if module is None or not hasattr(module, "process"):
+        return
+
+    global _symbol_paths, _symbol_table
+    _symbol_paths = symbol_paths
+    _symbol_table = None
+
+    original_process = module.process
+
+    def process_with_canonical_relocs(dump: str, config) -> list:
+        lines = original_process(dump, config)
+        try:
+            for line in lines:
+                _rewrite_line(line)
+        except Exception:
+            pass
+        return lines
+
+    module.process = process_with_canonical_relocs
 
 
 def _find_c_info() -> "regtrack_poc.CInfo | None":
