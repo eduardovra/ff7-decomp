@@ -19,11 +19,9 @@ typedef struct {
     /* 0x00 */ char pad[0x4000];
 } FirePrimPage; // size:0x4000
 
-extern s32 g_dbIndex;
 extern FireData g_BattleEffectSlots[];
 static FirePrimPage fire_prim_buffer[2];
 static void* fire_buffer_ptr;
-extern s16 D_80151774;
 extern u_long g_FireTexture[]; // 4bpp TIM + four 16-colour CLUTs, uploaded on setup
 extern SpriteRenderDesc g_FireRenderDesc;
 

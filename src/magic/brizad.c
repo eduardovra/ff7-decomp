@@ -44,7 +44,6 @@ typedef struct {
 
 extern ModelRenderDesc g_BrizadRenderDesc;
 extern BrizadData g_BattleEffectSlots[];
-extern s16 D_80151774;
 
 static void BrizadRenderIce(void) {
     MATRIX matrix;

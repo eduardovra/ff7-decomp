@@ -1112,7 +1112,6 @@ void func_800D51D4(s32 arg0);
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D51D4);
 
 extern s32 D_800F10E4;
-extern s16 D_800F5B74;
 
 // Step the ramp once: accumulate (0x04 += 0x08), publish the high word, and
 // free the slot when the countdown (0x0C) reaches 0.

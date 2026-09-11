@@ -3,11 +3,8 @@
 #include "common.h"
 #include "../battle/battle.h"
 
-extern s32 g_dbIndex;
 // Battle far colour; func_800B9568 feeds r/g/b straight to SetFarColor.
 extern CVECTOR D_800F5B70;
-extern s16 D_800F5B74;
-extern u8 D_80062D98; // set while the battle is paused
 
 #define TARGET_LIFETIME 45
 #define FADE_IN_FRAMES 8

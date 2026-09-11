@@ -360,7 +360,6 @@ typedef struct {
 extern Unk800F7ED8 g_BattleCameraSlots[];
 extern s16 D_800F8182[];
 extern s16 g_BattleCameraCursor;
-extern s32 g_dbIndex;
 extern s16 D_800F836C;
 extern s16 D_800F8370;
 extern u8 D_800F8374;
@@ -470,7 +469,6 @@ typedef struct {
 extern s16 D_800F3110;
 extern u8 D_800F3150; // btlmenu_prevLimitReadyMask
 extern ModelScreenPos g_modelScreenPos[10];
-extern s16 D_80151774;
 extern u8 D_801517BC;
 extern u8 D_801517C4;
 extern s16 D_80158D00;
