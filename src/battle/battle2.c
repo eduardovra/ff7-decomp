@@ -1164,7 +1164,7 @@ void BattleAnimationUpdate(void) {
             }
         } while (slot->FrameStep == 0); // 0 fans out to every target at once
     }
-    slot->FrameCounter = (u16)slot->FrameCounter + 1;
+    slot->FrameCounter++;
     if (slot->FrameCounter >= slot->FrameStep) {
         slot->FrameCounter = 0;
     }
