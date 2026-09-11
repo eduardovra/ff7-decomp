@@ -46,10 +46,10 @@ void func_801B0294(void) {
 }
 
 extern s16 D_80151774;
-extern u32 D_801B039C;
+extern u_long g_FireTexture[]; // 4bpp TIM + four 16-colour CLUTs, uploaded on setup
 
 void func_801B02EC(s32 arg0, s32 arg1) {
-    func_800D2980(&D_801B039C, 0, 0, 0);
+    func_800D2980(g_FireTexture, 0, 0, 0);
     MagicAnimationRegister(arg0, arg1, 0, func_801B0210);
     BattleEffectRegister(func_801B0294);
     BattleCommandSend(0x20, BattleEntityGetStereoPan((s32)D_80151774), 9);

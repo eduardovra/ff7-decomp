@@ -1894,5 +1894,6 @@ func_801B0210 = 0x801b0210;
 func_801B0294 = 0x801b0294;
 func_801B02EC = 0x801b02ec;
 func_801B037C = 0x801b037c;
+g_FireTexture = 0x801b039c;
 fire_prim_buffer = 0x801c0604;
 fire_buffer_ptr = 0x801c8604;
