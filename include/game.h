@@ -1136,6 +1136,7 @@ s32 SysGetPtrToUncompKernBattleTxtWithId(s32);
 const char* SysKernGetString(s32 arg0, s32 arg1, s32 arg2);
 void func_800155A4(s32, ...);
 void func_8001726C(s16, u16);
+void func_8001C3C4(void);
 u32 InputReadPadsRaw(void);
 u32 InputReadPads(void);
 void SysMenuCreateDrawenvDispenv(DRAWENV* draw_env, DISPENV* disp_env);
