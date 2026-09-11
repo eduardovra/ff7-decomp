@@ -1007,7 +1007,7 @@ extern s32 g_BattleCharIdToCharId[14];
 extern MainMenuColorLabels g_Labels;    // labels indexed by Labels enum
 extern u8 g_MenuColors[NUM_MENU_COLOR]; // 4 corners x RGB
 extern FieldModelData* g_FieldModelData;
-extern u8 D_80062D98; // battle_clearRenderList
+extern u8 D_80062D98; // global pause; nonzero freezes effect frame advance and the game clock
 extern u8 D_80062D99;
 // Set while a memory-card transfer is in flight and the savemap must not be
 // touched; battle code spin-waits on it.
