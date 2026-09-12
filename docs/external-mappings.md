@@ -127,6 +127,35 @@ resident battle module rather than the overlay. Absolute references
 *inside* a dump keep their real addresses regardless -- the entry point
 at their `0x80000000` does `jal $801b06cc`, which is `func_801B06CC`.
 
+### Zaarbs' PC-port decomp (C++ source, not addresses)
+
+<https://github.com/Zaarbs/ff7> -- a partial decompilation of the 1998
+PC port, GPL-3.0, work in progress (it builds a playable `FF7.exe`
+against DirectX/dgvoodoo2). The PC port was ported *from* the PSX code,
+so the module and function decomposition largely survives: `src/battle/`
+(`b3ddata`, `battle3d/`, `yama/`), `src/field/` (`ad_*`, `fkawai`,
+`frender`), `src/wm/`, `src/menu/`, `src/movie/`, `src/sound/`,
+`src/polygon/`, plus kernel-ish pieces we also have -- `heap.cpp`,
+`list.cpp`, `sort.cpp`, `stack.cpp`, `cd.cpp`, `playtimeCount.cpp`.
+
+Value here is *structure*, not offsets: field names and struct shapes,
+control flow of a routine we are staring at in asm, and above all
+plausible **names** for things (the PC port kept many original
+identifiers). Useful when a PSX function has no q-gears note but its PC
+sibling is decompiled and readable.
+
+Hard limits:
+
+- **No addresses transfer.** This is x86 with a different build; nothing
+  in it maps onto a PSX RAM address. Do not import numbers from it.
+- **The renderer is not ours.** `src/graphics/` is the DirectX backend
+  the port replaced the GPU/GTE path with -- irrelevant to our packet
+  building, and actively misleading for the battle render path.
+- **Structs may have been widened** for 32-bit x86 (pointers, padding,
+  `int` vs `short`). A layout has to be re-checked against our asm.
+- **GPL-3.0 and decompiled third-party code.** Read it for
+  understanding; do not paste from it into `src/`.
+
 ## Porting workflow
 
 A struct import touches two places (see docs/tooling-ideas.md,
