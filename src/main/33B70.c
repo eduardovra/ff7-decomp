@@ -42,8 +42,33 @@ INCLUDE_ASM("asm/us/main/nonmatchings/33B70", func_80033BE0);
 
 INCLUDE_ASM("asm/us/main/nonmatchings/33B70", func_80033C20);
 
-void SysCdromSetChainParam(int op, int sector, size_t len, u_long* dst, void (*cb)());
-INCLUDE_ASM("asm/us/main/nonmatchings/33B70", SysCdromSetChainParam);
+void SysMovieAbortPlay(void);
+
+// Waits for the chain to drain, then arms the next read. D_80071A60 is written
+// last: it is the index SystemCdromReadChain dispatches on.
+void SysCdromSetChainParam(int op, int sector, size_t len, u_long* dst, void (*cb)()) {
+    s32 state;
+
+    do {
+        state = SystemCdromReadChain();
+        switch (state) {
+        case 8:
+        case 9:
+        case 10:
+            SysMovieAbortPlay();
+            break;
+        case 18:
+            CdControl(CdlPause, NULL, NULL);
+            break;
+        }
+    } while (state != 0);
+
+    CdIntToPos(sector, &D_80071A68);
+    D_80071A6C = (len + 0x7FF) >> 11;
+    D_80071A80 = dst;
+    D_80071A84 = cb;
+    D_80071A60 = op;
+}
 
 int func_80033DAC(int sector_no, void (*cb)()) {
     SysCdromSetChainParam(CDOP_1, sector_no, 0, NULL, cb);
