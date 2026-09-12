@@ -116,7 +116,12 @@ typedef struct {
     /* 0x4D */ u8 unk4D;
     /* 0x4E */ u8 unk4E;
     /* 0x4F */ u8 unk4F;
-    /* 0x50 */ u32 unk50[6];
+    /* 0x50 */ u16 unk50;
+    /* 0x52 */ u16 unk52;
+    /* 0x54 */ u16 unk54;
+    /* 0x56 */ u8 unk56;
+    /* 0x57 */ u8 unk57;
+    /* 0x58 */ u32 unk58[4];
 } BattleUnit; // size:0x68
 
 typedef struct {
@@ -414,7 +419,8 @@ typedef struct {
     s16 unk2;
     u16 unk4; // ATB fill gauge, saturates/compares at 0xFFFF -- unsigned
     s16 unk6;
-    s32 unk8;
+    u16 unk8;
+    u16 unkA;
     u8 unkC;
     u8 unkD; // effect id of the equipped accessory (0xFF = none)
     u8 unkE;
@@ -569,3 +575,8 @@ void func_800A55BC(void);
 void func_800A61D4(void);
 void func_800A4480(void);
 void func_800A5BC8(s32 arg0, s32 arg1);
+void BattleInitUnitAction(s32 index);
+void func_800A4E80(s32 index);
+
+// Scratch copy of a party member's save record, taken when D_8016376A bit 0x40 is set.
+extern SavePartyMember D_80167938;

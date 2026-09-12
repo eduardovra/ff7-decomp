@@ -541,6 +541,40 @@ typedef struct {
     /* 0x1A */ u16 flags;
 } AttackData; // size: 0x1C
 
+// Kernel armor record, one per armor id (g_ArmorTable). Field meanings were
+// verified by dumping the live table and matching each field against
+// published stats for all 32 armors.
+typedef struct {
+    u8 unk0;            // 0 on every armor except Wizard Bracelet (0xFF)
+    u8 elementalEffect; // "damage type": 0xFF=none, 0=absorb, 1=nullify,
+                        // 2=halve
+    u8 defense;
+    u8 magicDefense;
+    u8 defensePercent;
+    u8 magicDefensePercent;
+    u8 statusDefense; // index of the status bit this armor guards against;
+                      // 0xFF (none) on every armor (a mostly-accessory field)
+    u8 unk7;
+    u8 unk8;              // 0 on every armor except Four Slots (0xFF)
+    u8 materiaSlot[8];    // one byte per possible slot; 0=none, else slot present
+                          // (5=single/6,7=linked-pair when materiaGrowth!=None;
+                          //  1=single/2,3=linked-pair when materiaGrowth==None)
+    u8 materiaGrowth;     // 0=None, 1=Normal, 2=Double
+    u8 equipMask[2];      // equippable-by-character bitmask (bit0=Cloud,1=Barret,
+                          // 2=Tifa,3=Aeris,4=RedXIII,5=Yuffie,6=CaitSith,7=Vincent,
+                          // 8=Cid,9=Young Cloud). 0x01FF=all; Minerva=0x002C
+                          // (women), Escort Guard=0x03D3 (men + Young Cloud).
+    u8 elementalMask[2];  // bit0=Fire,1=Ice,2=Lightning,3=Earth,4=Poison,5=Gravity,
+                          // 6=Water,7=Wind,8=Holy,10=Cut,11=Hit,12=Punch,13=Shoot
+    u8 unk16[2];          // unknown, always 0x00FF
+    u8 statBonusId[4];    // stat each slot boosts: 0=Str,1=Vit,2=Mag,3=Spr,
+                          // 4=Dex,5=Lck; unused slot when paired value==0
+    u8 statBonusValue[4]; // bonus amount; 0 = slot unused
+    u16 restrictionMask;  // usage flags (sellability / battle-use / menu-use);
+                          // 0xFFFE on armor
+    u8 unk22[2];          // unknown, always 0xFFFF
+} ArmorRecord;
+
 // Kernel weapon record, one per weapon id (g_WeaponTable), 0x2C-byte stride.
 // Combat fields verified by dumping the live table and matching each field
 // against published weapon stats (same method as ArmorRecord); the remaining
@@ -603,6 +637,13 @@ typedef struct {
                           // 0x04 use in menu (0xFFFE on every accessory)
 } AccessoryRecord;
 
+// Kernel limit-break record, one per character: the HP divisor for each of the
+// four limit levels, followed by the rest of the 0x38-byte stride.
+typedef struct {
+    s32 hpDivisor[4];
+    u8 rest[0x28];
+} KernelLimitRecord;
+
 typedef struct {
     u16 levelUpApLimits[4];
     u8 equipEffect;
@@ -627,6 +668,20 @@ typedef struct {
     u8 materiaEffectFlags;
 } ActiveCharCommandMenu; // size: 0x6
 
+// The character's three limit techniques: their ids, the learned-limit filter
+// applied by BattleInitLimits, and the 0x1C-byte record behind each one.
+typedef struct {
+    /* 00 */ u8 limitId[3];
+    /* 03 */ u8 unk3[3];
+    /* 06 */ u8 activeLimits;
+    /* 07 */ u8 unk7;
+    /* 08 */ struct {
+        u8 unk0[0xC];
+        u8 unkC;
+        u8 unkD[0xF];
+    } limitData[3];
+} BattleLimitData; // size:0x5C
+
 // Runtime data for a battle participant.
 typedef struct {
     u8 id;
@@ -645,8 +700,10 @@ typedef struct {
     s16 baseHp;
     s16 mp;
     s16 baseMp;
-    s32 unk18;
-    s32 unk1C;
+    u16 unk18;
+    u16 unk1A;
+    u16 unk1C;
+    u16 unk1E;
     s8 unk20;
     s8 unk21;
     s8 unk22;
@@ -659,7 +716,7 @@ typedef struct {
     u32 physicalAttackStatuses;
     u32 immuneStatuses;
     ActiveCharCommandMenu commandMenu[16];
-    u8 unkAC[92];
+    BattleLimitData limits;
     MagicRecord enabledMagic[96];
     WeaponRecord weapon;
     s16 unk434;
@@ -699,7 +756,6 @@ typedef struct {
     /* 0x15 */ u8 isOnLine;
     /* 0x16 */ u8 slipDisabled;
     /* 0x17 */ u8 unk17;
-
 } FieldLine; // size:0x18
 
 typedef struct {
@@ -1049,6 +1105,8 @@ extern AttackData D_800708C4[];
 extern AttackData D_800722CC[];            // magic/summon/skill table
 extern WeaponRecord g_WeaponTable[];       // 0x800738A0, by weapon id
 extern AccessoryRecord g_AccessoryTable[]; // 0x80071C24, by accessory id
+extern ArmorRecord g_ArmorTable[];         // 0x80071E44, by armor id
+extern KernelLimitRecord D_80082290[];     // 0x80082290, by character id
 extern FieldEntity g_FieldEntity[];
 extern u8 g_FieldModelAnimStatus[16]; // per-model flags, indexed by field model id
 extern s32 D_800756F8[];

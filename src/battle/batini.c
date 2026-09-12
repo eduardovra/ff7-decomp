@@ -189,8 +189,8 @@ static void BattleInitSetup(s32 sceneID) {
 }
 
 extern u16 g_BattleUnitPresentMask;
-extern u16 D_8009D864[][0x220]; // stride 0x440, one per Unk8009D84C record
-u16 BattleGetRndU16(void);      // random, 16-bit
+
+u16 BattleGetRndU16(void); // random, 16-bit
 
 // Rolls the initial ATB timer of every present combatant and writes it into
 // g_BattleWork.turn[i].unk4. The battle type (battleType) then biases
@@ -254,13 +254,170 @@ static void BattleInitATBTimers(void) {
         }
     }
     for (i = 0; i < NUM_PARTY; i++) {
-        D_8009D864[i][0] = g_BattleWork.turn[i].unk4;
+        g_ActiveCharacters[i].unk18 = g_BattleWork.turn[i].unk4;
     }
 }
 
 static void BattleInitSetSpeed(s32 speed) { D_800F5F44.battleSpeed = 0x10000 / ((speed * 480 / 256 + 0x78) * 2); }
 
+#ifndef NON_MATCHING
+// register allocation only: the last callee-saved register goes to the
+// attack-setup pointer in the target, and to the party-work pointer here
 INCLUDE_ASM("asm/us/battle/nonmatchings/batini", BattleInitPlayer);
+#else
+void BattleInitPlayer(void) {
+    s32 i;
+    s32 dexTotal;
+    s32 memberCount;
+    ActiveCharacterData* character;
+    BattlePartyWork* battle_party_worker;
+    BattleUnit* battle_unit;
+    BattleUnitAttackSetup* battle_unit_attack_setup;
+    Unk800AF470* turn;
+    s32 soundIdx;
+    s32 bit;
+    s32 j;
+    u32 enemySkillMateria;
+    SavePartyMember* member;
+    s32 charId;
+    s32 limitCharge;
+    s32 limitLevel;
+    u16 soundId;
+    WeaponRecord* weapon;
+    ArmorRecord* armor;
+
+    dexTotal = 0;
+    memberCount = 0;
+    g_BattleState.unk10 = 0;
+    for (i = 0; i < NUM_PARTY; i++) {
+        charId = Savemap.partyID[i];
+        D_801636B8[i].D_801636B8 = -1;
+        turn = &g_BattleWork.turn[i];
+        battle_unit_attack_setup = &g_BattleWork.setup[i];
+        battle_party_worker = &g_BattleWork.party[i];
+        character = &g_ActiveCharacters[i];
+        battle_unit = &g_BattleState.combatant[i];
+        if (charId != 0xFF) {
+            for (j = 0; j < NUM_CHARACTERS; j++) {
+                member = &Savemap.party[j];
+                if (D_8016376A & 0x40) {
+                    D_80167938 = *member;
+                }
+                if (member->char_id == charId) {
+                    turn->unkC = 0xFF;
+                    turn->unk29 = 1;
+                    bit = 1;
+                    turn->unkF = 0xFF;
+                    D_801636B8[i].D_801636B8 = charId;
+                    battle_unit->unk8 = charId;
+                    battle_unit->unkC = charId + 0x10;
+                    battle_unit->unk56 = 8;
+                    battle_unit->unk11 = 5;
+                    battle_unit->unk16 = 0;
+                    battle_unit->unk4 = 8;
+                    battle_unit->unk9 = member->level;
+                    battle_party_worker->partyMember = member;
+                    g_BattleState.unk10 |= bit << i;
+                    if (!(member->order & 1)) {
+                        battle_unit->unk4 |= 0x40;
+                    }
+                    battle_unit->curHP = (u32)character->hp;
+                    battle_unit->unk28 = character->mp;
+                    battle_party_worker->curHP = (u16)battle_unit->curHP;
+                    battle_party_worker->curMP = battle_unit->unk28;
+                    BattleInitCharStats(character, battle_party_worker, battle_unit);
+                    battle_unit->unk12 = 0x10;
+                    battle_unit->unk44[0] = 0;
+                    battle_unit->status = member->status_flags & 0x30;
+                    turn->unk34 = (s32)character->immuneStatuses;
+                    battle_unit_attack_setup->targetFlags = character->weapon.targetFlags;
+                    battle_unit_attack_setup->attackEffectId = character->weapon.attackEffectId;
+                    battle_unit_attack_setup->damageFormulaId = character->weapon.damageFormula;
+                    battle_unit_attack_setup->hitChance = character->weapon.attackPercent;
+                    battle_unit_attack_setup->impactEffectId = character->weapon.impactEffect;
+                    battle_unit_attack_setup->criticalHitChance = character->weapon.criticalPercent;
+                    battle_unit_attack_setup->attackElement =
+                        character->weapon.attackElement | character->physicalAttackElements;
+                    battle_unit_attack_setup->cameraMovementId = *(u16*)character->weapon.cameraMovementId;
+                    battle_unit_attack_setup->specialAttackFlags = *(u16*)character->weapon.specialAttackFlags;
+                    battle_unit_attack_setup->attackStatusMask = (s32)character->physicalAttackStatuses;
+                    armor = &g_ArmorTable[member->armor];
+                    battle_unit->unkF = (s8)armor->defensePercent;
+                    battle_unit->unk4D = armor->magicDefensePercent;
+                    weapon = &character->weapon;
+                    BattleInitApplyAccStatus(i, (s32)member->accessory);
+                    battle_unit->unk50 = 0;
+                    battle_unit->unk52 = 0xFFFF;
+                    for (soundIdx = 0; soundIdx < 3; soundIdx++) {
+                        soundId = (&weapon->hitSound)[soundIdx];
+                        if (weapon->soundIdMask & bit) {
+                            soundId |= 0x100;
+                        }
+                        (&battle_unit_attack_setup->normalAttackSound)[soundIdx] = soundId;
+                        bit *= 2;
+                    }
+                    turn->unk29 &= 0xFD;
+                    if (character->characterFlags & 4) {
+                        battle_unit_attack_setup->targetFlags &= 0xDF;
+                    }
+                    if (!(battle_unit_attack_setup->targetFlags & 0x20)) {
+                        turn->unk29 |= 2;
+                    }
+                    turn->unk4 = 0;
+                    character->unk22 = 0;
+                    character->unk18 = 0;
+                    character->unk1C = 0;
+                    character->unk1E = 0;
+                    character->unk1A = 0;
+                    character->unk20 = 1;
+                    battle_party_worker->limitLevel = 0xFF;
+                    if (charId < 9) {
+                        limitLevel = member->limit_level - 1;
+                        if (limitLevel < 4U) {
+                            limitCharge = member->limit_charge;
+                            battle_party_worker->limitLevel = limitLevel;
+                            battle_party_worker->limitBar = (u16)limitCharge;
+                            battle_party_worker->limitBarUI = (u16)limitCharge;
+                            battle_party_worker->limitBreakHPDivisor = D_80082290[charId].hpDivisor[limitLevel];
+                            character->unk1A = (s16)(battle_party_worker->limitBar << 8);
+                            character->unk20 = (s8)member->limit_level;
+                            BattleInitLimits(charId, member->limit_learn, &character->limits);
+                            if (battle_party_worker->limitBreakHPDivisor == 0) {
+                                func_800155A4(0x26);
+                            }
+                        } else {
+                            func_800155A4(0x26);
+                        }
+                    }
+                    battle_unit->unk4 |= 8;
+                    if (battle_unit->curHP == 0) {
+                        battle_unit->status |= 1;
+                    }
+                    BattleInitCharCmdMenu(i);
+                    BattleInitCharCmdState(i);
+                    if (battle_party_worker->limitBar == 0xFF) {
+                        func_800A4E80(i);
+                        g_BattleWork.turn[i].unk8 &= 0xFFFE;
+                    }
+                    if (battle_unit->status != 0) {
+                        BattleInitUnitAction(i);
+                    }
+                    enemySkillMateria = BattleGetEquipMateriaVal(member);
+                    battle_party_worker->enemySkillMateriaData = enemySkillMateria;
+                    battle_party_worker->enemySkillMateriaData2 = enemySkillMateria;
+                    memberCount += 1;
+                    dexTotal += member->dexterity;
+                    break;
+                }
+            }
+        }
+    }
+    if (memberCount != 0) {
+        // (dexTotal - 1 + memberCount) / memberCount is a ceiling divide: mean party dexterity rounded up.
+        D_800F5F44.D_800F7DA8 = ((dexTotal - 1 + memberCount) / memberCount) + 0x32;
+    }
+}
+#endif
 
 static void BattleInitApplyAccStatus(s32 slot, s32 accessory);
 static void BattleInitCharCmdMenu(s32 slot);
@@ -419,44 +576,31 @@ static void BattleInitResetExtraCmds(s32 sceneID) {
 
 s32 SysGetLimitCmdId(s32, s32); // extern
 
-typedef struct {
-    /* 00 */ u8 materiaID[3];
-    /* 03 */ u8 unk3[3];
-    /* 06 */ u8 count;
-    /* 07 */ u8 unk7;
-    /* 08 */ u8 unk8[0xC];
-    /* 14 */ struct {
-        u8 unk0;
-        u8 unk1[0x1B];
-    } unk14[3];
-} BattleMateriaSlotData; // size:0x68
-
-// Resolves up to three materia slots of character sceneID against the equipment
-// mask arg1: a slot whose bit is set copies its paired value into unk3 and
-// counts towards unk6.
-static void BattleResolveMateriaSlots(s32 slot, s32 materiaMask, BattleMateriaSlotData* data) {
-    s32 count;
+// Filters character charId's three limit slots against learnedLimits
+// (SavePartyMember.limit_learn), counting the ones actually learned.
+static void BattleInitLimits(s32 charId, s32 learnedLimits, BattleLimitData* data) {
+    s32 activeLimits;
     s32 i;
     s32 j;
 
-    count = 0;
+    activeLimits = 0;
     for (i = 0; i < 3; i++) {
-        if (data->materiaID[i] != 0xFF) {
+        if (data->limitId[i] != 0xFF) {
             for (j = 0; j < 12; j++) {
-                if (SysGetLimitCmdId(slot, j) == data->materiaID[i]) {
+                if (SysGetLimitCmdId(charId, j) == data->limitId[i]) {
                     break;
                 }
             }
             if (j == 12) {
                 func_800155A4(0x26);
-            } else if ((materiaMask >> j) & 1) {
-                count++;
-                data->unk3[i] = data->unk14[i].unk0;
+            } else if ((learnedLimits >> j) & 1) {
+                activeLimits++;
+                data->unk3[i] = data->limitData[i].unkC;
             }
         }
     }
     data->unk7 = 0;
-    data->count = count;
+    data->activeLimits = activeLimits;
 }
 
 static s32 BattleGetMateriaValue(u32 sceneID) {
@@ -696,8 +840,6 @@ static void BattleInitFormation(void) {
     g_BattleMultiInfo.characterMask[2] = row[2];
 }
 
-extern u16 D_8009CBE0[];     // item inventory (320 slots; (count << 9) | id)
-extern u16 D_80071E64[][18]; // armor table, stride 0x24
 extern u8 D_80166F74;
 extern BattleItemEntry D_801671B8[];
 
@@ -719,7 +861,7 @@ static void BattleInitItemList(void) {
     last = 0;
     for (i = 0; i < 0x140; i++) {
         entry = &D_801671B8[i];
-        id = D_8009CBE0[i];
+        id = Savemap.inventory[i];
         count = 0;
         targetFlags = 0;
         flags = 0xB;
@@ -733,7 +875,7 @@ static void BattleInitItemList(void) {
                 flags = g_WeaponTable[id - 0x80].restrictionMask & 0xB;
                 targetFlags = g_WeaponTable[id - 0x80].targetFlags;
             } else if (id < 0x120) {
-                flags = D_80071E64[id - 0x100][0] & 0xB;
+                flags = g_ArmorTable[id - 0x100].restrictionMask & 0xB;
                 targetFlags = 3;
             } else if (id < 0x140) {
                 flags = g_AccessoryTable[id - 0x120].restrictionMask & 0xB;
