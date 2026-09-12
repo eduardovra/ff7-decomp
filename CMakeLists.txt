@@ -70,6 +70,15 @@ set(FF7_SOURCES
     src/magic/fire.c
 )
 
+option(FF7_PC "Build the native PSY-Z prototype executable" OFF)
+
+if(FF7_PC)
+    # Battle and world share the 0x800A overlay load address, so three of
+    # their symbols collide in a single native link. The prototype boots
+    # into battle, which makes world the one to drop.
+    list(REMOVE_ITEM FF7_SOURCES src/world/world.c src/world/world2.c)
+endif()
+
 add_executable(str tools/str.c)
 
 set(FF7_STR_SOURCES)
@@ -112,3 +121,16 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Werror=switch-outside-range
     -Werror=switch-unreachable
 )
+
+if(FF7_PC)
+    add_subdirectory(tools/psyz/psyz psyz)
+    target_include_directories(psyz PRIVATE tools/psyz/psyz/include)
+    target_compile_definitions(psyz PRIVATE __psyz)
+
+    add_executable(ff7_pc src/pc/main.c src/pc/globals.c src/pc/stubs.c)
+    target_include_directories(ff7_pc PRIVATE
+        include
+        include/psxsdk
+        tools/psyz/psyz/include)
+    target_link_libraries(ff7_pc PRIVATE ${PROJECT_NAME} psyz)
+endif()
