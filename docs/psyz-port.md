@@ -12,6 +12,33 @@ you want to run has to become C first.
 This document scopes the smallest useful target: **boot straight into a battle
 and cast a spell**, skipping the title screen, field and world map.
 
+## Precedent: sotn-decomp
+
+sotn-decomp already ships this, and not as a side experiment:
+
+- `tools/psyz` is a git submodule.
+- `src/pc/` holds a PC backend of roughly 78 KB across 20 files -- a
+  simulation layer, a replay harness, I/O, plus per-stage shims under
+  `stages/`, `servants/` and `bosses/`.
+- Its main `include/game.h` includes `<psyz.h>` directly, so the port lives
+  in-tree rather than in a fork.
+- `CMakeLists.txt` sets the `__psyz` compile definition and calls
+  `psyz_title()`.
+- A dedicated workflow, `picci.yaml` ("Build cross-platform codebase"),
+  builds Linux x86_64 and i686, macOS and Windows on every pull request
+  touching `src/`, `include/` or the cmake files.
+
+PSY-Z is therefore a CI-gated build target on a large, real game, not only the
+SDK samples its README advertises.
+
+Two lessons carry over: the in-tree route works (see **Traps**), and globals
+cost more than the function count suggests (see **Scope**).
+
+One caveat. sotn-decomp is itself a work in progress and its PC builds still
+pass CI, so a port plainly does not demand 100%. How it handles functions that
+are still assembly is unverified here -- do not read it as proof that FF7 can
+build at roughly half.
+
 ## Why field is not needed
 
 `BATINI_Main(s32 sceneID)` is the battle entry point, and it takes a single
@@ -91,6 +118,12 @@ decompiled `src/magic/*.c` calls, **10 are PSY-Q** and vanish for free:
 
 For comparison: 1542 `INCLUDE_ASM` stubs remain repo-wide, 486 of them PSY-Q.
 Skipping field, world, menu, mini-games and the ending is what buys the rest.
+
+**Globals are not in that number.** sotn-decomp carries `src/pc/stubs.c`
+because PS1 globals live at fixed linker-script addresses and natively each
+one needs a real C definition. That is a separate body of work from the 262,
+and it is where overlapping symbols surface: one declaration in that file is
+annotated as an overlap its authors found hard to remove.
 
 ## Tier 0 -- direct blockers of `BATINI_Main`
 
@@ -225,7 +258,9 @@ sampling over HTTP by a wide margin.
   `unsigned int`.
 - **These changes break the sha1.** They alter codegen, so they cannot land in
   the matching build. A port has to be a downstream fork or sit behind
-  `#ifdef __psyz`.
+  `#ifdef __psyz`. sotn-decomp takes the second route and keeps everything
+  in-tree: `<psyz.h>` from its main `include/game.h`, PC-only code under
+  `src/pc/`.
 - **No hardcoded addresses.** PSY-Z crashes on `*(s32*)0x800A1234`. The C
   written so far is clean of these -- keep it that way.
 - **PS1 file I/O is not POSIX.** Never include `<fcntl.h>`; use `FWRITE`
