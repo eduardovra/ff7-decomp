@@ -560,19 +560,19 @@ typedef struct {
                           // (5=single/6,7=linked-pair when materiaGrowth!=None;
                           //  1=single/2,3=linked-pair when materiaGrowth==None)
     u8 materiaGrowth;     // 0=None, 1=Normal, 2=Double
-    u8 equipMask[2];      // equippable-by-character bitmask (bit0=Cloud,1=Barret,
+    u16 equipMask;        // equippable-by-character bitmask (bit0=Cloud,1=Barret,
                           // 2=Tifa,3=Aeris,4=RedXIII,5=Yuffie,6=CaitSith,7=Vincent,
                           // 8=Cid,9=Young Cloud). 0x01FF=all; Minerva=0x002C
                           // (women), Escort Guard=0x03D3 (men + Young Cloud).
-    u8 elementalMask[2];  // bit0=Fire,1=Ice,2=Lightning,3=Earth,4=Poison,5=Gravity,
+    u16 elementalMask;    // bit0=Fire,1=Ice,2=Lightning,3=Earth,4=Poison,5=Gravity,
                           // 6=Water,7=Wind,8=Holy,10=Cut,11=Hit,12=Punch,13=Shoot
-    u8 unk16[2];          // unknown, always 0x00FF
+    u16 unk16;            // unknown, always 0x00FF
     u8 statBonusId[4];    // stat each slot boosts: 0=Str,1=Vit,2=Mag,3=Spr,
                           // 4=Dex,5=Lck; unused slot when paired value==0
     u8 statBonusValue[4]; // bonus amount; 0 = slot unused
     u16 restrictionMask;  // usage flags (sellability / battle-use / menu-use);
                           // 0xFFFE on armor
-    u8 unk22[2];          // unknown, always 0xFFFF
+    u16 unk22;            // unknown, always 0xFFFF
 } ArmorRecord;
 
 // Kernel weapon record, one per weapon id (g_WeaponTable), 0x2C-byte stride.
@@ -580,41 +580,40 @@ typedef struct {
 // against published weapon stats (same method as ArmorRecord); the remaining
 // fields follow the standard kernel weapon-data layout.
 typedef struct {
-    u8 targetFlags;           // 0x23 = melee, 0x03 = long-range (hits back row)
-    u8 attackEffectId;        // always 0xFF (unused by weapons)
-    u8 damageFormula;         // 0x11 = physical; 0xA0-0xA8 select a special formula
-                              // (HP/MP/AP/Limit/kills/status/dead-allies), shared by
-                              // formula across weapons
-    u8 unk3;                  // always 0xFF (unused)
-    u8 attack;                // attack power
-    u8 statusAttack;          // index of the status this attack inflicts; 0xFF (none)
-                              // on every weapon (cf. ArmorRecord.statusDefense)
-    u8 materiaGrowth;         // 0=None, 1=Normal, 2=Double, 3=Triple
-    u8 criticalPercent;       // bonus critical-hit %
-    u8 attackPercent;         // hit rate
-    u8 weaponModel;           // lo nibble = model index, hi nibble = animation mod
-    u8 alignmentA;            // always 0xFF (alignment padding)
-    u8 soundIdMask;           // mask to reach the high (0x100+) sound-effect ids
-    u8 cameraMovementId[2];   // attack camera; always 0xFFFF
-    u8 equipMask[2];          // equippable-by-character bitmask (see ArmorRecord);
-                              // Cloud weapons add bit9 (Young Cloud) = 0x0201
-    u16 attackElement;        // 0x0400=Cut,0x0800=Hit,0x1000=Punch,0x2000=Shoot
-    u8 unk12[2];              // unknown, always 0xFFFF
-    u8 statBonusId[4];        // stat each slot boosts: 0=Str,1=Vit,2=Mag,3=Spr,
-                              // 4=Dex,5=Lck; 0xFF = unused (the Mag column is id 2)
-    u8 statBonusValue[4];     // bonus amount, paired with statBonusId; 0xFF unused
-    u8 materiaSlot[8];        // one byte per slot; same encoding as ArmorRecord
-                              // (5=single/6,7=linked-pair when materiaGrowth!=None;
-                              //  1=single/2,3=linked-pair when materiaGrowth==None)
-    u8 hitSound;              // sound-effect id for a normal hit (constant per weapon
-                              // class)
-    u8 criticalSound;         // sound-effect id for a critical hit
-    u8 missSound;             // sound-effect id for a miss (0x2F on firearms, else 0x05)
-    u8 impactEffect;          // impact-effect id (varies per weapon)
-    u8 specialAttackFlags[2]; // always 0xFFFF
-    u16 restrictionMask;      // a set bit forbids: 0x01 sell, 0x02 use in battle,
-                              // 0x04 use in menu, 0x08 throw (0xFFF6 base; the
-                              // initial weapons add sell+throw -> 0xFFFF)
+    u8 targetFlags;         // 0x23 = melee, 0x03 = long-range (hits back row)
+    u8 attackEffectId;      // always 0xFF (unused by weapons)
+    u8 damageFormula;       // 0x11 = physical; 0xA0-0xA8 select a special formula
+                            // (HP/MP/AP/Limit/kills/status/dead-allies), shared by
+                            // formula across weapons
+    u8 unk3;                // always 0xFF (unused)
+    u8 attack;              // attack power
+    u8 statusAttack;        // index of the status this attack inflicts; 0xFF (none)
+                            // on every weapon (cf. ArmorRecord.statusDefense)
+    u8 materiaGrowth;       // 0=None, 1=Normal, 2=Double, 3=Triple
+    u8 criticalPercent;     // bonus critical-hit %
+    u8 attackPercent;       // hit rate
+    u8 weaponModel;         // lo nibble = model index, hi nibble = animation mod
+    u8 alignmentA;          // always 0xFF (alignment padding)
+    u8 soundIdMask;         // mask to reach the high (0x100+) sound-effect ids
+    u16 cameraMovementId;   // attack camera; always 0xFFFF
+    u16 equipMask;          // equippable-by-character bitmask (see ArmorRecord);
+                            // Cloud weapons add bit9 (Young Cloud) = 0x0201
+    u16 attackElement;      // 0x0400=Cut,0x0800=Hit,0x1000=Punch,0x2000=Shoot
+    u16 unk12;              // unknown, always 0xFFFF
+    u8 statBonusId[4];      // stat each slot boosts: 0=Str,1=Vit,2=Mag,3=Spr,
+                            // 4=Dex,5=Lck; 0xFF = unused (the Mag column is id 2)
+    u8 statBonusValue[4];   // bonus amount, paired with statBonusId; 0xFF unused
+    u8 materiaSlot[8];      // one byte per slot; same encoding as ArmorRecord
+                            // (5=single/6,7=linked-pair when materiaGrowth!=None;
+                            //  1=single/2,3=linked-pair when materiaGrowth==None)
+    u8 attackSound[3];      // sound-effect ids: [0] normal hit (constant per weapon
+                            // class), [1] critical hit, [2] miss (0x2F on firearms,
+                            // else 0x05)
+    u8 impactEffect;        // impact-effect id (varies per weapon)
+    u16 specialAttackFlags; // always 0xFFFF
+    u16 restrictionMask;    // a set bit forbids: 0x01 sell, 0x02 use in battle,
+                            // 0x04 use in menu, 0x08 throw (0xFFF6 base; the
+                            // initial weapons add sell+throw -> 0xFFFF)
 } WeaponRecord;
 
 // Kernel accessory record, one per accessory id (g_AccessoryTable), 0x10 bytes.

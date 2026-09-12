@@ -542,6 +542,9 @@ extern u16 D_8016376A;
 
 extern BattleMultiInfo g_BattleMultiInfo;
 
+// Scratch copy of a party member's save record, taken when D_8016376A bit 0x40 is set.
+extern SavePartyMember D_80167938;
+
 s32 BattleEffectRegister(void (*func)(void));
 void BattleSetLoadTimToVram(u_long* addr, s16 imgXY, s16 clutX, s16 clutY);
 void* func_800D29D4(ModelRenderDesc*, u_long**, int, void*);
@@ -576,7 +579,4 @@ void func_800A61D4(void);
 void func_800A4480(void);
 void BattleAddAutoBattleActionByChance(s32 arg0, s32 arg1);
 void BattleInitUnitAction(s32 index);
-void func_800A4E80(s32 index);
-
-// Scratch copy of a party member's save record, taken when D_8016376A bit 0x40 is set.
-extern SavePartyMember D_80167938;
+void BattleEnableLimitToPlayerWithSpeed(s32 index);
