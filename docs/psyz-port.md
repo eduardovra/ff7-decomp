@@ -142,6 +142,74 @@ empty stubs for the whole set, link immediately, then replace stubs one at a
 time. The build runs (badly) from day one and gdb is available throughout --
 far better feedback than waiting for function 262.
 
+## Versus the emulator loop
+
+`./mako.sh redux` and `magic_probe.py` (see `emulator-loop.md` and
+`magic-probe.md`) are not replaced by a native build. The two answer
+different questions.
+
+### What a native build removes
+
+**The residency guard.** Every magic overlay sits at `0x801B0000` because
+PS1 RAM is 2MB, so `MabariaRenderModel` and `ThunderRenderModel` collide at
+`0x801B0020` and every sample has to be checked against the built `.exe` to
+learn which spell is resident. Linked natively they are ordinary distinct
+symbols. No fingerprint compare, no dropped hits, no `drain` count, and no
+ambiguity when an enemy casts mid-battle and swaps the overlay underneath a
+breakpoint. This is the same root cause as the battle/world `0x800A`
+collision in **Traps** below.
+
+**Per-overlay symbol loading.** Redux resets the symbol table and uploads
+`main` plus one overlay, because uploading them together collides. gdb holds
+battle, field, world and all seven magic overlays at once.
+
+**The whole HTTP and Lua layer.** No ~256-byte URL cap, no chunked append
+buffer, no per-response connection teardown, no 34ms full-RAM read to fetch
+four bytes. `redux_lua.py` and `redux_probe.lua` stop being needed, along
+with the `pcsx.json`-rewritten-on-exit ordering and the rule that the dynarec
+and the debugger cannot both be live.
+
+**`--force TYPE:ID`.** Instead of breaking on `func_800D1110` and
+`func_800D0C80` to rewrite bytes `0x22`/`0x23` of the acting unit's
+`BattleModel` from `a0`, you call the overlay entry point directly.
+`sceneID` is already an argument to `BATINI_Main`.
+
+### What a native build adds
+
+| capability | today | native |
+| --- | --- | --- |
+| data change detection | sample `--watch` at breakpoints | `watch -l`, fires on write with the stack that did it |
+| going backwards | re-run with a new breakpoint | `rr replay` |
+| state vs. picture | one frame of lag by construction | same instant |
+| bad writes | silently clobber a neighbouring global | ASan/UBSan trap |
+
+The watchpoint case is the strongest. Working out what writes a descriptor
+field is a stack trace natively, and re-deriving offset `0xA` from assembly
+cost an afternoon.
+
+ASan matters more than it looks: it catches exactly the overlapping-symbol
+class (`D_800A1230[2]` against `D_800A1234`) that PSY-Z's porting guide warns
+silently breaks ports.
+
+### What Redux keeps
+
+- **It is the oracle.** PSY-Z prioritises compatibility over accuracy, does
+  not target 1:1 output, and does not reproduce hardware-misuse bugs. The
+  spec here is byte-exact codegen, so a native build can never settle a
+  matching question. `blend_probe.py` is the clearest case: blending is
+  precisely what PSY-Z declines to guarantee.
+- **It runs code that is not decompiled yet.** A native build needs the 262
+  finished or stubbed. Redux runs the original assembly, so it stays the only
+  way to probe a function still behind `INCLUDE_ASM`.
+- **Which makes it partly circular.** You probe a function to understand it
+  well enough to decompile it, and the native build needs it decompiled
+  first. PSY-Z debugging improves *verification* of code already written, not
+  *discovery* of behaviour not yet understood.
+
+Keep `mako.sh redux` as the matching oracle. Reach for the native build when
+the question is "this matches but behaves wrong", where a watchpoint beats
+sampling over HTTP by a wide margin.
+
 ## Traps
 
 - **Battle and world share the `0x800A` load address.** Name-based analysis
