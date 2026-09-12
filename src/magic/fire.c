@@ -2,7 +2,6 @@
 
 #include "common.h"
 #include "../battle/battle.h"
-#include "magic_private.h"
 
 typedef struct {
     /* 0x00 */ s16 StartFrame;
@@ -15,12 +14,8 @@ typedef struct {
     /* 0x14 */ char pad14[0xC];
 } FireData; // size:0x20
 
-typedef struct {
-    /* 0x00 */ char pad[0x4000];
-} FirePrimPage; // size:0x4000
-
 extern FireData g_BattleEffectSlots[];
-static FirePrimPage fire_prim_buffer[2];
+static u8 fire_prim_buffer[2][0x4000];
 static void* fire_buffer_ptr;
 extern u_long g_FireTexture[]; // 4bpp TIM + four 16-colour CLUTs, uploaded on setup
 extern SpriteRenderDesc g_FireRenderDesc;
@@ -63,7 +58,7 @@ static void FireAnimationUpdate(void) {
     }
 }
 
-static void FireAttachToTarget(s32 target, s32 arg1) {
+static void FireAttachToTarget(s32 target, s32 callbackArg) {
     FireData* effect;
 
     effect = &g_BattleEffectSlots[BattleEffectRegister(FireAnimationUpdate)];
@@ -74,12 +69,12 @@ static void FireAttachToTarget(s32 target, s32 arg1) {
 
 static void FireDoubleBufferFlip(void) {
     FireData* effect;
-    FirePrimPage* buf;
+    u8* buf;
 
     effect = &g_BattleEffectSlots[g_BattleEffectCursor];
-    buf = &fire_prim_buffer[1];
+    buf = fire_prim_buffer[1];
     if (g_dbIndex != 0) {
-        buf = &fire_prim_buffer[0];
+        buf = fire_prim_buffer[0];
     }
     fire_buffer_ptr = buf;
 
@@ -88,9 +83,9 @@ static void FireDoubleBufferFlip(void) {
     }
 }
 
-void MAGIC_Fire(s32 targetMask, s32 arg1) {
+void MAGIC_Fire(s32 targetMask, s32 callbackArg) {
     func_800D2980(g_FireTexture, 0, 0, 0);
-    MagicAnimationRegister(targetMask, arg1, 0, FireAttachToTarget);
+    MagicAnimationRegister(targetMask, callbackArg, 0, FireAttachToTarget);
     BattleEffectRegister(FireDoubleBufferFlip);
     BattleCommandSend(0x20, BattleEntityGetStereoPan(D_80151774), 9);
 }

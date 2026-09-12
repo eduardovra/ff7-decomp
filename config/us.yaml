@@ -345,6 +345,7 @@ overlays:
     symbol_addrs_path:
       - config/sym_export.us.txt
       - config/sym_export_battle.us.txt
+      - config/symbols.magic-refrec.us.txt
     segments:
       - [0, c, refrec]
       - [0x584, data, refrec]

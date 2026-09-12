@@ -1173,14 +1173,13 @@ void BattleAnimationUpdate(void) {
 // index and arg1 (offset 0x06). Guessed: the types -- s16 and s32
 // compile identically, no overlay yet reads arg1, and editing this
 // leaves every object byte-identical, so the build cannot check it.
-
-void MagicAnimationRegister(s32 arg0, s32 arg1, s32 arg2, void (*func)(s32, s32)) {
+void MagicAnimationRegister(s32 targetMask, s32 callbackArg, s32 frameStep, void (*func)(s32, s32)) {
     MagicAnimationData* temp_v0 =
         (MagicAnimationData*)&g_BattleEffectSlots[BattleEffectRegister(BattleAnimationUpdate)];
     temp_v0->TargetCursor = 0;
-    temp_v0->TargetMask = arg0;
-    temp_v0->CallbackArg = arg1;
-    temp_v0->FrameStep = arg2;
+    temp_v0->TargetMask = targetMask;
+    temp_v0->CallbackArg = callbackArg;
+    temp_v0->FrameStep = frameStep;
     temp_v0->Callback = func;
 }
 
