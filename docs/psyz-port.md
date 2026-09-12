@@ -9,8 +9,100 @@ It is a link-time API replacement, **not** an emulator or a recompiler. It
 cannot execute MIPS. Every function still behind `INCLUDE_ASM` on a code path
 you want to run has to become C first.
 
-This document scopes the smallest useful target: **boot straight into a battle
-and cast a spell**, skipping the title screen, field and world map.
+This document's target is **boot straight into a battle and cast a spell**,
+skipping the title screen, field and world map. An earlier version called that
+"the smallest useful target". It is not the smallest -- it is the largest, and
+the next section re-sequences the plan around that. Everything below it still
+stands; what changed is the order the work happens in.
+
+## The three phases, in short
+
+| phase | work | difficulty |
+| --- | --- | --- |
+| 0 -- import `.data`/`.bss` | replace 928 guessed 256-byte zero stubs with true types, sizes and contents | large and tedious, but mechanical; shared by every overlay, so none of it is wasted |
+| 1 -- boot a cheap overlay | decompile `dschange` (2 functions) or finish `ending` (11 left), wire disc loading, get a screen up | easy; proves out the link, the stub generator and gdb |
+| 2 -- battle | the 262 functions, plus loading the true `KERNEL.BIN`, a `SCENE.BIN`, models and textures | hardest by a wide margin, and last |
+
+## Battle boots last -- the revised sequence
+
+Xeeynamo, who wrote both PSY-Z and this repo, was shown this plan and does not
+think battle is the right first target:
+
+> I think there's far too much missing yet for that. BATTLE is the most
+> complex overlay. Essentially all .data and .bss must be imported first.
+> Then let the game load the true KERNEL.BIN, a SCENE.BIN and all models +
+> textures. I believe the Battle overlay will be the last one to boot.
+>
+> In terms of complexity, I think we have ENDING > DSCHANGE > SAVEMENU
+> (includes Title screen) > MENUs > MINI > WORLD > FIELD > BATTLE.
+
+Read that ordering easiest-first -- ENDING is the cheapest overlay to bring up
+and BATTLE the dearest -- which is what "the last one to boot" pins down; the
+bare `>` list on its own is ambiguous about direction.
+
+The repo's own numbers agree. Remaining `INCLUDE_ASM` stubs per `src/`
+directory, a rough proxy for how far each overlay is from running:
+
+| directory | stubs left | |
+| --- | --- | --- |
+| `magic` | 0 | all seven spell overlays complete |
+| `dschange` | 2 | the entire overlay is two functions, both still asm |
+| `menu` | 5 | across five files |
+| `brom` | 5 | |
+| `ending` | 11 | of 51 functions; 40 are already C |
+| `mini` | 49 | no C file yet |
+| `world` | 119 | |
+| `field` | 227 | |
+| `battle` | 338 | |
+| `main` | 787 | 486 of them PSY-Q, see below |
+
+### The evidence that data, not functions, is the blocker
+
+His "essentially all .data and .bss must be imported first" is already
+observable in the prototype. `SysCdromSetChainParam` was the named blocker in
+**How far it gets**; it has since been decompiled (`src/main/33B70.c`). The
+`-battle` run dies in exactly the same place, because what it actually reads is
+`D_8004A634`, the CD operation dispatch table, whose real contents live in
+`asm/us/main/data/psxsdk.data.s` and which `src/pc/stubs.c` supplies as 256
+bytes of zeroes. Decompiling the function did not move the blocker one inch.
+
+That is the whole shape of the problem, and the stub counts say it plainly:
+**928 stubbed globals against 320 stubbed functions**, every global's size a
+guess from the gap to the next symbol.
+
+### What this changes
+
+**Phase 0 -- data before functions.** Importing `.data` and `.bss` for real,
+with true sizes and types, is the prerequisite workstream, not cleanup to do
+once the functions land. `src/pc/globals.c` is where it goes; today it holds
+one hand-written definition (`Savemap`) and `src/pc/stubs.c` holds the other
+927 as guesses. This work is shared by every overlay, so none of it is wasted
+whichever one boots first.
+
+**Phase 1 -- first native boot is a cheap overlay, not battle.** `dschange`
+(two functions) or `ending` (11 of 51 left) reaches a running screen far
+sooner, and proves out the parts that are genuinely common: the PSY-Z link,
+the stub generator, disc loading, the hardcoded-address mapping, gdb. Neither
+needs `KERNEL.BIN` tables, `SCENE.BIN` formations, models or textures.
+
+**Phase 2 -- battle.** Still the interesting target, because it is the only
+one that runs a spell and the only one with all seven magic overlays already
+at 100%. It is the end of the queue rather than a shortcut to the front of it.
+
+### What does not change
+
+The technical content below is unaffected and most of it is not
+battle-specific: what PSY-Z supplies and must not be decompiled, the
+`u_long`/`OT_TYPE` traps, the hardcoded-address mapping, the overlapping-symbol
+collisions, disc loading, and the whole **Versus the emulator loop**
+comparison. **Why field is not needed** and **What sets up the game state**
+remain correct about battle -- `BATINI_Main` really does take one integer.
+The 262 stays as battle's function inventory; it is simply no longer the
+number that gates the first native boot.
+
+His estimate is one person's judgement, not a measurement. It is load-bearing
+because he is the only person holding both toolchains, and because the
+`D_8004A634` case above independently confirms its central claim.
 
 ## Precedent: sotn-decomp
 
@@ -196,17 +288,18 @@ PSY-Z provides them. Loading `KERNEL.BIN` and `SCENE.BIN` is work you own.
 
 ## Scope
 
-**262 functions**, reached transitively from `BATINI_Main`, `BATTLE_RunFrame`,
-`func_80014934` and `src/magic/*.c`, with PSY-Q excluded.
+The number that gates a battle boot is **globals**, not functions -- see
+**Battle boots last** above. PS1 globals live at fixed linker-script addresses,
+so natively each one needs a real C definition, and `.data` has to carry its
+real contents rather than zeroes. sotn-decomp carries `src/pc/stubs.c` for the
+same reason, and it is where overlapping symbols surface: one declaration in
+that file is annotated as an overlap its authors found hard to remove.
+
+The function inventory is **262**, reached transitively from `BATINI_Main`,
+`BATTLE_RunFrame`, `func_80014934` and `src/magic/*.c`, with PSY-Q excluded.
 
 For comparison: 1542 `INCLUDE_ASM` stubs remain repo-wide, 486 of them PSY-Q.
 Skipping field, world, menu, mini-games and the ending is what buys the rest.
-
-**Globals are not in that number.** sotn-decomp carries `src/pc/stubs.c`
-because PS1 globals live at fixed linker-script addresses and natively each
-one needs a real C definition. That is a separate body of work from the 262,
-and it is where overlapping symbols surface: one declaration in that file is
-annotated as an overlap its authors found hard to remove.
 
 ## Tier 0 -- direct blockers of `BATINI_Main`
 
@@ -259,14 +352,15 @@ function lands.
 
 ### What it measures
 
-The numbers the linker gives are not the same as the 262, and are worth having:
+The numbers the linker gives are not the same as the 262, and are worth having
+(the stub counts drift as functions land; `src/pc/stubs.c` states its own):
 
 | | |
 | --- | --- |
 | symbols `libff7.a` leaves undefined | 1592 |
 | of those, supplied by PSY-Z | 81 |
-| stubbed functions | 319 |
-| stubbed globals | 927 |
+| stubbed functions | 320 |
+| stubbed globals | 928 |
 
 The globals dominate, as the **Scope** section warns. They are also the
 sloppiest part of the prototype: `tools/gen_pc_stubs.py` sizes each one from
@@ -319,9 +413,11 @@ does file I/O: `SystemLoadFileBySector` issues an asynchronous sector read
 through `SysCdromSetChainParam`, pumped by `while (SystemCdromReadChain())`,
 over `CdControl(CdlSetloc, ...)`. PSY-Z already implements `CdControl`,
 `CdRead`, `CdReadSync` and `CdSync`, parses `.cue`/`.bin`, and takes an image
-path from `Psyz_CdSetDiskPath`. `SystemCdromReadChain` is already C
-(`src/main/33B70.c`); what is missing is `SysCdromSetChainParam` and the
-handler table it fills.
+path from `Psyz_CdSetDiskPath`. `SystemCdromReadChain` and
+`SysCdromSetChainParam` are both C now (`src/main/33B70.c`), and the crash did
+not move: what is missing is the handler table `D_8004A634` itself, still data
+in `asm/us/main/data/psxsdk.data.s`. See **Battle boots last** -- this is the
+data-before-functions problem in its smallest form.
 
 ## Running it under gdb
 
