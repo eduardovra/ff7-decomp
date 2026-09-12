@@ -53,7 +53,7 @@ typedef enum {
     BATTLE_TITLE,
     BATTLE_BATTLE,
     BATTLE_BATINI,
-    BATTLE_SCENE,
+    BATTTLE_SCENE,
     BATTLE_BATRES,
     BATTLE_CO,
     YAMADA_FILE_NUM,
@@ -1051,6 +1051,7 @@ typedef struct WindowData {
     u16 preventClose;
 } WindowData; // size:0x30
 
+extern u8* D_8003623C;
 extern u16 g_Pad1Keys;
 extern u16 g_Pad1KeysPressed;
 extern u16 g_Pad1KeysRepeat;
@@ -1122,6 +1123,8 @@ extern DRAWENV D_8007EAAC[2];
 extern DISPENV D_8007EB68[2];
 extern u8 g_EntityToModel[48]; // entity id -> model id (0xFF: none)
 extern s8 D_8007EBCC;
+extern DRAWENV* D_8007EBD0;
+extern DISPENV* D_8007EBD8;
 extern s8 D_8007EBDC;
 extern u8 D_8007EBE0;                    // field debug mode
 extern u8 g_CharacterLock;               // mirror of the UC opcode's control-lock flag
@@ -1179,6 +1182,14 @@ extern s32 D_800FAFD0;
 // PSXSDK funcs
 SVECTOR* ApplyMatrixSV(MATRIX* m, SVECTOR* v0, SVECTOR* v1);
 MATRIX* RotMatrixYXZ(SVECTOR* r, MATRIX* m);
+MATRIX* ScaleMatrix(MATRIX*, VECTOR*);
+void VectorNormal(VECTOR*, VECTOR*);
+s32 SetGraphDebug(s32);
+s32 func_80041E30(s32 arg0, s32 arg1);
+void func_80041D28(int, void*, int);
+void func_8003DE6C(s32 arg0);
+void func_8003DE84(s32 arg0);
+
 void SystemError(char c, long n);
 void SysMemCopy32(void* dst, const void* src, const s32 len);
 void SysIncSeedForRandom(void);
@@ -1209,6 +1220,16 @@ s32 SysMenuGetMateriaColorByType(s32 arg0);
 void SysMemCopy32(void* dst, const void* src, const s32 len);
 s32 SysAddCommandToTemp(s32);
 void SysMenuSetDrawMode(s32 dfe, s32 dtd, u16 tpage, RECT* tw);
+void SysMovieAbortPlay(void);
+s32 func_80048540(s32 arg0);
+s32 func_80034410(void);
+void SysMoviePlay(void* ptr, s16);
+void* SysCdromGetPackPointer(void* ptr, s32);
+void SysCdromSetLzsExtract(void* src, void* dst);
+s32 func_80034D5C(void);
+s32 func_800484A8(void);
+u32 InputReadPadsRaw(void);
+void func_80036244(void* anim, u16 frame);
 
 int func_80033DAC(int sector_no, void (*cb)());
 int func_80033DE4(int sector_no);
@@ -1220,6 +1241,7 @@ int SysCdromLoadLzs(int sector_no, size_t size, u_long* dst, void (*cb)());
 void SystemLzsDecompress(u8* dst, u8* src);
 u32 SystemCdromReadChain(void);
 s32 SysGetLimitCmdId(s32 charId, s32 limitIndex);
+int SYS_GetDiskNo(void);
 
 // from overlays
 extern u8 SavedScriptIds[48][8]; // script ids of latest queued scripts

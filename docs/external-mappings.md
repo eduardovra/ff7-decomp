@@ -92,7 +92,7 @@ documents the battle *effect* functions the magic overlays call:
 > 0x801b0000 effect: work 0xe frames. each frame read data from effect
 > billboard data and create number of quads with texture.
 
-That is `func_800D2980` -> `MagicAnimationRegister` ->
+That is `BattleSetLoadTimToVram` -> `MagicAnimationRegister` ->
 `BattleEffectRegister` -> `BattleCommandSend`, then a fixed-frame-count
 render callback -- exactly `func_801B06CC` and `func_801B0020`.
 

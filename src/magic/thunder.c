@@ -168,7 +168,7 @@ static void ThunderDoubleBufferFlip(void) {
 }
 
 static void ThunderMainSetup(s32 targetMask, s32 callbackArg) {
-    func_800D2980(g_ThunderTexture, 0, 0, 0);
+    BattleSetLoadTimToVram(g_ThunderTexture, 0, 0, 0);
     BattleEffectRegister(ThunderDoubleBufferFlip);
     MagicAnimationRegister(targetMask, callbackArg, 2, ThunderAttachToTarget);
 }

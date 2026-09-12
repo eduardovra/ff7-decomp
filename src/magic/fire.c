@@ -84,7 +84,7 @@ static void FireDoubleBufferFlip(void) {
 }
 
 void MAGIC_Fire(s32 targetMask, s32 callbackArg) {
-    func_800D2980(g_FireTexture, 0, 0, 0);
+    BattleSetLoadTimToVram(g_FireTexture, 0, 0, 0);
     MagicAnimationRegister(targetMask, callbackArg, 0, FireAttachToTarget);
     BattleEffectRegister(FireDoubleBufferFlip);
     BattleCommandSend(0x20, BattleEntityGetStereoPan(D_80151774), 9);

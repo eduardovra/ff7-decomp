@@ -311,7 +311,7 @@ Eight functions. Everything else is behind them.
 | `BattleInitEnemyUnits` | `src/battle/batini.c` |
 | `BattleRecalcUnitSpeed` | `src/battle/battle.c` |
 | `BattleUpdateUnitMasks` | `src/battle/battle.c` |
-| `func_800A5BC8` | `src/battle/battle.c` |
+| `BattleAddAutoBattleActionByChance` | `src/battle/battle.c` |
 | `SysInitPlayerStatFromMateria` | `src/main/17238.c` |
 | `SysCalculateTotalLureGilPreemptiveValue` | `src/main/17238.c` |
 | `SysInitPlayerStatFromEquip` | `src/main/1F6B4.c` |
@@ -636,7 +636,7 @@ grep -rc INCLUDE_ASM src/battle src/main --include='*.c' | grep -v ':0'
 
     BattleInitCharCmdState                    BattleRecalcUnitSpeed                     BattleRunUnitScript
     BattleUpdateUnitMasks                     func_800A3ED0                             func_800A4E80
-    func_800A5AC8                             func_800A5BC8                             func_800A5E0C
+    func_800A5AC8                             BattleAddAutoBattleActionByChance         func_800A5E0C
     func_800A72C8                             func_800AE42C                             func_800AF874
     func_800B0F04                             func_800B141C                             func_800B153C
     func_800B16D0                             func_800B18A8                             func_800B1AA0
