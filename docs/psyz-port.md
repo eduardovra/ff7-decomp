@@ -263,10 +263,10 @@ The numbers the linker gives are not the same as the 262, and are worth having:
 
 | | |
 | --- | --- |
-| symbols `libff7.a` leaves undefined | 1492 |
+| symbols `libff7.a` leaves undefined | 1246 |
 | of those, supplied by PSY-Z | 81 |
-| stubbed functions | 294 |
-| stubbed globals | 678 |
+| stubbed functions | 292 |
+| stubbed globals | 690 |
 
 The globals dominate, as the **Scope** section warns. They are also the
 sloppiest part of the prototype: `tools/gen_pc_stubs.py` sizes each one from
@@ -298,11 +298,19 @@ Both are the silent kind, and both are now handled in the generator:
 out of `src/main/btlinit.c` and prints correct answers, so decompiled game
 code really is executing. `-frames` drives the PSY-Z render loop.
 
-`-battle` maps PS1 RAM and then dies in `BATINI_Main`, on the line after
-`SysGetPtrToUncompKernBattleTxtWithId` -- a stub, returning 0, dereferenced
-immediately. That is the expected shape: gdb names the next function to
-implement, and this one needs `KERNEL.BIN` off the disc, which needs the file
-I/O that PSY-Z does not supply.
+`-battle` maps PS1 RAM and then dies in `SystemCdromReadChain`, on
+`D_8004A634[*op]()` -- the CD operation dispatch table, still data in
+assembly, so a stub of zeroes and a call to NULL. That is the expected shape:
+gdb names what to do next.
+
+Disc loading is the whole blocker, and it is smaller than it looks. FF7 never
+does file I/O: `SystemLoadFileBySector` issues an asynchronous sector read
+through `SysCdromSetChainParam`, pumped by `while (SystemCdromReadChain())`,
+over `CdControl(CdlSetloc, ...)`. PSY-Z already implements `CdControl`,
+`CdRead`, `CdReadSync` and `CdSync`, parses `.cue`/`.bin`, and takes an image
+path from `Psyz_CdSetDiskPath`. `SystemCdromReadChain` is already C
+(`src/main/33B70.c`); what is missing is `SysCdromSetChainParam` and the
+handler table it fills.
 
 ## Running it under gdb
 

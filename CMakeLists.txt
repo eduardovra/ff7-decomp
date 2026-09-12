@@ -17,6 +17,7 @@ set(FF7_SOURCES
     src/main/269C0.c
     src/main/48F60.c
     src/main/26B70.c
+    src/main/33B70.c
     src/main/akao.c
     src/main/btlinit.c
     src/main/btlrand.c
@@ -25,6 +26,7 @@ set(FF7_SOURCES
     src/main/ovl.c
     src/main/psxsdk.c
     src/main/psxsdk/card_data.c
+    src/main/swirl.c
     src/main/unzip.c
 
     # Menu
