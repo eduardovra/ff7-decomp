@@ -79,9 +79,8 @@ overlay loader becomes dead code rather than a problem to solve.
 #include <psyz.h>
 
 int main(void) {
-    psyz_init();
-    func_80014934();          /* seed Savemap from KERNEL.BIN */
-    g_BattleMode = 0;         /* normally g_FieldState.battleMode2 */
+    func_800148B4();          /* boot init: LBA table + all of KERNEL.BIN */
+    func_80014934();          /* reseed Savemap.party from the init blob */
     BATINI_Main(sceneID);     /* any formation from SCENE.BIN */
     for (;;) {
         BATTLE_RunFrame();
@@ -89,9 +88,84 @@ int main(void) {
 }
 ```
 
-`g_BattleMode` is the one piece of field state on this path
-(`src/main/110B8.c`). Set it to a constant. You need field's *struct
-definitions* from `game.h`, never field's *code*.
+There is no `psyz_init()`. PSY-Z initialises itself from the first
+`ResetGraph`/`PutDispEnv`, exactly as PSY-Q did, so the entry point is a plain
+`main`.
+
+`func_800148B4` is easy to miss and nothing works without it.
+`func_80014934` on its own decompresses **only** the init section, whereas
+`func_800148B4` is the real boot path: it clears the battle flags, builds the
+LBA table (`func_80014610`), and loads `INIT_KERNEL` with `func_80014750` as
+its callback, which walks every section of `KERNEL.BIN` into the fixed tables
+in `D_80048DD4` (`src/main/144D8.c`) -- command, attack, growth, item, weapon,
+armor, accessory and materia. `BATINI_Main` reads `g_WeaponTable` through
+`SysInitPlayerStatFromEquip` and `g_MateriaData` through `BattleGetMateriaValue`,
+so skipping it leaves every character with zeroed gear rather than no gear.
+
+`func_800148B4` is itself still `INCLUDE_ASM`, and it is **not** in the 262.
+
+`g_BattleMode` needs no assignment: `func_800148A0`, the first thing
+`func_800148B4` and `func_80014934` both call, already zeroes it along with
+`D_80062F88`. It is the one piece of field state on this path
+(`src/main/110B8.c`). You need field's *struct definitions* from `game.h`,
+never field's *code*.
+
+## What sets up the game state
+
+Nothing picks anything. The party comes from a blob, and one integer chooses
+both the enemies and the arena.
+
+### Party, materia and equipment
+
+All of it is `Savemap`, and the seed is one compressed `KERNEL.BIN` section:
+
+```c
+SysGzipPackDecompressById((u8*)0x801B0000, &Savemap.party, KERNEL_INIT);
+```
+
+`&Savemap.party` is `0x8009C738`, the same address `D_80048DD4[3]` names. That
+section *is* the new-game party: for each of the nine `SavePartyMember` records
+(`include/game.h`) it writes `char_id`, `level`, the six stats, `name`, the
+`weapon`/`armor`/`accessory` ids and `materia_weapon[8]`/`materia_armor[8]`. You
+get what "New Game" gives you, with no field code involved.
+
+Which three fight is `Savemap.partyID[3]` at `0x8009CBDC`; `BattleInitPlayer`
+walks it and `0xFF` means an empty slot. `BATINI_Main` then runs
+`SysInitPlayerStatFromEquip` and `SysInitPlayerStatFromMateria` per slot against
+those same bytes plus the kernel tables.
+
+To use a different party, write `Savemap` after seeding it:
+
+```c
+Savemap.partyID[0] = CLOUD;
+Savemap.party[0].weapon = weaponID;
+Savemap.party[0].materia_weapon[0] = (ap << 8) | materiaID;  /* 0xFF = empty */
+```
+
+`BattleGetMateriaValue` in `src/battle/batini.c` is where that packing is
+visible: low byte is the materia id, the upper 24 bits are AP.
+
+### Enemies and arena
+
+`BattleInitLoadSceneData` turns `sceneID` into everything else:
+
+- `sceneID / 4` selects a scene chunk; `BattleGetScenePackId` maps it through
+  `D_80083184` to a four-sector block of `SCENE.BIN`, loaded to `0x801C0000`
+  and `Unzip`ped into one `SceneContainer`.
+- `sceneID % 4` picks one of the four formations in that block.
+- Out of it come `enemyModelIDs`, `setup` (**`stageID` is the battle
+  background**, plus `cameraID`, `type`, flags and the escape counter), the
+  camera placements, the `formation` table of per-enemy positions, the enemy
+  stat records, their attacks and names, and the AI script.
+
+So field's only job was to roll a `sceneID` from the map's encounter table.
+Supplying it directly is the whole shortcut.
+
+Two battle-overlay globals normally arrive from field and must be zero for a
+plain random encounter: `D_8016376A`, the battle flags -- bit `0x10` is Battle
+Square, which rewrites `stageID` to 37, forces `SETUP_CANNOT_ESCAPE` and boosts
+enemy strength and magic by 25% -- and `g_BattleMultiInfo.isMultiBattle`. Both
+are BSS, so zero is what you already have.
 
 ## What PSY-Z supplies -- do not decompile
 
@@ -106,10 +180,19 @@ PSY-Z coverage of each one is unverified -- its README states gaps are
 expected.
 
 This matters more than it looks. Of the 14 still-asm functions the fully
-decompiled `src/magic/*.c` calls, **10 are PSY-Q** and vanish for free:
+decompiled `src/magic/*.c` calls, **9 are PSY-Q** and vanish for free:
 
     ApplyMatrix     CompMatrix      RotMatrixYXZ    ScaleMatrix    SetFarColor
-    SetRotMatrix    SetTransMatrix  rand            rcos           rsin
+    SetRotMatrix    SetTransMatrix  rcos            rsin
+
+`rand` is not among them -- PSY-Z does not define it. Let libc's `rand` resolve
+it, and make sure the stub generator does not shadow it. The same applies to
+`printf`, `sprintf`, `memcpy`, `memset`, `strcmp` and `atoi`, which FF7 also
+carries as PSY-Q assembly.
+
+PSY-Z does **not** cover PS1 file I/O either. `open`, `read`, `write` and
+`close` share their names with POSIX but not their semantics, and nothing in
+PSY-Z provides them. Loading `KERNEL.BIN` and `SCENE.BIN` is work you own.
 
 ## Scope
 
@@ -147,6 +230,80 @@ need just **four** functions, all in `src/battle/battle2.c`:
 
     BattleGetPartPosition    func_800D29D4    func_800D4368    func_800D4D90
 
+## The prototype
+
+It exists and it runs. `tools/psyz` is a submodule, and the repo's existing
+modern-compiler target -- which already builds every decompiled `.c` with
+`SKIP_ASM=1` into `libff7.a` -- links against it behind an opt-in CMake flag.
+
+```shell
+git submodule update --init --depth 1 tools/psyz
+git -C tools/psyz submodule update --init --depth 1 external/SDL
+
+cmake -B build-pc -DFF7_PC=ON -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-pc --target ff7 psyz -j8      # pass 1: the libraries
+tools/gen_pc_stubs.py --psyz build-pc/psyz/libpsyz.a \
+    build-pc/libff7.a \
+    build-pc/CMakeFiles/ff7_pc.dir/src/pc/main.c.o
+cmake --build build-pc -j8                        # pass 2: the executable
+
+./build-pc/ff7_pc -headless                       # no window, CI-friendly
+./build-pc/ff7_pc -frames 600                     # the PSY-Z render loop
+./build-pc/ff7_pc -battle -scene 100              # the boot path, still dies
+```
+
+Two passes because the stub set comes from the link itself: build the
+libraries, ask the linker what is missing, generate a placeholder for each,
+link. `src/pc/stubs.c` is generated and committed; regenerate it whenever a
+function lands.
+
+### What it measures
+
+The numbers the linker gives are not the same as the 262, and are worth having:
+
+| | |
+| --- | --- |
+| symbols `libff7.a` leaves undefined | 1492 |
+| of those, supplied by PSY-Z | 81 |
+| stubbed functions | 294 |
+| stubbed globals | 678 |
+
+The globals dominate, as the **Scope** section warns. They are also the
+sloppiest part of the prototype: `tools/gen_pc_stubs.py` sizes each one from
+the gap to the next address in `config/*.txt` and falls back to 256 bytes, so
+every one of them is a guess. `Savemap` is hand-defined in `src/pc/globals.c`
+from its real `SaveWork` type precisely because a guess there would be too
+small and corrupt the heap. That file is where the others should migrate.
+
+Only **three** symbols actually collide in a single native link --
+`D_800A0000`, `func_800ADFC0` and `func_800AF1A8`, all battle against world,
+the `0x800A` trap below. The prototype drops `src/world/*.c`, which the battle
+target does not need.
+
+### Traps the prototype walked into
+
+Both are the silent kind, and both are now handled in the generator:
+
+- **Stubbing `printf`.** FF7 carries it as PSY-Q assembly, so it lands in the
+  undefined set, and a stub for it swallows every diagnostic the program
+  prints. `sprintf`, `memcpy`, `memset`, `strcmp` and `atoi` are the same.
+- **Stubbing something the archive already defines.** An archive member can
+  reference what another member defines, so `nm -u` reports it as undefined.
+  A stub then wins the link over the real body, because an object beats an
+  archive member. Symptom: fully decompiled functions returning 0.
+
+### How far it gets
+
+`-headless` runs `SysCountActiveBits`, `SysGetLsbNumber` and `SysMemCopy32`
+out of `src/main/btlinit.c` and prints correct answers, so decompiled game
+code really is executing. `-frames` drives the PSY-Z render loop.
+
+`-battle` maps PS1 RAM and then dies in `BATINI_Main`, on the line after
+`SysGetPtrToUncompKernBattleTxtWithId` -- a stub, returning 0, dereferenced
+immediately. That is the expected shape: gdb names the next function to
+implement, and this one needs `KERNEL.BIN` off the disc, which needs the file
+I/O that PSY-Z does not supply.
+
 ## Running it under gdb
 
 PSY-Z produces an ordinary native ELF, so gdb works normally -- real
@@ -154,26 +311,23 @@ breakpoints and watchpoints on game functions, which PCSX-Redux cannot give
 you. Note the PC build is a *separate* build from the matching one: modern
 clang/gcc with `-g -O0`, not gcc 2.6.3.
 
-```shell
-cmake -B build-pc -DCMAKE_BUILD_TYPE=Debug && cmake --build build-pc
-gdb ./build-pc/ff7
-```
-
 ```
 (gdb) break BATINI_Main
-(gdb) run
+(gdb) run -battle -scene 100
 (gdb) watch -l Savemap.party          # catch whoever corrupts the party
 (gdb) break BATTLE_RunFrame           # then `finish` to step frame by frame
 ```
 
-`rr record ./ff7` then `rr replay` gives reverse execution, which is the fast
-way to find what wrote a bad value in `g_BattleState`.
+`rr record ./build-pc/ff7_pc` then `rr replay` gives reverse execution, which
+is the fast way to find what wrote a bad value in `g_BattleState`.
 
-**You do not have to finish all 262 before debugging.** A function still as
-`INCLUDE_ASM` will not link natively at all, so the practical route is to emit
-empty stubs for the whole set, link immediately, then replace stubs one at a
-time. The build runs (badly) from day one and gdb is available throughout --
-far better feedback than waiting for function 262.
+**You do not have to finish all 262 before debugging**, and the prototype above
+already proves it: stubs for the whole set, linked immediately, replaced one at
+a time. The build runs (badly) today and gdb is available throughout -- far
+better feedback than waiting for function 262.
+
+On a machine whose session is Wayland, SDL may need `-u WAYLAND_DISPLAY` or an
+`xvfb-run` wrapper; `-headless` sidesteps graphics entirely.
 
 ## Versus the emulator loop
 
@@ -261,8 +415,13 @@ sampling over HTTP by a wide margin.
   `#ifdef __psyz`. sotn-decomp takes the second route and keeps everything
   in-tree: `<psyz.h>` from its main `include/game.h`, PC-only code under
   `src/pc/`.
-- **No hardcoded addresses.** PSY-Z crashes on `*(s32*)0x800A1234`. The C
-  written so far is clean of these -- keep it that way.
+- **Hardcoded addresses are already there.** PSY-Z crashes on
+  `*(s32*)0x800A1234`, and the decompiled C contains 88 such casts across 17
+  files. The battle bootstrap hits one immediately: `func_80014934` decompresses
+  into `(void*)0x801B0000` and `BattleInitLoadSceneData` reads `0x801C0000`.
+  Mapping the PS1's 2MB of RAM at `0x80000000` makes them all valid and costs
+  nothing in the matching build, which is what the prototype does. Rewriting
+  them into real buffers is the clean fix, and it changes codegen.
 - **PS1 file I/O is not POSIX.** Never include `<fcntl.h>`; use `FWRITE`
   and `FCREAT` from `<romio.h>`. `KERNEL.BIN`, `SCENE.BIN` and the battle
   models still have to load off the disc.
