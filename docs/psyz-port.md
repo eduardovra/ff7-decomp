@@ -263,10 +263,10 @@ The numbers the linker gives are not the same as the 262, and are worth having:
 
 | | |
 | --- | --- |
-| symbols `libff7.a` leaves undefined | 1246 |
+| symbols `libff7.a` leaves undefined | 1592 |
 | of those, supplied by PSY-Z | 81 |
-| stubbed functions | 292 |
-| stubbed globals | 690 |
+| stubbed functions | 319 |
+| stubbed globals | 927 |
 
 The globals dominate, as the **Scope** section warns. They are also the
 sloppiest part of the prototype: `tools/gen_pc_stubs.py` sizes each one from
@@ -275,10 +275,21 @@ every one of them is a guess. `Savemap` is hand-defined in `src/pc/globals.c`
 from its real `SaveWork` type precisely because a guess there would be too
 small and corrupt the heap. That file is where the others should migrate.
 
-Only **three** symbols actually collide in a single native link --
-`D_800A0000`, `func_800ADFC0` and `func_800AF1A8`, all battle against world,
-the `0x800A` trap below. The prototype drops `src/world/*.c`, which the battle
-target does not need.
+Only **three** symbols actually collide in a single native link.
+`D_800A0000` is defined by battle, field and world -- a `u8`, a `u32[]` and
+the string `"NEW  "`, three unrelated things sharing a name because the name
+is the overlay load address. `func_800ADFC0` and `func_800AF1A8` are battle
+against world, genuinely different functions at the same address.
+
+None of that needs a dynamic loader. The PC build renames them per overlay
+with `COMPILE_DEFINITIONS` in `CMakeLists.txt`, battle keeping the bare name,
+and links everything including world.
+
+**Do not rename them in the sources.** That was tried and it breaks the
+matching build: `asm/us/world/data/world.data.s` references `D_800A0000`, and
+the world overlay's own still-assembly code calls both functions, so the
+rename would have to propagate into checked-in assembly and the symbol config.
+The collision only exists in the native link, so the fix belongs there.
 
 ### Traps the prototype walked into
 

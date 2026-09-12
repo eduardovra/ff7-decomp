@@ -74,13 +74,6 @@ set(FF7_SOURCES
 
 option(FF7_PC "Build the native PSY-Z prototype executable" OFF)
 
-if(FF7_PC)
-    # Battle and world share the 0x800A overlay load address, so three of
-    # their symbols collide in a single native link. The prototype boots
-    # into battle, which makes world the one to drop.
-    list(REMOVE_ITEM FF7_SOURCES src/world/world.c src/world/world2.c)
-endif()
-
 add_executable(str tools/str.c)
 
 set(FF7_STR_SOURCES)
@@ -98,6 +91,20 @@ foreach(src ${FF7_SOURCES})
         INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/${src_dir}")
     list(APPEND FF7_STR_SOURCES ${strd_src})
 endforeach()
+
+# Battle, world and field all load at 0x800A, so symbols named after that
+# address collide when they are linked into one native binary. The names
+# carry no meaning, so the PC build renames them per overlay and leaves the
+# matching sources untouched. Battle keeps the bare name.
+if(FF7_PC)
+    set_source_files_properties(
+        "${CMAKE_CURRENT_BINARY_DIR}/strd/src/world/world.c"
+        PROPERTIES COMPILE_DEFINITIONS
+        "D_800A0000=D_800A0000_world;func_800ADFC0=func_800ADFC0_world;func_800AF1A8=func_800AF1A8_world")
+    set_source_files_properties(
+        "${CMAKE_CURRENT_BINARY_DIR}/strd/src/field/field.c"
+        PROPERTIES COMPILE_DEFINITIONS "D_800A0000=D_800A0000_field")
+endif()
 
 add_library(${PROJECT_NAME} ${FF7_STR_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE include include/psxsdk)
