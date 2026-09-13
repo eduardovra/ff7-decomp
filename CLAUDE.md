@@ -51,6 +51,11 @@ a longer identifier pushes lines past the 120-column limit.
   re-tests are usually load-bearing -- they exist because the target's
   instructions require them. Add a comment instead of removing them.
 - Restore the working tree after experiments, and say so.
+- Never put `#167`, `Xeeynamo#167`, `GH-167` or a PR/issue URL in a commit
+  message. The fork shares GitHub's issue-number network with upstream, so
+  pushing one posts a permanent "referenced this pull request" line on that
+  upstream thread. Write `upstream PR 167` instead; the linked form is inert
+  inside a `docs/` file.
 - Keep code comments to one or two lines. Anything longer belongs in a
   `docs/` file; leave the standalone one-liner in the code.
 - A comment must add what the code cannot say. Drop it when the identifier
