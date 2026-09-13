@@ -481,6 +481,19 @@ typedef struct {
     s32 unk25C;
 } Unk800A8D04; // size: ???
 
+// Targeting byte shared by weapons, magic, items and battle commands.
+// Bit meanings per https://ff7-mods.github.io/ff7-flat-wiki/FF7/Battle/Targeting_Data.html
+typedef enum {
+    TARGET_ENABLE_SELECTION = 0x01, // cursor moves to the field; a target can be picked
+    TARGET_START_ENEMY_ROW = 0x02,  // cursor starts on the first enemy row
+    TARGET_MULTIPLE_DEFAULT = 0x04, // cursor selects every target in a row
+    TARGET_TOGGLE_MULTIPLE = 0x08,  // player may switch single/multi (splits damage)
+    TARGET_ONE_ROW_ONLY = 0x10,     // cursor is locked to one row
+    TARGET_SHORT_RANGE = 0x20,      // halved physical damage unless both are front row
+    TARGET_ALL_ROWS = 0x40,         // cursor selects viable targets across every row
+    TARGET_RANDOM = 0x80,           // one of the selected targets is picked at random
+} TargetFlags;
+
 typedef struct {
     u8 id;
     u8 mpCost;
@@ -682,6 +695,16 @@ typedef struct {
 } BattleLimitData; // size:0x5C
 
 // Runtime data for a battle participant.
+// ActiveCharacterData.characterFlags (offset 0x23), documented as
+// "Underwater, Long Range, HP<->MP" in
+// https://ff7-mods.github.io/ff7-flat-wiki/FF7/Battle/Battle_Mechanics.html
+typedef enum {
+    CHARFLAG_LONG_RANGE = 0x04, // clears TARGET_SHORT_RANGE on the character's attacks
+    CHARFLAG_HP_MP_SWAP = 0x08, // HP<->MP materia: swaps the HP and MP caps
+} CharacterFlags;
+
+// Field names and offsets per the "Active Character Data" table in
+// https://ff7-mods.github.io/ff7-flat-wiki/FF7/Battle/Battle_Mechanics.html
 typedef struct {
     u8 id;
     u8 coverChance;
@@ -699,14 +722,15 @@ typedef struct {
     s16 baseHp;
     s16 mp;
     s16 baseMp;
-    u16 unk18;
-    u16 unk1A;
-    u16 unk1C;
-    u16 unk1E;
-    s8 unk20;
+    u16 atbTimer;           // seeded from BattleWork.turn[].unk4 (wiki: 0x18 "Timer")
+    u16 unk1A;              // set to BattlePartyWork.limitBar << 8; the wiki folds
+                            // 0x18-0x1B into one 32-bit "Timer", so PSX differs here
+    u16 counterActionIndex; // wiki: 0x1C "Counter Attack Action Index"
+    u16 counterChance;      // wiki: 0x1E "Counter Attack Chance"
+    s8 limitLevel;          // 1-based, unlike BattlePartyWork.limitLevel
     s8 unk21;
     s8 unk22;
-    u8 characterFlags;
+    u8 characterFlags; // CharacterFlags bits
     ActiveCharEnabledCounter enabledCounters[8];
     u16 physicalAttackElements;
     u16 halvedElements;
