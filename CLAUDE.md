@@ -53,6 +53,14 @@ a longer identifier pushes lines past the 120-column limit.
 - Restore the working tree after experiments, and say so.
 - Keep code comments to one or two lines. Anything longer belongs in a
   `docs/` file; leave the standalone one-liner in the code.
+- A comment must add what the code cannot say. Drop it when the identifier
+  already says it (`u8 characterFlags; // CharacterFlags bits`,
+  `u16 BattleGetRndU16(void); // random, 16-bit`) -- upstream review rejects
+  these.
+- Do not leave research trails in `src/` or `include/` -- how a field was
+  derived, what a wiki page calls it, what was ruled out. That reads as agent
+  context, not a comment; it belongs in `docs/`. Comment the meaning of the
+  field, not the investigation behind it.
 - `docs/`, `CLAUDE.md` and the probe tooling are fork-only -- none of them
   exist on `main`. Never cite them from anything that goes upstream (`src/`,
   `include/`, `config/`). A code comment has to stand on its own, so put the
