@@ -59,6 +59,13 @@ mv /tmp/keep.c src/magic/brizad.c
 The `.s` filenames come from the symbol names, so `INCLUDE_ASM` entries must
 be updated to match after a rename.
 
+**splat drops a data label once nothing in the assembly references it.**
+Moving a descriptor into C removes the only reference to the blob it points
+at, so a symbol in the middle of a data range silently merges into its
+neighbour and the link fails with `undefined reference`. Give it an entry of
+its own first: `./mako.sh symbols add <symbols_path> <name> 0x<addr>`. A blob
+at the start of its range keeps its label either way.
+
 ## Function order is address layout
 
 The linker emits functions in source order, so a function's position in the
@@ -156,6 +163,13 @@ gcc 2.6.3 accepts an **undeclared identifier as an array size** without an
 error, silently producing a near-zero-size array. A `#define` placed below
 the declaration that uses it will do exactly this, and every function will
 still diff clean.
+
+**An explicit `= {0}` keeps a static in `.data`; leaving it uninitialised
+moves it to `.bss`.** gcc 2.6.3 only sends tentative definitions to `.bss`,
+so `static MATRIX m = {0};` emits 32 zero bytes into `.data` where
+`static MATRIX m;` emits none. Zero-filled globals inside a `.data` range
+therefore have to carry the initialiser, or the section comes up short and
+the sha1 breaks while every function still scores 0.
 
 ## Toolchain annotation
 
