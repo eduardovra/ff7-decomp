@@ -86,7 +86,7 @@ game runs slower in PAL rather than choppier.
 The battle overlay owns a fixed pool of effect instances:
 
 ```c
-extern Unk80162978 D_80162978[100];   // battle_private.h
+extern Unk80162978 g_BattleEffectSlots[100];   // battle_private.h
 ```
 
 One hundred entries, `0x20` bytes each. One entry is one running effect.
@@ -101,14 +101,14 @@ void BattleGetPartPosition(s32 target, s32 part, void* out);
 
 `BattleEffectRegister` takes a free entry, attaches the callback and returns
 the **index**. Once per frame the engine walks the live entries; for each it
-writes that entry's index into the global `D_8015169C` and then calls the
-callback with no arguments.
+writes that entry's index into the global `g_BattleEffectCursor` and then
+calls the callback with no arguments.
 
 So a callback finds its own state like this, and this line opens every
 function in the file:
 
 ```c
-BrizadData* effect = &D_80162978[D_8015169C];
+BrizadData* effect = &g_BattleEffectSlots[g_BattleEffectCursor];
 ```
 
 There is no `this` pointer. The object identity arrives through a global that
@@ -139,7 +139,7 @@ you see on a multi-target cast.
 
 ```c
 static void BrizadAttachToTarget(s32 target) {
-    D_80162978[BattleEffectRegister(BrizadSpawnIce)].TargetIndex = target;
+    g_BattleEffectSlots[BattleEffectRegister(BrizadSpawnIce)].TargetIndex = target;
 }
 ```
 
@@ -149,11 +149,11 @@ spawn slot then lives a single frame:
 ```c
 static void BrizadSpawnIce(void) {
     BrizadData* next;
-    BrizadData* effect = &D_80162978[D_8015169C];
+    BrizadData* effect = &g_BattleEffectSlots[g_BattleEffectCursor];
 
     if (D_80062D98 == 0) {
         if (effect->AnimationFrame == 0) {
-            next = &D_80162978[BattleEffectRegister(BrizadRenderIce)];
+            next = &g_BattleEffectSlots[BattleEffectRegister(BrizadRenderIce)];
             BattleGetPartPosition(effect->TargetIndex,
                 D_801518E4[effect->TargetIndex].D_8015190F, &next->Pos);
             next->Rot.vz = 0;
@@ -621,9 +621,9 @@ Each block is a 4-byte header holding a quad count, followed by that many
 the field ramps with the animation frame, so each frame draws the next block.
 
 ```c
-ThunderRenderDesc0.u08.frameIndex = (s16)(u16)effect->AnimationFrame >> 1;
-ThunderBufferPtr = func_800D4D90(&ThunderRenderDesc0, g_cDb->unk70, 0xC,
-                                 ThunderBufferPtr);
+thunder_render_desc0.frameIndex = effect->AnimationFrame >> 1;
+g_ThunderBufferPtr = func_800D4D90(&thunder_render_desc0, g_cDb->unk70, 0xC,
+                                   g_ThunderBufferPtr);
 ```
 
 **Expand four corners from a base and two deltas.** A record stores one corner
@@ -719,16 +719,48 @@ frame.
 model pass all go through `func_800D29D4`, which is 609 lines and does a great
 deal more. The differences are the interesting part.
 
+### What a descriptor is
+
+Neither renderer takes the art as an argument. Each takes a pointer to a small
+struct, and that struct is the only thing binding a spell to the engine's
+drawing code:
+
+```c
+ModelRenderDesc  -> func_800D29D4()   // 3D model, four primitive lists
+SpriteRenderDesc -> func_800D4D90()   // textured quad, one block per frame
+```
+
+Every draw in `src/magic/` is the same two lines -- poke this frame's value in,
+then hand the struct over:
+
+```c
+brizad_render_desc.color = fade;
+brizad_buffer_ptr = func_800D29D4(&brizad_render_desc, g_cDb->unk70, 12,
+                                  brizad_buffer_ptr);
+```
+
+The struct has two halves. The model pointer, flags, tpage and clut are set at
+compile time and never touched again. `color` and `frameIndex` are rewritten
+every frame. That mutable half is why descriptors sit in `.data` rather than
+`.rodata`: they are a spell's per-frame parameter block, not a constant table.
+Across all seven overlays exactly three fields are ever written -- `color`,
+`frameIndex`, and barrier's `flags`.
+
+One descriptor is one drawable thing. Barrier has two because it draws two
+models, thunder three for one model and two sprite animations. Barrier draws
+the *same* model four times by rewriting the mirror bits in `flags` between
+calls.
+
 **It unpacks the whole descriptor up front.** The first dozen instructions
-read every field of `Unk801B0C98` into a saved register and then follow the
+read every field of `ModelRenderDesc` into a saved register and then follow the
 pointer, which is the cleanest confirmation of the struct in `battle.h`:
 
 ```
-    lw    $s0, 0x4($a0)    # desc.u.flags
-    lhu   $s1, 0x8($a0)    # desc.u08.uvOffset
-    lhu   $s2, 0xA($a0)    # desc.uA.depthCue
-    lhu   $s3, 0xC($a0)    # unkC
-    lhu   $s4, 0xE($a0)    # unkE
+    lw    $s0, 0x4($a0)    # desc.flags
+    lhu   $s1, 0x8($a0)    # desc.uvOffset
+    lhu   $s2, 0xA($a0)    # desc.color
+    lhu   $s3, 0xC($a0)    # desc.tpage
+    lhu   $s4, 0xE($a0)    # desc.clut
     lw    $a0, 0x0($a0)    # -> the model data
     ...
     lw    $v0, 0x0($a0)    # vertex table size, in bytes
@@ -739,7 +771,7 @@ pointer, which is the cleanest confirmation of the struct in `battle.h`:
 Those three lines at the end *are* the model format from section 11, executed:
 a size word, the table, then the lists. `$s5` stays put for the whole call and
 `$a0` walks forward through the four lists. `$s3` is later stored to `0x16` of
-the textured packets, so `unkC` is a texture-page base; brizad's is `0x20`.
+the textured packets, so `tpage` is a texture-page base; brizad's is `0x20`.
 
 **It emits four primitive types, in four separate passes.** The model data
 carries four independent lists and the renderer walks them in a fixed order.
@@ -816,7 +848,7 @@ layout in section 7:
 ```
 
 `$a3` is the packet cursor, which is the fourth argument — the overlay's own
-`BrizadBufferPtr`. So a vertex enters the GTE as model-space `s16`s and leaves
+`brizad_buffer_ptr`. So a vertex enters the GTE as model-space `s16`s and leaves
 it as packed screen coordinates written straight into the primitive page; the
 GPU is never shown a vertex, only a packet.
 
@@ -835,16 +867,16 @@ with the far colour. The Gouraud passes use `dpct` instead, which runs the
 same blend across the whole three-entry colour FIFO in one instruction.
 
 **Which settles what offset `0xA` means.** It is the `IR0` fed to that blend.
-Barrier makes it unmistakable, at `src/magic/barrier.c:95`:
+Barrier makes it unmistakable, at `src/magic/barrier.c:131`:
 
 ```c
-var_s3 = barrier->FaceIndex | 8;      // 8 = semi-transparent
-var_s4 = temp_a0 << 9;                // 0, 0x200, 0x400 ... 0xE00
+faceFlags = barrier->FaceIndex | MODEL_SEMI_TRANS;
+fade = temp_a0 << 9;                  // 0, 0x200, 0x400 ... 0xE00
 ...
 SetFarColor(0, 0, 0);
 ...
-BorderRenderDesc.desc.u.flags = var_s3 | 0x80;
-BorderRenderDesc.desc.unkA = var_s4;
+border_render_desc.flags = faceFlags | MODEL_DEPTH_CUE;
+border_render_desc.color = fade;
 ```
 
 Over the effect's last eight frames it turns on transparency and ramps the
@@ -991,38 +1023,19 @@ with three zero counts before its six Gouraud quads.
 ### Brizad's own model, still in the data segment
 
 Barrier's model is readable because someone typed it into C. Brizad's is not.
-The overlay only names the descriptor, at `src/magic/brizad.c:48`:
-
-```c
-extern Unk801B0C98 BrizadRenderDesc;
-```
-
-`extern` with no definition anywhere in `src/` means the symbol is resolved out
-of the raw data blob. `build/us/brizad.yaml` shows the split:
+The descriptor is, so the split runs through the middle of the data segment:
 
 ```yaml
-  subsegments:
-  - - 0
-    - c
-    - brizad          # code, file offset 0      -> 0x801B0000
-  - - 1008
-    - data
-    - brizad          # data, file offset 0x3F0  -> 0x801B03F0
-  - - 4116
-    - .bss
-    - brizad          #                             0x801B1014
+  - [0, c, brizad]
+  - [0x3f0, data, brizad_model]   # the model, still a blob -> 0x801B03F0
+  - [0x1004, .data, brizad]       # the descriptor, from C  -> 0x801B1004
+  - [0x1014, .bss, brizad]        #                            0x801B1014
 ```
 
-So everything between the end of the code and `0x801B1014` is data, and
-`config/symbols.magic-brizad.us.txt` brackets it without naming any of it:
-
-```
-MAGIC_Brizad = 0x801B037C;
-BrizadRenderDesc = 0x801B1004; // size:0x10
-BrizadPrimBuffer = 0x801B1014;
-```
-
-The model is the unnamed `0xC14` bytes in between. Dumping it against the
+The descriptor holds a pointer to the model, which is why it had to become C:
+a relocation is something only the linker can write, and no byte array can
+carry one. The model needs no such thing, so it stays the unnamed `0xC14`
+bytes in between. Dumping it against the
 format above, with the same annotation style as `bari_a1`:
 
 ```c
@@ -1111,25 +1124,28 @@ The last count word lands at `0x801B1000` and the descriptor begins on the
 very next word, which is how you know the dump is right:
 
 ```c
-// 0x801B1004, in the same never-typed data segment:
-//   { { brizad_model, .flags = 0x88, .uvOffset = 0, .depthCue = 0 }, 0x20 }
+static ModelRenderDesc brizad_render_desc = {
+    D_801B03F0, MODEL_DEPTH_CUE | MODEL_SEMI_TRANS, 0, 0, 0x20};
 ```
 
-Compare barrier, which does have it in C at `src/magic/barrier.c:71`:
+Barrier's reads the same, at `src/magic/barrier.c:77`:
 
 ```c
-static Unk801B0C98 BorderRenderDesc = {{bari_a1, {0}, 0, 0}, 0x20};
+static ModelRenderDesc border_render_desc = {bari_a1, 0, 0, 0, 0x20};
 ```
 
-Same shape, same trailing `0x20`. And the type it fills, from
+Same shape, same trailing `0x20`. The type they fill, from
 `src/battle/battle.h`, is what section 10's prologue reads field by field:
 
 ```c
 typedef struct {
-    /* 0x0 */ ModelRenderDesc desc;   // model pointer, flags, uv, depth cue
-    /* 0xC */ s16 unkC;
-    /* 0xE */ s16 unkE;
-} Unk801B0C98; // size:0x10
+    /* 0x0 */ s32* model;
+    /* 0x4 */ s32 flags;    // ModelRenderFlags
+    /* 0x8 */ u16 uvOffset;
+    /* 0xA */ s16 color;    // grey level, or the GTE depth-cue factor
+    /* 0xC */ s16 tpage;
+    /* 0xE */ s16 clut;
+} ModelRenderDesc;          // size:0x10
 ```
 
 ### The whole path, in six addresses
@@ -1139,18 +1155,18 @@ Putting sections 4 through 11 in order, for one triangle of the ice model:
 | step         | where          | what                                    |
 |--------------|----------------|-----------------------------------------|
 | model data   | `0x801B03F0`   | 84 verts, 120 `POLY_G3` records         |
-| the handle   | `0x801B1004`   | `BrizadRenderDesc`: pointer + flags     |
+| the handle   | `0x801B1004`   | `brizad_render_desc`: pointer + flags   |
 | into the GTE | `0x800D2AFC`   | `lwc2 $0..$5` from the table, then `rtpt` |
 | out of it    | `0x800D2B70`   | `mfc2 $12..$14` into the packet         |
-| the packet   | `0x801B1014`   | `BrizadPrimBuffer`, two 64 KB pages     |
+| the packet   | `0x801B1014`   | `brizad_prim_buffer`, two 64 KB pages   |
 | the sort     | `g_cDb->unk70` | linked into `ot[OTZ >> 2]`              |
 
 `BrizadRenderIce` itself only supplies the first two and the matrix. Line 86 is
 the entire draw:
 
 ```c
-BrizadBufferPtr = func_800D29D4(&BrizadRenderDesc, g_cDb->unk70, 12,
-                                BrizadBufferPtr);
+brizad_buffer_ptr = func_800D29D4(&brizad_render_desc, g_cDb->unk70, 12,
+                                  brizad_buffer_ptr);
 ```
 
 Descriptor, ordering table, `otLen`, and the bump pointer in and out.
@@ -1162,10 +1178,8 @@ Descriptor, ordering table, `otLen`, and the bump pointer in and out.
 Back in the overlay, the buffer is doubled:
 
 ```c
-#define BRIZAD_PAGE_SIZE 0x10000
-
-static char BrizadPrimBuffer[2 * BRIZAD_PAGE_SIZE];
-static void* BrizadBufferPtr;
+static u8 brizad_prim_buffer[2][MAGIC_PAGE_SIZE];
+static void* brizad_buffer_ptr;
 ```
 
 The declaration order matters. The pointer has to land immediately after the
@@ -1176,11 +1190,12 @@ frame:
 
 ```c
 static void BrizadDoubleBufferFlip(void) {
-    BrizadData* flip = &D_80162978[D_8015169C];
+    BrizadData* flip;
 
-    BrizadBufferPtr = flip->AnimationFrame * BRIZAD_PAGE_SIZE + BrizadPrimBuffer;
-    flip->AnimationFrame = (u16)flip->AnimationFrame ^ 1;
-    if (D_80162080 < 2) {
+    flip = &g_BattleEffectSlots[g_BattleEffectCursor];
+    brizad_buffer_ptr = brizad_prim_buffer[flip->AnimationFrame];
+    flip->AnimationFrame ^= 1;
+    if (g_BattleEffectCount < 2) {
         flip->StartFrame = -1;
     }
 }
@@ -1329,7 +1344,7 @@ nothing ever registers:
 
 ```c
 static void BrizadAttachToTargetUnused(s32 target) {
-    D_80162978[BattleEffectRegister(BrizadSpawnIce)].TargetIndex = target;
+    g_BattleEffectSlots[BattleEffectRegister(BrizadSpawnIce)].TargetIndex = target;
 }
 ```
 
