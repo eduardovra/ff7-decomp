@@ -1,8 +1,8 @@
 //! PSYQ=3.3 CC1=2.6.3
 
 #include "common.h"
-#include "../battle/battle.h"
 #include "magic_private.h"
+#include "../battle/battle.h"
 
 // Ice (ブリザド / Blizzard), tier 1.
 //
