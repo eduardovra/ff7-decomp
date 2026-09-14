@@ -34,7 +34,7 @@ INCLUDE_ASM("asm/us/main/nonmatchings/psxsdk", func_80036190);
 
 INCLUDE_ASM("asm/us/main/nonmatchings/psxsdk", func_80036244);
 
-INCLUDE_ASM("asm/us/main/nonmatchings/psxsdk", func_80036298);
+INCLUDE_ASM("asm/us/main/nonmatchings/psxsdk", SpuInit);
 
 // NOTE: please do not decompile any of these functions.
 // Please refer to psyz/decomp for decompiled PSX SDK functions:
@@ -466,7 +466,7 @@ INCLUDE_ASM("asm/us/main/nonmatchings/psxsdk", func_8003DDBC);
 
 INCLUDE_ASM("asm/us/main/nonmatchings/psxsdk", func_8003DDF4);
 
-INCLUDE_ASM("asm/us/main/nonmatchings/psxsdk", func_8003DE2C);
+INCLUDE_ASM("asm/us/main/nonmatchings/psxsdk", CdSync);
 
 INCLUDE_ASM("asm/us/main/nonmatchings/psxsdk", func_8003DE4C);
 

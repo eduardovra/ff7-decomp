@@ -233,7 +233,7 @@ static void func_80034A90(void) {
     s32 temp_v0;
     s32* var_a1;
 
-    switch (func_8003DE2C(1, 0)) {
+    switch (CdSync(1, NULL)) {
     case 2:
         func_80034444();
         return;

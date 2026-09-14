@@ -1070,7 +1070,7 @@ static void func_800A2458(void) {
     ResetGraph(0);
     PadInit(0);
     InitGeom();
-    func_80036298();
+    SpuInit();
     SysCdromInit();
 }
 
