@@ -72,7 +72,16 @@ a longer identifier pushes lines past the 120-column limit.
   finding in the comment rather than a pointer to where it was written up.
 - `config/sym_ovl_export.us.txt` and `config/sym_export_battle.us.txt` are
   build-generated. Do not hand-edit them.
-- Use `./mako.sh symbols add` rather than editing symbol files by hand.
+- Use `./mako.sh symbols add` rather than editing symbol files by hand. It
+  takes an optional size (`... <symbol> 0x<addr> 0x<size>`) and updates an
+  existing entry in place.
+- Give a data or bss symbol an explicit size whenever the code addresses its
+  interior -- a struct written field by field, an array indexed by a constant.
+  splat ends a symbol at the next address the code references, so it truncates
+  the object and invents `D_` labels for the rest. `make build` still passes,
+  since `obj.field` resolves to `obj + offset` either way; the only symptom is
+  stray labels in `asm/**/data/*.bss.s` and in the generated export file. Read
+  the generated asm after naming a struct.
 
 ## Conventions
 
