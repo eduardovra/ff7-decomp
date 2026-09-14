@@ -2,8 +2,9 @@
 #include <game.h>
 #include <libcd.h>
 #include <libetc.h>
+#include <libpress.h>
 
-INCLUDE_ASM("asm/us/main/nonmatchings/psxsdk", func_80034F3C);
+void func_80034F3C(void) { DecDCTReset(0); }
 
 INCLUDE_ASM("asm/us/main/nonmatchings/psxsdk", SysMovieLoadMovieSettings);
 

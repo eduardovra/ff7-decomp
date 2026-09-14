@@ -218,7 +218,7 @@ INCLUDE_ASM("asm/us/main/nonmatchings/1F6B4", func_80022DE4);
 
 INCLUDE_ASM("asm/us/main/nonmatchings/1F6B4", func_80022FE0);
 
-INCLUDE_ASM("asm/us/main/nonmatchings/1F6B4", SysMenuGetMenuListState);
+s32 SysMenuGetMenuListState(void) { return g_PartyMenuListState; }
 
 INCLUDE_ASM("asm/us/main/nonmatchings/1F6B4", SysMenuSetMenuListAnimation);
 

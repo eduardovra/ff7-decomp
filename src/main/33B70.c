@@ -193,7 +193,7 @@ static s32 ReadDiskNo(void) {
 
 s32 SYS_GetDiskNo(void) { return ReadDiskNo(); }
 
-INCLUDE_ASM("asm/us/main/nonmatchings/33B70", func_80034410);
+s32 func_80034410(void) { return D_80071A60; }
 
 void func_80034420(void) {}
 
