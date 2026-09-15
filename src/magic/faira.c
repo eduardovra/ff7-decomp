@@ -4,6 +4,8 @@
 #include "magic_private.h"
 #include "../battle/battle.h"
 
+// Fire2 (ファイラ / Fira), tier 2.
+
 #define FADE_IN_FRAMES 8
 #define FADE_OUT_START 16
 #define LIFETIME 24

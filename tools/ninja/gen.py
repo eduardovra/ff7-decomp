@@ -445,5 +445,6 @@ with open("build.ninja", "w") as f:
         "refrec",
         "fire",
         "faira",
+        "brizara",
     ]:
         add_splat_config(os.path.join(work_dir, f"{ovl}.yaml"))
