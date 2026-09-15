@@ -39,10 +39,13 @@ static void ThunderaRenderModel(void) {
     MATRIX matrix;
     ModelRenderDesc* desc;
     ThunderaData* effect;
+    u16 frame;
+    u16 boltFrame;
     s32 grey;
 
     effect = &g_BattleEffectSlots[g_BattleEffectCursor];
-    grey = 0x80 - ((u16)effect->AnimationFrame * 0x10);
+    frame = effect->AnimationFrame;
+    grey = 0x80 - (frame * 0x10);
     matrix.m[0][0] = matrix.m[2][1] = effect->Scale;
     matrix.m[1][2] = -effect->Scale;
     matrix.m[0][1] = matrix.m[0][2] = matrix.m[1][0] = matrix.m[1][1] = matrix.m[2][0] = matrix.m[2][2] = 0;
@@ -73,13 +76,15 @@ static void ThunderaRenderModel(void) {
 static void func_801B01A0(void) {
     SpriteRenderDesc* desc;
     ThunderaData* effect;
+    u8 frame;
     s32 shade;
 
     desc = (SpriteRenderDesc*)0x1F800000;
     desc->frames = g_ThunderaRenderData0;
     desc->frameIndex = 0;
     effect = &g_BattleEffectSlots[g_BattleEffectCursor];
-    shade = ~((u8)effect->AnimationFrame << 6);
+    frame = effect->AnimationFrame;
+    shade = ~(frame << 6);
     desc->color.cd = 0x2C;
     desc->color.r = desc->color.g = desc->color.b = shade;
     func_800D4368(&effect->Pos, 0x2000, effect->DepthBias);
@@ -116,7 +121,7 @@ static void func_801B0348(void) {
     effect = &g_BattleEffectSlots[g_BattleEffectCursor];
     SetRotMatrix(&D_800FA63C.m);
     SetTransMatrix(&D_800FA63C.m);
-    RotTrans(&effect->Pos, (VECTOR*)&thundera_matrix.t[0], &flag);
+    RotTrans(&effect->Pos, (VECTOR*)thundera_matrix.t, &flag);
     thundera_matrix.t[2] += effect->DepthBias;
     if (effect->Flags & 1) {
         thundera_matrix.m[0][0] = -0x2000;
@@ -150,7 +155,8 @@ static void func_801B0348(void) {
 static void ThunderaSpawnBolt(void) {
     ThunderaData* next;
     ThunderaData* effect;
-    u32 frame;
+    u16 frame;
+    u16 boltFrame;
 
     effect = &g_BattleEffectSlots[g_BattleEffectCursor];
     if (D_80062D98 == 0) {
@@ -161,7 +167,7 @@ static void ThunderaSpawnBolt(void) {
             next->DepthBias = effect->DepthBias;
             func_800D5774(effect->TargetIndex);
         }
-        frame = (u16)effect->AnimationFrame;
+        frame = effect->AnimationFrame;
         if (frame < 21 && !(frame & 1)) {
             next = &g_BattleEffectSlots[BattleEffectRegister(ThunderaRenderModel)];
             next->Pos.vx = (effect->Pos.vx + rand() % 2000) - 1000;
@@ -175,7 +181,8 @@ static void ThunderaSpawnBolt(void) {
             next->Pos = effect->Pos;
             next->DepthBias = effect->DepthBias;
         }
-        if ((u16)effect->AnimationFrame < 16) {
+        boltFrame = effect->AnimationFrame;
+        if (boltFrame < 16) {
             next = &g_BattleEffectSlots[BattleEffectRegister(func_801B0348)];
             next->Pos.vx = (effect->Pos.vx + rand() % 1000) - 500;
             next->Pos.vy = (effect->Pos.vy + rand() % 1000) - 500;
