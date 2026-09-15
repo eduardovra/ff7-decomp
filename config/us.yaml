@@ -419,3 +419,17 @@ overlays:
       - [0x7a4, data, brizara_model]
       - [0x8F78, .data, brizara]
       - [0x8F98, .bss, brizara]
+  # THUNDERA.BIN -- "Bolt2", the tier-2 lightning spell
+  - name: thundera
+    disk_path: disks/us/MAGIC/THUNDERA.BIN
+    sha1: 29c8b0352638357bb635d9320328f738e1dc7476
+    base_path: magic
+    vram_start: 0x801B0000
+    symbol_addrs_path:
+      - config/sym_export.us.txt
+      - config/sym_export_battle.us.txt
+      - config/symbols.magic-thundera.us.txt
+    segments:
+      - [0, c, thundera]
+      - [0x97c, data, thundera_model]
+      - [0x190BC, .data, thundera]
