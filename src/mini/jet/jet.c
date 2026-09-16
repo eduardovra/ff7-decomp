@@ -1,6 +1,47 @@
+//! PSYQ=3.3
+
 #include "common.h"
 #include "libgpu.h"
 #include "libgte.h"
+
+// Offsets 0x00 and 0x5C are fixed by SetDefDrawEnv/SetDefDispEnv in
+// func_800A7C88; both tables are sized by their ClearOTagR calls.
+typedef struct {
+    /* 0x0000 */ DRAWENV draw;
+    /* 0x005C */ DISPENV disp;
+    /* 0x0070 */ u_long* unk70[0x1000];
+    /* 0x4070 */ u_long* unk4070[10];
+    /* 0x4098 */ u_long* unk4098[0xB4];
+    /* 0x4368 */ u_long* unk4368[6];
+} Unk800D1964; // size: at least 0x4380
+
+// Doubly linked list node. func_800A80A8 initialises the matrix to identity
+// and func_800A8010 chains the arrays with a 0x38 stride.
+typedef struct Unk800EE1D4 {
+    /* 0x00 */ s16 unk0;
+    /* 0x02 */ s16 unk2;
+    /* 0x04 */ MATRIX m;
+    /* 0x24 */ void* unk24;
+    /* 0x28 */ s16 unk28;
+    /* 0x2A */ s16 unk2A;
+    /* 0x2C */ u16 unk2C;
+    /* 0x2E */ s16 unk2E;
+    /* 0x30 */ struct Unk800EE1D4* unk30;
+    /* 0x34 */ struct Unk800EE1D4* unk34;
+} Unk800EE1D4; // size: 0x38
+
+extern Unk800D1964* D_800D1964[1];
+extern Unk800EE1D4 D_800A8A90[10];
+extern Unk800EE1D4 D_800D16E4;
+extern s16 D_800D1710;
+extern s16 D_800D1A40[0xC8];
+extern s16 D_800D9944;
+extern Unk800EE1D4 D_800EE1D4[10];
+
+void func_800A7FAC(u_long**);
+void func_800A80A8(Unk800EE1D4* arg0, s16 arg1);
+void func_800A8264(s16);
+void func_800A82F0(Unk800EE1D4*);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0450);
 
@@ -143,21 +184,6 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7C54);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7C88);
 
-/*?*/ void func_800A7FAC(u_long**); // extern
-
-// Offsets 0x00 and 0x5C are fixed by SetDefDrawEnv/SetDefDispEnv in
-// func_800A7C88; both tables are sized by their ClearOTagR calls.
-typedef struct {
-    /* 0x0000 */ DRAWENV draw;
-    /* 0x005C */ DISPENV disp;
-    /* 0x0070 */ u_long* unk70[0x1000];
-    /* 0x4070 */ u_long* unk4070[10];
-    /* 0x4098 */ u_long* unk4098[0xB4];
-    /* 0x4368 */ u_long* unk4368[6];
-} Unk800D1964; // size: at least 0x4380
-
-extern Unk800D1964* D_800D1964[1];
-
 void func_800A7E1C(void) {
     ClearOTagR((u_long*)D_800D1964[0]->unk70, LEN(D_800D1964[0]->unk70));
     ClearOTagR((u_long*)D_800D1964[0]->unk4098, LEN(D_800D1964[0]->unk4098));
@@ -167,30 +193,6 @@ void func_800A7E1C(void) {
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7E70);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7FAC);
-
-// Doubly linked list node. func_800A80A8 initialises the matrix to identity
-// and func_800A8010 chains the arrays with a 0x38 stride.
-typedef struct Unk800EE1D4 {
-    /* 0x00 */ s16 unk0;
-    /* 0x02 */ s16 unk2;
-    /* 0x04 */ MATRIX m;
-    /* 0x24 */ void* unk24;
-    /* 0x28 */ s16 unk28;
-    /* 0x2A */ s16 unk2A;
-    /* 0x2C */ u16 unk2C;
-    /* 0x2E */ s16 unk2E;
-    /* 0x30 */ struct Unk800EE1D4* unk30;
-    /* 0x34 */ struct Unk800EE1D4* unk34;
-} Unk800EE1D4; // size: 0x38
-
-extern Unk800EE1D4 D_800A8A90[10];
-extern Unk800EE1D4 D_800D16E4;
-extern s16 D_800D1710;
-extern s16 D_800D1A40[0xC8];
-extern s16 D_800D9944;
-extern Unk800EE1D4 D_800EE1D4[10];
-
-void func_800A80A8(Unk800EE1D4* arg0, s16 arg1); // forward declaration
 
 void func_800A8010(void) {
     Unk800EE1D4* a;
@@ -234,9 +236,6 @@ void func_800A80A8(Unk800EE1D4* arg0, s16 arg1) {
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A80F8);
 
-void func_800A8264(s16);          // extern
-void func_800A82F0(Unk800EE1D4*); // extern
-
 void func_800A8204(Unk800EE1D4* arg0) {
     func_800A82F0(arg0);
     func_800A8264(arg0->unk2A);
@@ -244,7 +243,15 @@ void func_800A8204(Unk800EE1D4* arg0) {
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A8238);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A8264);
+void func_800A8264(s16 arg0) {
+    s16* temp;
+    s16* temp2;
+
+    temp2 = &D_800D1A40[arg0];
+    temp = &D_800D9944;
+    *temp2 = *temp;
+    *temp = arg0;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A8290);
 

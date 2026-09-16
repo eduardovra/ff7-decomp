@@ -195,3 +195,62 @@ wrong compiler is not subtle: bginmenu.c built as 2.6.3 breaks four
 untouched functions by 15 to 340 points. A single function that is off by
 nothing but register names scores the same under both, and is telling you
 about the source, not the toolchain.
+
+**Re-run `.venv/bin/python3 tools/ninja/gen.py` after changing the
+annotation.** `ninja` happily rebuilds the object with the old `as_flags`,
+so the score does not move and the annotation looks innocent. Confirm with
+`ninja -t commands <obj> | grep aspsx-version`. Bare `python3` is PyPy and
+dies inside gen.py on a nested f-string quote; use the venv.
+
+Most files do not constrain the cc1 at all, so a `CC1=` override is often
+inherited noise. Drop it and score the file before keeping it -- jet.c
+carried `PSYQ=3.3 CC1=2.7.2` where plain `PSYQ=3.3` matches, and plain
+`PSYQ=3.3` is a real SDK pairing.
+
+## Which aspsx version a file wants
+
+The aspsx version leaves a visible mark, so a wrong one is diagnosable
+without guessing. The tell is how the assembler expands a store or load
+indexed off a symbol. Below 2.30 it materialises the whole address first:
+
+```
+lui   $at, %hi(sym)      # aspsx <= 2.21        lui  $at, %hi(sym)
+addiu $at, $at, %lo(sym)                        addu $at, $at, $idx
+addu  $at, $at, $idx                            sh   $v1, %lo(sym)($at)
+sh    $v1, 0($at)
+```
+
+`maspsx` calls this `addiu_at` and enables it for `--aspsx-version` below
+2.30 (`tools/maspsx/maspsx.py`). **A diff whose only defect is one missing
+`addiu $at, $at, %lo(...)` is an annotation problem, not a source
+problem** -- no amount of rewriting the C will produce it. The full
+behaviour matrix is in `tools/maspsx/README.md`.
+
+## What the ROM says about the SDK version
+
+The `PSYQ=x.y` labels are this repo's naming for an aspsx version, not
+something the ROM records. What the disc actually attests:
+
+- **The assembler is aspsx 2.21 (June 1995).** `addiu_at` is required, which
+  bounds it at 2.21 or older. Division expands to `break`, never `tge`
+  (553 to 0 across `asm/us`), which excludes 2.05/2.08 -- the only versions
+  using `tge`. The remaining 1.05/1.07 are pre-1995 plain-DOS builds that
+  predate the commercial SDK line.
+- **The linked libapi is newer than the assembler.** `disks/us/SCUS_941.63`
+  still carries its RCS stamps: `intr.c 1.73` (1995/11/10), `sys.c 1.115`
+  (1995/11/29), `bios.c 1.76` (1996/04/03). The overlays carry none; only
+  the main executable links libapi.
+
+So the shipped toolchain was mixed -- a mid-1995 assembler against
+libraries built in April 1996 -- which is why a single "PSYQ version" never
+quite fits the tree.
+
+Retail PSYQ 4.00 and 4.70 are not it: their `.LIB` files carry no `$Id`
+strings at all (rebuilt, dated 1997 and 2000), and comparing FF7 against
+them by 24-byte code windows gives a longest LIBAPI run of 65 bytes. Pinning
+the release rather than bounding it needs a PSYQ 3.x dump -- check that its
+`ASPSX.EXE` is 2.21 and its LIBAPI `$Id` set matches the three above.
+Reference binaries, if you want to redo this: PSYQ 4.00/4.70 from the psyz
+release referenced by `tools/psyz/decomp/sdk/Makefile`, and the real
+`ASPSX.EXE` set from the maspsx `aspsx` release. The 16-bit ones need
+dosemu2; wine will not run them.
