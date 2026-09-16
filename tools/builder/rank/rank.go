@@ -18,7 +18,13 @@ type entry struct {
 	name  string
 }
 
+var includeAsmPattern = regexp.MustCompile(`INCLUDE_ASM\([^,]*,\s*(\w+)\s*\)`)
+
 func Rank(path string, minThreshold float32) error {
+	pending, err := pendingFunctions(path)
+	if err != nil {
+		return err
+	}
 	path = strings.TrimPrefix(path, "src/")
 	path = strings.TrimSuffix(path, ".c")
 	if !strings.HasPrefix(path, "asm/") {
@@ -46,6 +52,10 @@ func Rank(path string, minThreshold float32) error {
 		if !strings.HasSuffix(path, ".s") {
 			return nil
 		}
+		funcName := strings.TrimSuffix(filepath.Base(path), ".s")
+		if pending != nil && !pending[funcName] {
+			return nil
+		}
 		score, err := rankFunction(path)
 		if err != nil {
 			return err
@@ -65,6 +75,47 @@ func Rank(path string, minThreshold float32) error {
 		fmt.Printf("%.3f: %s\n", entry.score, entry.name)
 	}
 	return nil
+}
+
+// pendingFunctions lists the functions still stubbed with INCLUDE_ASM in the
+// C sources for path. A nil result means no source was found, so every
+// function gets ranked.
+func pendingFunctions(path string) (map[string]bool, error) {
+	sources, err := sourceFiles(path)
+	if err != nil || sources == nil {
+		return nil, err
+	}
+	pending := map[string]bool{}
+	for _, source := range sources {
+		content, err := os.ReadFile(source)
+		if err != nil {
+			return nil, err
+		}
+		for _, match := range includeAsmPattern.FindAllStringSubmatch(string(content), -1) {
+			pending[match[1]] = true
+		}
+	}
+	return pending, nil
+}
+
+func sourceFiles(path string) ([]string, error) {
+	if strings.HasPrefix(path, "asm/") {
+		return nil, nil
+	}
+	if !strings.HasPrefix(path, "src/") {
+		path = filepath.Join("src", path)
+	}
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if info.IsDir() {
+		return filepath.Glob(filepath.Join(path, "*.c"))
+	}
+	return []string{path}, nil
 }
 
 // NOTE: decompilationDifficultyScore and rankFunction are directly converted
