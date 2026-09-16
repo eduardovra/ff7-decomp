@@ -4,6 +4,28 @@
 #include "libgpu.h"
 #include "libgte.h"
 
+// Nine write cursors, each reset to the start of its own buffer below.
+typedef struct {
+    /* 0x0000 */ u_long* unk0;
+    /* 0x0004 */ u_long* unk4;
+    /* 0x0008 */ u_long* unk8;
+    /* 0x000C */ u_long* unkC;
+    /* 0x0010 */ u_long* unk10;
+    /* 0x0014 */ u_long* unk14;
+    /* 0x0018 */ u_long* unk18;
+    /* 0x001C */ u_long* unk1C;
+    /* 0x0020 */ u_long* unk20;
+    /* 0x0024 */ u_long unk24[5];
+    /* 0x0038 */ u_long unk38[6];
+    /* 0x0050 */ u_long unk50[11200];
+    /* 0xAF50 */ u_long unkAF50[270];
+    /* 0xB388 */ u_long unkB388[8];
+    /* 0xB3A8 */ u_long unkB3A8[3000];
+    /* 0xE288 */ u_long unkE288[10];
+    /* 0xE2B0 */ u_long unkE2B0[13];
+    /* 0xE2E4 */ u_long unkE2E4[1]; // trailing size unknown
+} Unk800A7FAC;                      // size: at least 0xE2E8
+
 // Offsets 0x00 and 0x5C are fixed by SetDefDrawEnv/SetDefDispEnv in
 // func_800A7C88; both tables are sized by their ClearOTagR calls.
 typedef struct {
@@ -12,8 +34,8 @@ typedef struct {
     /* 0x0070 */ u_long* unk70[0x1000];
     /* 0x4070 */ u_long* unk4070[10];
     /* 0x4098 */ u_long* unk4098[0xB4];
-    /* 0x4368 */ u_long* unk4368[6];
-} Unk800D1964; // size: at least 0x4380
+    /* 0x4368 */ Unk800A7FAC unk4368;
+} Unk800D1964; // size: at least 0x12650
 
 // Doubly linked list node. func_800A80A8 initialises the matrix to identity
 // and func_800A8010 chains the arrays with a 0x38 stride.
@@ -38,7 +60,7 @@ extern s16 D_800D1A40[0xC8];
 extern s16 D_800D9944;
 extern Unk800EE1D4 D_800EE1D4[10];
 
-void func_800A7FAC(u_long**);
+void func_800A7FAC(Unk800A7FAC* arg0);
 void func_800A80A8(Unk800EE1D4* arg0, s16 arg1);
 void func_800A8264(s16);
 void func_800A82F0(Unk800EE1D4*);
@@ -187,12 +209,22 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7C88);
 void func_800A7E1C(void) {
     ClearOTagR((u_long*)D_800D1964[0]->unk70, LEN(D_800D1964[0]->unk70));
     ClearOTagR((u_long*)D_800D1964[0]->unk4098, LEN(D_800D1964[0]->unk4098));
-    func_800A7FAC(D_800D1964[0]->unk4368);
+    func_800A7FAC(&D_800D1964[0]->unk4368);
 }
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7E70);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7FAC);
+void func_800A7FAC(Unk800A7FAC* arg0) {
+    arg0->unk0 = arg0->unk24;
+    arg0->unk4 = arg0->unk38;
+    arg0->unk8 = arg0->unk50;
+    arg0->unkC = arg0->unkAF50;
+    arg0->unk10 = arg0->unkB388;
+    arg0->unk14 = arg0->unkB3A8;
+    arg0->unk18 = arg0->unkE288;
+    arg0->unk1C = arg0->unkE2B0;
+    arg0->unk20 = arg0->unkE2E4;
+}
 
 void func_800A8010(void) {
     Unk800EE1D4* a;
@@ -241,7 +273,16 @@ void func_800A8204(Unk800EE1D4* arg0) {
     func_800A8264(arg0->unk2A);
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A8238);
+s16 func_800A8238(void) {
+    s16* head;
+    s16 result;
+
+    head = &D_800D9944;
+    result = *head;
+    *head = D_800D1A40[result];
+
+    return result;
+}
 
 void func_800A8264(s16 arg0) {
     s16* temp;
