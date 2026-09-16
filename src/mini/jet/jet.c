@@ -40,8 +40,7 @@ typedef struct {
 // Doubly linked list node. func_800A80A8 initialises the matrix to identity
 // and func_800A8010 chains the arrays with a 0x38 stride.
 typedef struct Unk800EE1D4 {
-    /* 0x00 */ s16 unk0;
-    /* 0x02 */ s16 unk2;
+    /* 0x00 */ s32 unk0;
     /* 0x04 */ MATRIX m;
     /* 0x24 */ void* unk24;
     /* 0x28 */ s16 unk28;
@@ -59,11 +58,15 @@ extern s16 D_800D1710;
 extern s16 D_800D1A40[0xC8];
 extern s16 D_800D9944;
 extern Unk800EE1D4 D_800EE1D4[10];
+extern Unk800EE1D4 D_800A8CD0[];
+extern s32 D_800D1730[];
 
 void func_800A7FAC(Unk800A7FAC* arg0);
 void func_800A80A8(Unk800EE1D4* arg0, s16 arg1);
 void func_800A8264(s16);
 void func_800A82F0(Unk800EE1D4*);
+s16 func_800A8238(void);
+void func_800A8290(Unk800EE1D4* arg0, Unk800EE1D4* arg1);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0450);
 
@@ -266,7 +269,29 @@ void func_800A80A8(Unk800EE1D4* arg0, s16 arg1) {
     arg0->unk34 = 0;
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A80F8);
+Unk800EE1D4* func_800A80F8(s16 arg0, s32 arg1, s32 arg2, s32 arg3, Unk800EE1D4* arg4, s32 arg5, s32 arg6, s32 arg7,
+                           u16 arg8, u16 arg9, u16 arg10) {
+    SVECTOR sp10;
+    Unk800EE1D4* temp_s0;
+    Unk800EE1D4* temp_v1;
+    s16 temp_v0;
+
+    temp_v0 = func_800A8238();
+    temp_v1 = D_800A8CD0;
+    temp_s0 = &temp_v1[temp_v0];
+    func_800A8290(temp_s0, arg4);
+    temp_s0->unk0 = D_800D1730[arg0];
+    temp_s0->unk28 = arg0;
+    temp_s0->unk2A = temp_v0;
+    sp10.vx = arg8;
+    sp10.vy = arg9;
+    sp10.vz = arg10;
+    RotMatrix(&sp10, &temp_s0->m);
+    temp_s0->m.t[0] = arg5;
+    temp_s0->m.t[1] = arg6;
+    temp_s0->m.t[2] = arg7;
+    return temp_s0;
+}
 
 void func_800A8204(Unk800EE1D4* arg0) {
     func_800A82F0(arg0);
@@ -294,7 +319,21 @@ void func_800A8264(s16 arg0) {
     *temp = arg0;
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A8290);
+void func_800A8290(Unk800EE1D4* arg0, Unk800EE1D4* arg1) {
+    Unk800EE1D4* temp_v0_2;
+    Unk800EE1D4* temp_v1;
+    s16 temp_v0;
+
+    arg0->unk24 = arg1;
+    temp_v0 = arg1->unk2C + 1;
+    arg0->unk2C = temp_v0;
+    temp_v1 = &D_800EE1D4[temp_v0];
+    temp_v0_2 = temp_v1->unk30;
+    arg0->unk30 = temp_v0_2;
+    arg0->unk34 = temp_v0_2->unk34;
+    temp_v1->unk30->unk34 = arg0;
+    temp_v1->unk30 = arg0;
+}
 
 void func_800A82F0(Unk800EE1D4* arg0) {
     arg0->unk30->unk34 = arg0->unk34;
