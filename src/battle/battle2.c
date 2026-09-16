@@ -840,7 +840,7 @@ static void BattleEnqueueMoveImage(RECT* rect, s32 x, s32 y) {
     D_800F01DC++;
 }
 
-static void BattleEnqueueClearImage(RECT* rect) {
+void BattleEnqueueClearImage(RECT* rect) {
     D_800F01DC->method = QUEUE_CLEAR_IMAGE;
     D_800F01DC->rect = rect;
     D_800F01DC++;
@@ -1082,7 +1082,7 @@ extern s16 D_800F4D2C[16][10];
 
 // Enqueue a value into the 16-entry circular battle queue and return
 // the associated data slot for the newly queued entry.
-static s16* BattleEventQueuePush(s32 arg0) {
+s16* BattleEventQueuePush(s32 arg0) {
     s32 idx = D_800F10D8;
     s32 next = (idx + 1) & 0xF;
 
