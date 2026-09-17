@@ -51,7 +51,21 @@ typedef struct Unk800EE1D4 {
     /* 0x34 */ struct Unk800EE1D4* unk34;
 } Unk800EE1D4; // size: 0x38
 
+typedef struct {
+    /* 0x00 */ s32 unk0;
+    /* 0x04 */ char pad4[0x1C];
+} Unk800D0554; // size: 0x20
+
+typedef struct {
+    /* 0x00 */ s32 unk0;
+    /* 0x04 */ char pad4[0x24];
+} Unk800D1968; // size: 0x28
+
 extern Unk800D1964* D_800D1964[1];
+extern Unk800D0554 D_800D0554[];
+extern u32 D_800A8A8C;
+extern Unk800D1968* D_800D1968;
+extern s32 D_800D171C;
 extern Unk800EE1D4 D_800A8A90[10];
 extern Unk800EE1D4 D_800D16E4;
 extern s16 D_800D1710;
@@ -60,6 +74,8 @@ extern s16 D_800D9944;
 extern Unk800EE1D4 D_800EE1D4[10];
 extern Unk800EE1D4 D_800A8CD0[];
 extern s32 D_800D1730[];
+extern u16 D_800D1970[];
+extern u16 D_800D9940;
 
 void func_800A7FAC(Unk800A7FAC* arg0);
 void func_800A80A8(Unk800EE1D4* arg0, s16 arg1);
@@ -165,9 +181,26 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A40F4);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A4390);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A4400);
+s16 func_800A4400(void) {
+    u16* temp;
+    s16 result;
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A442C);
+    temp = &D_800D9940;
+    result = *temp;
+    *temp = D_800D1970[result];
+
+    return result;
+}
+
+void func_800A442C(s16 arg0) {
+    u16* temp;
+    u16* temp2;
+
+    temp2 = &D_800D1970[arg0];
+    temp = &D_800D9940;
+    *temp2 = *temp;
+    *temp = arg0;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A4458);
 
@@ -201,11 +234,31 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7AF8);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7B48);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7BF4);
+s32* func_800A7BF4(void) {
+    u32* counter;
+    Unk800D0554* base;
+    s32 index;
+
+    counter = &D_800A8A8C;
+    index = *counter;
+    base = D_800D0554;
+    *counter = index + 1;
+    return &base[index].unk0;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7C20);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7C54);
+s32* func_800A7C54(s32 count) {
+    s32* cursor;
+    Unk800D1968* base;
+    s32 index;
+
+    cursor = &D_800D171C;
+    index = *cursor;
+    *cursor = index + count;
+    base = D_800D1968;
+    return &base[index].unk0;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7C88);
 
