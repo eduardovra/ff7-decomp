@@ -1040,7 +1040,7 @@ s32 func_800A22E4(void) {
 
 s32 func_800A2328(void) {
     D_8009A000[0] = 0x10;
-    D_8009A004[0] = (u32)SysCdromGetPackPointer((void*)0x800D0000, *D_800A6528++);
+    D_8009A004 = (u32)SysCdromGetPackPointer((void*)0x800D0000, *D_800A6528++);
     SystemAkaoExecute();
 
     return 1;
@@ -1048,7 +1048,7 @@ s32 func_800A2328(void) {
 
 s32 func_800A2380(void) {
     D_8009A000[0] = *D_800A6528++;
-    D_8009A004[0] = *D_800A6528++;
+    D_8009A004 = *D_800A6528++;
     D_8009A008[0] = *D_800A6528++;
     SystemAkaoExecute();
 

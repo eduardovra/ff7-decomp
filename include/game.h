@@ -1174,7 +1174,7 @@ extern s16 g_isFieldLoading;
 extern volatile s16 D_800965EC;
 extern u8 D_80099FFC;
 extern s16 D_8009A000[1];
-extern u_long D_8009A004[1]; // may be a u8*
+extern u_long D_8009A004; // first parameter word; meaning set by the opcode in D_8009A000
 extern s32 D_8009A008[1];
 extern s32 D_8009A00C;
 extern s32 D_8009A024[8];

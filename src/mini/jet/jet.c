@@ -1,8 +1,6 @@
 //! PSYQ=3.3
 
-#include "common.h"
-#include "libgpu.h"
-#include "libgte.h"
+#include <game.h>
 
 // Nine write cursors, each reset to the start of its own buffer below.
 typedef struct {
@@ -84,6 +82,8 @@ extern Unk800EE1D4 D_800A8CD0[];
 extern s32 D_800D1730[];
 extern u16 D_800D1970[];
 extern u16 D_800D9940;
+extern s32 D_800A8338;
+extern s32 D_800A833C;
 
 void func_800A7E70(Unk800A7FAC* arg0);
 void func_800A7FAC(Unk800A7FAC* arg0);
@@ -148,7 +148,14 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A29AC);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2AA0);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2B78);
+void func_800A2B78(void) {
+    D_8009A000[0] = 0xA2;
+    D_8009A004 = D_800A8338;
+    SystemAkaoExecute();
+    D_8009A000[0] = 0xA3;
+    D_8009A004 = D_800A833C;
+    SystemAkaoExecute();
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2BE0);
 

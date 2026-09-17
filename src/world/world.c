@@ -3073,7 +3073,7 @@ void PlayMusicTrack(s32 arg0) {
         } else {
             *cmd = 0x18;
         }
-        D_8009A004[0] = D_801159BC[arg0];
+        D_8009A004 = D_801159BC[arg0];
         D_8009A008[0] = 4;
         SystemAkaoExecute();
     }
@@ -3088,7 +3088,7 @@ static s32 func_800B64C8(void) { return D_801159E0; }
 
 static void func_800B64D8(u32 arg0) {
     D_8009A000[0] = 0x30;
-    D_8009A004[0] = arg0;
+    D_8009A004 = arg0;
     SystemAkaoExecute();
 }
 
@@ -3096,13 +3096,13 @@ INCLUDE_ASM("asm/us/world/nonmatchings/world", func_800B650C);
 
 static void WmSetMusicVolume(u32 arg0) {
     D_8009A000[0] = 0xC0;
-    D_8009A004[0] = arg0;
+    D_8009A004 = arg0;
     SystemAkaoExecute();
 }
 
 static void func_800B65A4(u32 arg0, s32 arg1) {
     D_8009A000[0] = 0xBD;
-    D_8009A004[0] = arg0;
+    D_8009A004 = arg0;
     D_8009A008[0] = arg1;
     SystemAkaoExecute();
 }
@@ -3111,7 +3111,7 @@ void ToggleAmbientSound(s32 arg0) {
     if (D_8010CB20 < arg0) {
         D_8009A000[0] = 0x20;
         D_8010CB20 = arg0;
-        D_8009A004[0] = 0x40;
+        D_8009A004 = 0x40;
         D_8009A008[0] = arg0;
         SystemAkaoExecute();
     } else if (arg0 == -D_8010CB20) {
@@ -3119,7 +3119,7 @@ void ToggleAmbientSound(s32 arg0) {
         D_8009A000[0] = 0xF1;
         SystemAkaoExecute();
         D_8009A000[0] = 0xBC;
-        D_8009A004[0] = 0;
+        D_8009A004 = 0;
         SystemAkaoExecute();
     }
 }
@@ -3827,7 +3827,7 @@ s32 WmDialogSetAskToShow(u8 window, u8 message, u8 first, u8 last, s16* selected
 
 static void WmDialogPlaySound(void) {
     *D_8009A000 = 0x30;
-    *D_8009A004 = 1;
+    D_8009A004 = 1;
     *D_8009A008 = 0x40;
     SystemAkaoExecute();
 }

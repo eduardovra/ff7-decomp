@@ -8,7 +8,7 @@
 
 static void func_801D0408(u16 arg0) {
     D_8009A000[0] = 0x30;
-    D_8009A004[0] = arg0;
+    D_8009A004 = arg0;
     D_8009A008[0] = arg0;
     SystemAkaoExecute();
 }

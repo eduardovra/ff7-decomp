@@ -380,7 +380,7 @@ s32 FieldDialogAskUpdateStates(u8 window, u8 message, u8 first, u8 last, s16* se
 static void PlayWindowPointerClickSound(void) {
     FieldEventClearAkaoStruct();
     D_8009A000[0] = 0x30;
-    D_8009A004[0] = 1;
+    D_8009A004 = 1;
     D_8009A008[0] = 0x40;
     SystemAkaoExecute();
 }

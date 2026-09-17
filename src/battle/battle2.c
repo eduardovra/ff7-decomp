@@ -1228,7 +1228,7 @@ void BattleCommandSend(s32 cmdId, ...) {
     }
     count = 1;
     if (count <= nExtra) {
-        dst = (u32*)D_8009A004;
+        dst = (u32*)&D_8009A004;
         src = (u32*)args + 1;
         for (; count <= nExtra; count++) {
             *dst++ = *src++;
