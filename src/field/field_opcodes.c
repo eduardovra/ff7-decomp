@@ -2259,7 +2259,7 @@ s32 OpcodeFuncCmusc(void) {
     }
     FieldEventClearAkaoStruct();
     *D_8009A000 = GET_PARAM_U8(3);
-    *D_8009A008 = (s16)FieldEventReadMemoryS16(3, 4);
+    D_8009A008 = (s16)FieldEventReadMemoryS16(3, 4);
     D_8009A00C = (s16)FieldEventReadMemoryS16(4, 6);
     result = SetAndApplyAkao();
     PC_INC(6);

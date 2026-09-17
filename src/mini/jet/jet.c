@@ -65,6 +65,13 @@ typedef struct {
     /* 0x04 */ char pad4[0x20];
 } Unk800A8CCC; // size: 0x24
 
+typedef struct {
+    /* 0x00 */ u8 unk0[0xD4];
+    /* 0xD4 */ Unk800EE1D4* unkD4;
+    /* 0xD8 */ s16 unkD8;
+    /* 0xDA */ s16 unkDA;
+} Unk800A4390; // size: at least 0xDC
+
 extern Unk800D1964* D_800D1964[1];
 extern Unk800D1964 D_800AB898[2];
 extern Unk800D0554 D_800D0554[];
@@ -96,6 +103,7 @@ extern s32 D_800A8328;
 extern u32 D_800A832C;
 extern u_long D_800A89E4;
 extern u_long D_800D1BD4;
+extern u16 D_800EE42C;
 
 void func_800A7E70(Unk800A7FAC* arg0);
 void func_800A7FAC(Unk800A7FAC* arg0);
@@ -105,6 +113,8 @@ void func_800A82F0(Unk800EE1D4*);
 s16 func_800A8238(void);
 void func_800A8290(Unk800EE1D4* arg0, Unk800EE1D4* arg1);
 void func_800A2518();
+void func_800A8204(Unk800EE1D4* arg0);
+void func_800A442C(s16 arg0);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0450);
 
@@ -175,7 +185,16 @@ void func_800A27F0(u_long* addr) {
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2860);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2938);
+void func_800A2938(void) {
+    D_8009A000[0] = 0xC1;
+    D_8009A004 = 0xF0;
+    D_8009A008 = 0;
+    SystemAkaoExecute();
+    D_8009A000[0] = 0xB9;
+    D_8009A004 = 0xF0;
+    D_8009A008 = 0;
+    SystemAkaoExecute();
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A29AC);
 
@@ -228,7 +247,18 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3E58);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A40F4);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A4390);
+void func_800A4390(Unk800A4390* arg0) {
+    u16* temp;
+
+    if (arg0->unkD8 != -1) {
+        temp = &D_800EE42C;
+        *temp -= 1;
+        func_800A8204(arg0->unkD4);
+        func_800A442C(arg0->unkD8);
+        arg0->unkD8 = -1;
+        arg0->unkDA = 0;
+    }
+}
 
 s16 func_800A4400(void) {
     u16* temp;

@@ -1255,7 +1255,7 @@ extern volatile s16 g_PrevGameState;
 extern u8 D_80099FFC;
 extern s16 D_8009A000[1];
 extern u_long D_8009A004; // first parameter word; meaning set by the opcode in D_8009A000
-extern s32 D_8009A008[1];
+extern s32 D_8009A008;
 extern s32 D_8009A00C;
 extern s32 D_8009A024[8];
 extern u8 g_FieldCurrentOpcode;

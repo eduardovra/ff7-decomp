@@ -325,7 +325,7 @@ void FieldMain(void) {
             *D_8009A000 = 0xF5;
             SystemAkaoExecute();
             *D_8009A000 = 0x18;
-            *D_8009A008 = 4;
+            D_8009A008 = 4;
             D_8009A004 = g_FieldState.nextFieldMusic;
             SystemAkaoExecute();
         }

@@ -146,6 +146,30 @@ top of a function computes the value there. If it is not consumed until after
 several calls, gcc must park it in a callee-saved register, adding a
 save/restore and growing the stack frame. Assign at the point of use instead.
 
+**A global's address held in a pointer is not the same program as naming
+the global.** The address costs two instructions either way, but gcc spends
+them differently: name the global and it folds `%lo` into each memory
+operand, rebuilding the address at every access; take its address into a
+local and it materialises the address once and reuses the register.
+
+```
+D_800EE42C--;                    temp = &D_800EE42C; *temp -= 1;
+--------------------------       ------------------------------
+lui   $v0, %hi(sym)              lui   $v0, %hi(sym)
+lhu   $v0, %lo(sym)($v0)         addiu $v0, $v0, %lo(sym)
+addiu $v0, $v0, -1               lhu   $v1, 0($v0)
+lui   $at, %hi(sym)              addiu $v1, $v1, -1
+sh    $v0, %lo(sym)($at)         sh    $v1, 0($v0)
+```
+
+A read-modify-write on a named global therefore pays for the address twice.
+The pointer local is the only way to ask for it once, so one in the target
+is evidence the original source had one -- it is not a decomp hack. The
+shape is toolchain-invariant: in `jet.c` `func_800A4400` the direct form
+scores 615 or more under all five cc1/aspsx pairings the build offers, so a
+diff of this shape is a source problem, never an annotation problem.
+`func_800A442C`, `func_800A8238` and `func_800A8264` are the same idiom.
+
 **Declarations must start a block.** gcc 2.6.3 is C89: a declaration after a
 statement is a `parse error`. Any nested `{ }` opens a new block, which is a
 legitimate way to keep a declaration next to its use.
@@ -195,6 +219,22 @@ wrong compiler is not subtle: bginmenu.c built as 2.6.3 breaks four
 untouched functions by 15 to 340 points. A single function that is off by
 nothing but register names scores the same under both, and is telling you
 about the source, not the toolchain.
+
+**Separate the two axes before concluding anything.** A `PSYQ=` row moves
+the cc1 and the aspsx version together, so one flip cannot say which of
+them broke. `PSYQ=3.3 CC1=2.7.2` changes the compiler alone, holding aspsx
+at 2.21; `PSYQ=3.5` changes the assembler alone, holding cc1 at 2.6.3.
+Scored across that grid, jet.c fails through a different function on each
+axis:
+
+| held | changed | breaks |
+|---|---|---|
+| aspsx 2.21 | cc1 2.6.3 -> 2.7.2 | `func_800A80F8`, 0 -> 497 |
+| cc1 2.6.3 | aspsx 2.21 -> 2.34 | `func_800A4400` and the 3 after, 0 -> 105 |
+
+`func_800A4400` scores 0 under either compiler, so it says nothing about
+the cc1 -- but under `PSYQ=3.6`, which moves both axes at once, it looks
+like it does. Pick a probe that isolates the axis you are testing.
 
 **Re-run `.venv/bin/python3 tools/ninja/gen.py` after changing the
 annotation.** `ninja` happily rebuilds the object with the old `as_flags`,

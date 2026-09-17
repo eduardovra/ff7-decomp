@@ -823,7 +823,7 @@ void func_800BB944(void) {
 void func_800BB978(void) {
     D_8009A000[0] = 0xC1;
     D_8009A004 = 0x12C;
-    D_8009A008[0] = 0;
+    D_8009A008 = 0;
     SystemAkaoExecute();
 }
 
@@ -846,7 +846,7 @@ void func_800BB9FC(s32 arg0) {
     D_8009A000[0] = 0x2B;
     param = arg0 & 0xFFFF;
     D_8009A004 = 0x40;
-    D_8009A008[0] = param;
+    D_8009A008 = param;
     SystemAkaoExecute();
 }
 
@@ -857,7 +857,7 @@ static void func_800BBA40(s32 arg0) {
     D_8009A000[0] = 0x20;
     param = arg0 & 0xFFFF;
     D_8009A004 = 0x40;
-    D_8009A008[0] = param;
+    D_8009A008 = param;
     SystemAkaoExecute();
 }
 

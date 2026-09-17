@@ -109,7 +109,7 @@ static u8 D_801D252C[NUM_MENU_COLOR];
 static void func_801D0040(u16 arg0) {
     D_8009A000[0] = 0x30;
     D_8009A004 = arg0;
-    D_8009A008[0] = arg0;
+    D_8009A008 = arg0;
     SystemAkaoExecute();
 }
 
@@ -118,17 +118,17 @@ static void func_801D0080(s32 arg0) {
     case 0:
         D_8009A000[0] = 0x81;
         D_8009A004 = 0x81;
-        D_8009A008[0] = 0x81;
+        D_8009A008 = 0x81;
         break;
     case 1:
         D_8009A000[0] = 0x80;
         D_8009A004 = 0x80;
-        D_8009A008[0] = 0x80;
+        D_8009A008 = 0x80;
         break;
     case 2:
         D_8009A000[0] = 0x82;
         D_8009A004 = 0x82;
-        D_8009A008[0] = 0x82;
+        D_8009A008 = 0x82;
         break;
     }
     SystemAkaoExecute();
