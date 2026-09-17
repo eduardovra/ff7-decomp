@@ -23,8 +23,8 @@ typedef struct {
     /* 0xB3A8 */ u_long unkB3A8[3000];
     /* 0xE288 */ u_long unkE288[10];
     /* 0xE2B0 */ u_long unkE2B0[13];
-    /* 0xE2E4 */ u_long unkE2E4[1]; // trailing size unknown
-} Unk800A7FAC;                      // size: at least 0xE2E8
+    /* 0xE2E4 */ u_long unkE2E4[4];
+} Unk800A7FAC; // size: 0xE2F4
 
 // Offsets 0x00 and 0x5C are fixed by SetDefDrawEnv/SetDefDispEnv in
 // func_800A7C88; both tables are sized by their ClearOTagR calls.
@@ -61,11 +61,19 @@ typedef struct {
     /* 0x04 */ char pad4[0x24];
 } Unk800D1968; // size: 0x28
 
+typedef struct {
+    /* 0x00 */ s32 unk0;
+    /* 0x04 */ char pad4[0x20];
+} Unk800A8CCC; // size: 0x24
+
 extern Unk800D1964* D_800D1964[1];
+extern Unk800D1964 D_800AB898[2];
 extern Unk800D0554 D_800D0554[];
 extern u32 D_800A8A8C;
 extern Unk800D1968* D_800D1968;
 extern s32 D_800D171C;
+extern Unk800A8CCC* D_800A8CCC;
+extern s32 D_800A8A70;
 extern Unk800EE1D4 D_800A8A90[10];
 extern Unk800EE1D4 D_800D16E4;
 extern s16 D_800D1710;
@@ -77,6 +85,7 @@ extern s32 D_800D1730[];
 extern u16 D_800D1970[];
 extern u16 D_800D9940;
 
+void func_800A7E70(Unk800A7FAC* arg0);
 void func_800A7FAC(Unk800A7FAC* arg0);
 void func_800A80A8(Unk800EE1D4* arg0, s16 arg1);
 void func_800A8264(s16);
@@ -246,7 +255,17 @@ s32* func_800A7BF4(void) {
     return &base[index].unk0;
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7C20);
+s32* func_800A7C20(s32 count) {
+    s32* cursor;
+    Unk800A8CCC* base;
+    s32 index;
+
+    cursor = &D_800A8A70;
+    index = *cursor;
+    *cursor = index + count;
+    base = D_800A8CCC;
+    return &base[index].unk0;
+}
 
 s32* func_800A7C54(s32 count) {
     s32* cursor;
@@ -260,7 +279,43 @@ s32* func_800A7C54(s32 count) {
     return &base[index].unk0;
 }
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7C88);
+#else
+
+void func_800A7C88(void) {
+    Unk800A7FAC* temp_s1;
+
+    SetDefDrawEnv(&D_800AB898[0].draw, 0, 0, 0x140, 0xF0);
+    SetDefDispEnv(&D_800AB898[0].disp, 0, 0xF0, 0x140, 0xF0);
+    SetDefDrawEnv(&D_800AB898[1].draw, 0, 0xF0, 0x140, 0xF0);
+    SetDefDispEnv(&D_800AB898[1].disp, 0, 0, 0x140, 0xF0);
+    D_800AB898[0].draw.isbg = 0;
+    D_800AB898[1].draw.isbg = 0;
+    D_800AB898[0].draw.r0 = 0;
+    D_800AB898[0].draw.g0 = 0;
+    D_800AB898[0].draw.b0 = 8;
+    D_800AB898[1].draw.r0 = 0;
+    D_800AB898[1].draw.g0 = 0;
+    D_800AB898[1].draw.b0 = 8;
+    SetGeomOffset(0xA0, 0xA0);
+    SetGeomScreen(0x100);
+    SetDispMask(1);
+    SetBackColor(0x80, 0x80, 0x80);
+    SetFarColor(0, 0, 8);
+    temp_s1 = &D_800AB898[0].unk4368;
+    func_800A7E70(temp_s1);
+    func_800A7E70(&D_800AB898[1].unk4368);
+    func_800A7FAC(temp_s1);
+    func_800A7FAC(&D_800AB898[1].unk4368);
+    ClearOTagR((u_long*)&D_800AB898[0].unk70, LEN(D_800AB898[0].unk70));
+    ClearOTagR((u_long*)&D_800AB898[1].unk70, LEN(D_800AB898[1].unk70));
+    ClearOTagR((u_long*)&D_800AB898[0].unk4098, LEN(D_800AB898[0].unk4098));
+    ClearOTagR((u_long*)&D_800AB898[1].unk4098, LEN(D_800AB898[1].unk4098));
+    *D_800D1964 = &D_800AB898[0];
+}
+
+#endif
 
 void func_800A7E1C(void) {
     ClearOTagR((u_long*)D_800D1964[0]->unk70, LEN(D_800D1964[0]->unk70));
