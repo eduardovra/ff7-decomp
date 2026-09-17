@@ -1,5 +1,6 @@
 //! PSYQ=3.3
 
+#include "types.h"
 #include <game.h>
 
 // Nine write cursors, each reset to the start of its own buffer below.
@@ -84,6 +85,17 @@ extern u16 D_800D1970[];
 extern u16 D_800D9940;
 extern s32 D_800A8338;
 extern s32 D_800A833C;
+extern RECT D_800A0000;
+extern s32 D_800A8310;
+extern u32 D_800A8314;
+extern s32 D_800A8318;
+extern u32 D_800A831C;
+extern s32 D_800A8320;
+extern u32 D_800A8324;
+extern s32 D_800A8328;
+extern u32 D_800A832C;
+extern u_long D_800A89E4;
+extern u_long D_800D1BD4;
 
 void func_800A7E70(Unk800A7FAC* arg0);
 void func_800A7FAC(Unk800A7FAC* arg0);
@@ -92,6 +104,7 @@ void func_800A8264(s16);
 void func_800A82F0(Unk800EE1D4*);
 s16 func_800A8238(void);
 void func_800A8290(Unk800EE1D4* arg0, Unk800EE1D4* arg1);
+void func_800A2518();
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0450);
 
@@ -121,7 +134,27 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2058);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2214);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2420);
+void func_800A2420(void) {
+    RECT unused;
+
+    unused = D_800A0000;
+
+    SystemLoadFileBySector(D_800A8310, D_800A8314, &D_800A89E4, NULL);
+    while (SystemCdromReadChain())
+        ;
+    SystemLoadFileBySector(D_800A8318, D_800A831C, (u_long*)0x800F0000, NULL);
+    while (SystemCdromReadChain())
+        ;
+
+    func_800A2518();
+
+    SystemLoadFileBySector(D_800A8320, D_800A8324, &D_800D1BD4, NULL);
+    while (SystemCdromReadChain())
+        ;
+    SysCdromStartLoadLzs(D_800A8328, D_800A832C, (u_long*)0x800F0000, NULL);
+    while (SystemCdromReadChain())
+        ;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2518);
 
