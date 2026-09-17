@@ -14,13 +14,30 @@ import (
 )
 
 type entry struct {
-	score float32
-	name  string
+	score        float32
+	name         string
+	instructions int
+	branches     int
+	jumps        int
+	labels       int
 }
 
 var includeAsmPattern = regexp.MustCompile(`INCLUDE_ASM\([^,]*,\s*(\w+)\s*\)`)
 
-func Rank(path string, minThreshold float32) error {
+// Mnemonics fed to the difficulty model. Only the ones the PSX disassembly
+// actually emits; jr/jalr are excluded to keep the model's jump feature as
+// trained.
+var branchMnemonics = map[string]bool{
+	"b": true, "beq": true, "bne": true, "bnez": true, "beqz": true,
+	"blez": true, "bgtz": true, "bltz": true, "bgez": true,
+	"blt": true, "bgt": true, "ble": true, "bge": true,
+	"bltzal": true, "bgezal": true,
+}
+
+var jumpMnemonics = map[string]bool{"j": true, "jal": true}
+
+func Rank(path string, minThreshold float32, limit int) error {
+	requested := path
 	pending, err := pendingFunctions(path)
 	if err != nil {
 		return err
@@ -56,25 +73,92 @@ func Rank(path string, minThreshold float32) error {
 		if pending != nil && !pending[funcName] {
 			return nil
 		}
-		score, err := rankFunction(path)
+		ranked, err := rankFunction(path)
 		if err != nil {
 			return err
 		}
-		if score < minThreshold {
+		if ranked == nil || ranked.score < minThreshold {
 			return nil
 		}
-		entries = append(entries, entry{score, filepath.Base(path)})
+		entries = append(entries, *ranked)
 		return nil
 	}); err != nil {
 		return err
 	}
 	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].score < entries[j].score
+		if entries[i].score != entries[j].score {
+			return entries[i].score < entries[j].score
+		}
+		if entries[i].instructions != entries[j].instructions {
+			return entries[i].instructions < entries[j].instructions
+		}
+		return entries[i].name < entries[j].name
 	})
-	for _, entry := range entries {
-		fmt.Printf("%.3f: %s\n", entry.score, entry.name)
-	}
+	report(entries, requested, limit)
 	return nil
+}
+
+func report(entries []entry, requested string, limit int) {
+	if len(entries) == 0 {
+		fmt.Println("no pending functions")
+		return
+	}
+	shown := entries
+	if limit > 0 && limit < len(shown) {
+		shown = shown[:limit]
+	}
+	fmt.Printf("%5s  %5s  %3s  %3s  %3s  %s\n",
+		"score", "instr", "br", "jmp", "lbl", "function")
+	for _, entry := range shown {
+		fmt.Printf("%.3f  %5d  %3d  %3d  %3d  %s\n",
+			entry.score,
+			entry.instructions,
+			entry.branches,
+			entry.jumps,
+			entry.labels,
+			entry.name)
+	}
+	fmt.Printf("\n%d pending", len(entries))
+	if len(shown) < len(entries) {
+		fmt.Printf(", showing %d", len(shown))
+	}
+	fmt.Println()
+	printNextCommands(shown[0].name, overlayName(requested))
+}
+
+// printNextCommands echoes the decompile and diff invocations for the
+// easiest function, ready to paste.
+func printNextCommands(funcName, overlay string) {
+	fmt.Printf("  ./mako.sh dec %s\n", funcName)
+	differ := ".venv/bin/python3 tools/asm-differ/diff.py -mowsc --annotate " + funcName
+	if overlay != "" {
+		differ += " --overlay " + overlay
+	}
+	fmt.Printf("  %s\n", differ)
+}
+
+// overlayName maps the ranked path to an overlay the differ accepts, which it
+// validates by the presence of a linker map. An empty result drops the flag.
+func overlayName(requested string) string {
+	trimmed := strings.TrimSuffix(requested, "/")
+	candidate := strings.TrimSuffix(filepath.Base(trimmed), ".c")
+	if hasLinkerMap(candidate) {
+		return candidate
+	}
+	parent := filepath.Base(filepath.Dir(trimmed))
+	if hasLinkerMap(parent) {
+		return parent
+	}
+	return ""
+}
+
+func hasLinkerMap(overlay string) bool {
+	if overlay == "" || overlay == "." || overlay == string(filepath.Separator) {
+		return false
+	}
+	mapPath := filepath.Join("build", builder.Version(), overlay+".map")
+	_, err := os.Stat(mapPath)
+	return err == nil
 }
 
 // pendingFunctions lists the functions still stubbed with INCLUDE_ASM in the
@@ -150,7 +234,9 @@ func decompilationDifficultyScore(instructions, branches, jumps, labels int) flo
 	return float32(difficulty)
 }
 
-func rankFunction(path string) (float32, error) {
+// rankFunction scores one disassembly file, returning nil for the data, bss
+// and rodata dumps that share the directory with real functions.
+func rankFunction(path string) (*entry, error) {
 	// Extract function name from file
 	filename := filepath.Base(path)
 	funcName := strings.TrimSuffix(filename, ".s")
@@ -162,20 +248,16 @@ func rankFunction(path string) (float32, error) {
 		strings.HasSuffix(funcName, ".bss") ||
 		strings.HasSuffix(funcName, ".rodata") ||
 		funcName == "header" {
-		return 0, nil
+		return nil, nil
 	}
 
 	// Open and read file
 	file, err := os.Open(path)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer file.Close()
 
-	// Compile regex patterns
-	branchPattern := regexp.MustCompile(`\b(beq|bne|bnez|beqz|blez|bgtz|bltz|bgez|blt|bgt|ble|bge|bltzal|bgezal)\b`)
-	jumpJalPattern := regexp.MustCompile(`\bjal\b`)
-	jumpJPattern := regexp.MustCompile(`\bj\b`)
 	labelPattern := regexp.MustCompile(`^\s*\.L[0-9A-Fa-f_]+:`)
 	instructionPattern := regexp.MustCompile(`/\*\s*[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s*\*/`)
 
@@ -192,14 +274,14 @@ func rankFunction(path string) (float32, error) {
 		content.WriteString("\n")
 	}
 	if err := scanner.Err(); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	contentStr := content.String()
 
 	// Skip files that only contain rodata (no actual code)
 	if strings.Contains(contentStr, ".section .rodata") && !strings.Contains(contentStr, "glabel") {
-		return 0, nil
+		return nil, nil
 	}
 
 	// Parse line by line
@@ -223,30 +305,54 @@ func rankFunction(path string) (float32, error) {
 
 		// Count instructions
 		if instructionPattern.MatchString(line) {
+			opcode := mnemonic(line)
+			// Data dumps carry the same address comment as code, so reject
+			// the assembler directives that make up their bodies.
+			if opcode == "" || strings.HasPrefix(opcode, ".") {
+				continue
+			}
 			instructionCount++
 
-			// Check for branches
-			if branchPattern.MatchString(line) {
+			switch {
+			case branchMnemonics[opcode]:
 				branchCount++
-			}
-
-			// Check for jumps
-			if jumpJalPattern.MatchString(line) || jumpJPattern.MatchString(line) {
+			case jumpMnemonics[opcode]:
 				jumpCount++
 			}
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	// Skip functions with 0 instructions (data sections)
 	if instructionCount == 0 {
-		return 0, nil
+		return nil, nil
 	}
 
-	// Calculate difficulty score
 	score := decompilationDifficultyScore(instructionCount, branchCount, jumpCount, labelCount)
-	return score, nil
+	return &entry{
+		score:        score,
+		name:         funcName,
+		instructions: instructionCount,
+		branches:     branchCount,
+		jumps:        jumpCount,
+		labels:       labelCount,
+	}, nil
+}
+
+// mnemonic returns the opcode of a disassembled line, which follows the
+// address comment. Matching it there avoids hitting the encoded bytes or an
+// operand that happens to spell an opcode.
+func mnemonic(line string) string {
+	index := strings.Index(line, "*/")
+	if index < 0 {
+		return ""
+	}
+	fields := strings.Fields(line[index+2:])
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[0]
 }
