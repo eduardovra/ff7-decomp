@@ -170,6 +170,28 @@ scores 615 or more under all five cc1/aspsx pairings the build offers, so a
 diff of this shape is a source problem, never an annotation problem.
 `func_800A442C`, `func_800A8238` and `func_800A8264` are the same idiom.
 
+**A store at `reg + offset` beyond 16 bits, where the register holds a
+known global address, means the source held that byte's address in a
+pointer.** CSE (`find_best_addr` in cse.c) folds every `reg + const` store
+address whose register it knows to be a constant, so `db[1].draw.isbg = 0`
+compiles to the absolute `sb $0, sym+0x12674` whether `db` is the array or a
+pointer to it. A plain register address is never folded, and combine later
+merges the pointer arithmetic back into the store, giving the target's
+`sb $0, 0x12674($s2)` that the assembler expands with `$at`. Only this shape
+reproduces it, and the pointer must be computed with no call in between:
+
+```c
+Unk800D1964* db = D_800AB898;
+u_char* isbg;
+isbg = &db[1].draw.isbg;      /* jet.c func_800A7C88 */
+*isbg = 0;
+```
+
+Neither a chained assignment, a volatile pointer, an index variable nor a
+`DRAWENV*` to the second buffer works: each leaves a `reg + 0x18` address
+that CSE folds. The pattern is unique in the tree, so treat it as a
+last-resort explanation, not a first guess.
+
 **Declarations must start a block.** gcc 2.6.3 is C89: a declaration after a
 statement is a `parse error`. Any nested `{ }` opens a new block, which is a
 legitimate way to keep a declaration next to its use.

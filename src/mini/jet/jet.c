@@ -414,19 +414,19 @@ s32* func_800A7C54(s32 count) {
     return &base[index].unk0;
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7C88);
-#else
-
 void func_800A7C88(void) {
     Unk800A7FAC* temp_s1;
+    Unk800D1964* db = D_800AB898;
+    u_char* isbg;
 
     SetDefDrawEnv(&D_800AB898[0].draw, 0, 0, 0x140, 0xF0);
     SetDefDispEnv(&D_800AB898[0].disp, 0, 0xF0, 0x140, 0xF0);
     SetDefDrawEnv(&D_800AB898[1].draw, 0, 0xF0, 0x140, 0xF0);
     SetDefDispEnv(&D_800AB898[1].disp, 0, 0, 0x140, 0xF0);
     D_800AB898[0].draw.isbg = 0;
-    D_800AB898[1].draw.isbg = 0;
+    // Stored off the buffer base register; a direct field store folds to an absolute address.
+    isbg = &db[1].draw.isbg;
+    *isbg = 0;
     D_800AB898[0].draw.r0 = 0;
     D_800AB898[0].draw.g0 = 0;
     D_800AB898[0].draw.b0 = 8;
@@ -449,8 +449,6 @@ void func_800A7C88(void) {
     ClearOTagR((u_long*)&D_800AB898[1].unk4098, LEN(D_800AB898[1].unk4098));
     *D_800D1964 = &D_800AB898[0];
 }
-
-#endif
 
 void func_800A7E1C(void) {
     ClearOTagR((u_long*)D_800D1964[0]->unk70, LEN(D_800D1964[0]->unk70));
