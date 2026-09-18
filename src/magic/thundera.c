@@ -3,6 +3,7 @@
 #include "common.h"
 #include "magic_private.h"
 #include "../battle/battle.h"
+#include <libc.h>
 
 // Bolt2 (サンダラ / Thundara), tier 2.
 
@@ -52,7 +53,7 @@ static void ThunderaRenderModel(void) {
     matrix.t[0] = effect->Pos.vx;
     matrix.t[1] = effect->Pos.vy;
     matrix.t[2] = effect->Pos.vz;
-    CompMatrix(&D_800FA63C, &matrix, &matrix);
+    CompMatrix(&D_800FA63C.m, &matrix, &matrix);
     SetRotMatrix(&matrix);
     SetTransMatrix(&matrix);
     desc = (ModelRenderDesc*)0x1F800000;

@@ -3,6 +3,7 @@
 #include "common.h"
 #include "magic_private.h"
 #include "../battle/battle.h"
+#include <libc.h>
 
 // Bolt (サンダー / Thunder), tier 1.
 
