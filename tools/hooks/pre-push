@@ -12,7 +12,7 @@ cd "$(git rev-parse --show-toplevel)"
 inputs="src include config tools asm CMakeLists.txt"
 
 # Tracked edits only: untracked files are not part of the push either way.
-dirty=$(git status --porcelain -uno -- $inputs)
+dirty=$(git status --porcelain -uno --ignore-submodules=all -- $inputs)
 if [ -n "$dirty" ]; then
 	echo "pre-push: build inputs are dirty, so CI would test different"
 	echo "          code than this hook does:"
@@ -22,9 +22,9 @@ fi
 
 echo "pre-push: format"
 make format >/dev/null
-if ! git diff --quiet -- $inputs; then
+if ! git diff --quiet --ignore-submodules=all -- $inputs; then
 	echo "pre-push: the formatter rewrote these, commit them:"
-	git diff --name-only -- $inputs
+	git diff --name-only --ignore-submodules=all -- $inputs
 	exit 1
 fi
 

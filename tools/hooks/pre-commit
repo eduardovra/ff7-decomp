@@ -8,8 +8,8 @@ cd "$(git rev-parse --show-toplevel)"
 inputs="src include config tools"
 
 make format >/dev/null
-if ! git diff --quiet -- $inputs; then
+if ! git diff --quiet --ignore-submodules=all -- $inputs; then
 	echo "pre-commit: the formatter rewrote these, stage them and retry:"
-	git diff --name-only -- $inputs
+	git diff --name-only --ignore-submodules=all -- $inputs
 	exit 1
 fi
