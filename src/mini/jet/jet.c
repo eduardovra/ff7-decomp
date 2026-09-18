@@ -83,8 +83,20 @@ extern s32 D_800A8328;
 extern u32 D_800A832C;
 extern s32 D_800A8338;
 extern s32 D_800A833C;
+extern s32 D_800A83C8;
+extern s32 D_800A83CC;
+extern s32 D_800A83D0;
+extern s32 D_800A892C;
+extern s32 D_800A8930;
+extern s32 D_800A8934;
+extern s32 D_800A893C;
+extern s32 D_800A8940;
+extern s32 D_800A8944;
 extern s32 D_800A8988;
+extern s32 D_800A89D8;
 extern u_long D_800A89E4;
+extern s32 D_800A8A5C;
+extern s32 D_800A8A64;
 extern s32 D_800A8A70;
 extern u32 D_800A8A8C;
 extern Unk800EE1D4 D_800A8A90[10];
@@ -97,12 +109,18 @@ extern Unk800EE1D4 D_800D16E4;
 extern s32 D_800D171C;
 extern s32 D_800D1724;
 extern s32 D_800D1730[];
+extern s8 D_800D1960;
 extern Unk800D1964* D_800D1964[1];
 extern Unk800D1968* D_800D1968;
 extern u16 D_800D1970[];
 extern s16 D_800D1A40[0xC8];
 extern u_long D_800D1BD4;
+extern s32 D_800D1BD8;
 extern s32 D_800D1BE4;
+extern s32* D_800D1BE8;
+extern s32* D_800D1BEC;
+extern Unk800A8CCC* D_800D1BFC;
+extern Unk800D1968* D_800D1C14;
 extern u16 D_800D9940;
 extern s16 D_800D9944;
 extern s32* D_800E2604;
@@ -119,6 +137,7 @@ void func_800A8290(Unk800EE1D4* arg0, Unk800EE1D4* arg1);
 void func_800A2518();
 void func_800A8204(Unk800EE1D4* arg0);
 void func_800A442C(s16 arg0);
+void func_800A2DE4(s32 arg0, s32 arg1);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0450);
 
@@ -213,11 +232,19 @@ void func_800A2B78(void) {
     SystemAkaoExecute();
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2BE0);
+void func_800A2BE0(void) {
+    D_800A83CC = -0x1B76;
+    D_800A83C8 = 0;
+    D_800A83D0 = 0xC8;
+    D_800E2604 = D_800D1BEC;
+    D_800A8CC0 = D_800D1BE8;
+    func_800A2DE4(0, 3);
+    D_800D1960 = 1;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2C50);
 
-void func_800A2DE4(s32 arg0) {
+void func_800A2DE4(s32 arg0, s32 arg1) {
     s32 elem;
     s32 base;
 
@@ -311,9 +338,28 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7414);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7544);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7688);
+s32 func_800A7688(s32 arg0, s32 arg1, s32 arg2) {
+    s32 a;
+    s32 b;
+    s32 c;
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A76DC);
+    a = D_800A892C;
+    b = D_800A8930;
+    c = D_800A8934;
+
+    return (a * (arg0 >> 2)) + (b * (arg1 >> 2)) + (c * (arg2 >> 2)) + D_800A8A5C;
+}
+
+s32 func_800A76DC(s32 arg0, s32 arg1, s32 arg2) {
+    s32 a;
+    s32 b;
+    s32 c;
+    a = D_800A893C;
+    b = D_800A8940;
+    c = D_800A8944;
+
+    return (a * (arg0 >> 2)) + (b * (arg1 >> 2)) + (c * (arg2 >> 2)) + D_800A8A64;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7730);
 
@@ -321,7 +367,14 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7928);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7A10);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7AF8);
+void func_800A7AF8(void) {
+    D_800A8A70 = 0;
+    D_800D171C = 0;
+    D_800A8A8C = 0;
+    D_800A8CCC = D_800D1BFC;
+    D_800D1968 = D_800D1C14;
+    D_800A89D8 = D_800D1BD8;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7B48);
 
