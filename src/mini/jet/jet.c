@@ -34,7 +34,7 @@ typedef struct {
     /* 0x4070 */ u_long* unk4070[10];
     /* 0x4098 */ u_long* unk4098[0xB4];
     /* 0x4368 */ Unk800A7FAC unk4368;
-} Unk800D1964; // size: at least 0x12650
+} Unk800D1964; // size: 0x1265C
 
 // Doubly linked list node. func_800A80A8 initialises the matrix to identity
 // and func_800A8010 chains the arrays with a 0x38 stride.
@@ -72,26 +72,6 @@ typedef struct {
     /* 0xDA */ s16 unkDA;
 } Unk800A4390; // size: at least 0xDC
 
-extern Unk800D1964* D_800D1964[1];
-extern Unk800D1964 D_800AB898[2];
-extern Unk800D0554 D_800D0554[];
-extern u32 D_800A8A8C;
-extern Unk800D1968* D_800D1968;
-extern s32 D_800D171C;
-extern Unk800A8CCC* D_800A8CCC;
-extern s32 D_800A8A70;
-extern Unk800EE1D4 D_800A8A90[10];
-extern Unk800EE1D4 D_800D16E4;
-extern s16 D_800D1710;
-extern s16 D_800D1A40[0xC8];
-extern s16 D_800D9944;
-extern Unk800EE1D4 D_800EE1D4[10];
-extern Unk800EE1D4 D_800A8CD0[];
-extern s32 D_800D1730[];
-extern u16 D_800D1970[];
-extern u16 D_800D9940;
-extern s32 D_800A8338;
-extern s32 D_800A833C;
 extern RECT D_800A0000;
 extern s32 D_800A8310;
 extern u32 D_800A8314;
@@ -101,8 +81,32 @@ extern s32 D_800A8320;
 extern u32 D_800A8324;
 extern s32 D_800A8328;
 extern u32 D_800A832C;
+extern s32 D_800A8338;
+extern s32 D_800A833C;
+extern s32 D_800A8988;
 extern u_long D_800A89E4;
+extern s32 D_800A8A70;
+extern u32 D_800A8A8C;
+extern Unk800EE1D4 D_800A8A90[10];
+extern s32* D_800A8CC0;
+extern Unk800A8CCC* D_800A8CCC;
+extern Unk800EE1D4 D_800A8CD0[0xC8];
+extern Unk800D1964 D_800AB898[2];
+extern Unk800D0554 D_800D0554[];
+extern Unk800EE1D4 D_800D16E4;
+extern s32 D_800D171C;
+extern s32 D_800D1724;
+extern s32 D_800D1730[];
+extern Unk800D1964* D_800D1964[1];
+extern Unk800D1968* D_800D1968;
+extern u16 D_800D1970[];
+extern s16 D_800D1A40[0xC8];
 extern u_long D_800D1BD4;
+extern s32 D_800D1BE4;
+extern u16 D_800D9940;
+extern s16 D_800D9944;
+extern s32* D_800E2604;
+extern Unk800EE1D4 D_800EE1D4[10];
 extern u16 D_800EE42C;
 
 void func_800A7E70(Unk800A7FAC* arg0);
@@ -213,7 +217,15 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2BE0);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2C50);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2DE4);
+void func_800A2DE4(s32 arg0) {
+    s32 elem;
+    s32 base;
+
+    elem = D_800A8CC0[arg0 & 0xFF];
+    base = D_800D1BE4;
+    D_800A8988 = base + elem;
+    D_800D1724 = *D_800E2604;
+}
 
 void func_800A2E30(void) {}
 
@@ -413,7 +425,7 @@ void func_800A8010(void) {
     s32 i;
 
     func_800A80A8(&D_800D16E4, 0);
-    D_800D1710 = 0;
+    D_800D16E4.unk2C = 0;
     D_800D9944 = 0;
     for (i = 0; i < LEN(D_800D1A40); i++) {
         D_800D1A40[i] = i + 1;
