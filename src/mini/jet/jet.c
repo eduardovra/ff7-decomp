@@ -437,23 +437,20 @@ s32* func_800A7C54(s32 count) {
 // No PC counterpart; the port replaced the PSX double buffer with the DirectX driver
 void func_800A7C88(void) {
     Unk800A7FAC* temp_s1;
-    Unk800D1964* db = D_800AB898;
+    Unk800D1964* db;
     u_char* isbg;
 
     SetDefDrawEnv(&D_800AB898[0].draw, 0, 0, 0x140, 0xF0);
     SetDefDispEnv(&D_800AB898[0].disp, 0, 0xF0, 0x140, 0xF0);
     SetDefDrawEnv(&D_800AB898[1].draw, 0, 0xF0, 0x140, 0xF0);
     SetDefDispEnv(&D_800AB898[1].disp, 0, 0, 0x140, 0xF0);
+    db = D_800AB898;
     D_800AB898[0].draw.isbg = 0;
     // Stored off the buffer base register; a direct field store folds to an absolute address.
     isbg = &db[1].draw.isbg;
     *isbg = 0;
-    D_800AB898[0].draw.r0 = 0;
-    D_800AB898[0].draw.g0 = 0;
-    D_800AB898[0].draw.b0 = 8;
-    D_800AB898[1].draw.r0 = 0;
-    D_800AB898[1].draw.g0 = 0;
-    D_800AB898[1].draw.b0 = 8;
+    setRGB0(&D_800AB898[0].draw, 0, 0, 8);
+    setRGB0(&D_800AB898[1].draw, 0, 0, 8);
     SetGeomOffset(0xA0, 0xA0);
     SetGeomScreen(0x100);
     SetDispMask(1);
