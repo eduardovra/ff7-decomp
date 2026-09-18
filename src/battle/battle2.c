@@ -41,13 +41,6 @@ void func_801B000C(s16, u8);
 void func_801B0040(s16, u8);
 void func_801B0054(s16, u8);
 void func_801B0084(s16, u8);
-void func_801B0038(s16, u8);
-void func_801B0060(s16, u8);
-void func_801B00B4(s16, u8);
-void func_801B00F0(s16, u8);
-void func_801B0150(s16, u8);
-void func_801B0170(s16, u8);
-void func_801B04C0(s16, u8);
 void func_800C6CB8(s16, u8);
 
 // A MAGIC/*.BIN overlay entrypoint. Only meaningful while that overlay is
@@ -630,66 +623,66 @@ MagicEntry D_800EF9D8[] = {
     (MagicEntry)0x801B0EEC,              //   7 CAREL.BIN
     (MagicEntry)0x801B0B60,              //   8 CAREL.BIN
     (MagicEntry)0x801B0364,              //   9 THREAT.BIN
-    (MagicEntry)func_801B0054,           //  10 TODO.BIN
-    (MagicEntry)func_801B0054,           //  11 MINIMAM.BIN
-    (MagicEntry)func_801B0000,           //  12 ECHOES.BIN
-    (MagicEntry)func_801B0000,           //  13 HAKAI.BIN
-    (MagicEntry)func_801B0000,           //  14 TEARS.BIN
-    (MagicEntry)func_801B0000,           //  15 ALMIGHTY.BIN
-    (MagicEntry)func_801B0000,           //  16 SMKBALL.BIN
-    (MagicEntry)func_801B0054,           //  17 HEIST.BIN
-    (MagicEntry)func_801B0054,           //  18 MYTYG.BIN
+    (MagicEntry)0x801B0054,              //  10 TODO.BIN
+    (MagicEntry)0x801B0054,              //  11 MINIMAM.BIN
+    (MagicEntry)0x801B0000,              //  12 ECHOES.BIN
+    (MagicEntry)0x801B0000,              //  13 HAKAI.BIN
+    (MagicEntry)0x801B0000,              //  14 TEARS.BIN
+    (MagicEntry)0x801B0000,              //  15 ALMIGHTY.BIN
+    (MagicEntry)0x801B0000,              //  16 SMKBALL.BIN
+    (MagicEntry)0x801B0054,              //  17 HEIST.BIN
+    (MagicEntry)0x801B0054,              //  18 MYTYG.BIN
     (MagicEntry)0x801B0564,              //  19 RESIST.BIN
     (MagicEntry)BattleQueueImpactEffect, //  20 FIRE.BIN
-    (MagicEntry)func_801B0054,           //  21 RENBAKU.BIN
-    (MagicEntry)func_801B0054,           //  22 ZENBAKU.BIN
-    (MagicEntry)func_801B0054,           //  23 STOP.BIN
+    (MagicEntry)0x801B0054,              //  21 RENBAKU.BIN
+    (MagicEntry)0x801B0054,              //  22 ZENBAKU.BIN
+    (MagicEntry)0x801B0054,              //  23 STOP.BIN
     (MagicEntry)func_800C6CB8,           //  24 DEATH.BIN
-    (MagicEntry)func_801B0000,           //  25 SLOW.BIN
-    (MagicEntry)func_801B0054,           //  26 SLIPL.BIN
-    (MagicEntry)func_801B0054,           //  27 SAILESS.BIN
+    (MagicEntry)0x801B0000,              //  25 SLOW.BIN
+    (MagicEntry)0x801B0054,              //  26 SLIPL.BIN
+    (MagicEntry)0x801B0054,              //  27 SAILESS.BIN
     (MagicEntry)0x801B07D0,              //  28 BERSERK.BIN
     (MagicEntry)func_800C6CB8,           //  29 CONF.BIN
-    (MagicEntry)func_801B0000,           //  30 FAIRA.BIN
-    (MagicEntry)func_801B0084,           //  31 FAIGA2.BIN
+    (MagicEntry)0x801B0000,              //  30 FAIRA.BIN
+    (MagicEntry)0x801B0084,              //  31 FAIGA2.BIN
     (MagicEntry)0x801B0714,              //  32 BRIZARA.BIN
-    (MagicEntry)func_801B0054,           //  33 BRIZAG2.BIN
-    (MagicEntry)func_801B0000,           //  34 THUNDERA.BIN
-    (MagicEntry)func_801B000C,           //  35 THUNDG2.BIN
+    (MagicEntry)0x801B0054,              //  33 BRIZAG2.BIN
+    (MagicEntry)0x801B0000,              //  34 THUNDERA.BIN
+    (MagicEntry)0x801B000C,              //  35 THUNDG2.BIN
     (MagicEntry)0x801B0074,              //  36 QUEIR.BIN
-    (MagicEntry)func_801B0054,           //  37 QUEIG.BIN
-    (MagicEntry)func_801B0000,           //  38 BIORA.BIN
-    (MagicEntry)func_801B0000,           //  39 BIOGA2.BIN
-    (MagicEntry)func_801B0000,           //  40 COMETEO.BIN
+    (MagicEntry)0x801B0054,              //  37 QUEIG.BIN
+    (MagicEntry)0x801B0000,              //  38 BIORA.BIN
+    (MagicEntry)0x801B0000,              //  39 BIOGA2.BIN
+    (MagicEntry)0x801B0000,              //  40 COMETEO.BIN
     (MagicEntry)0x801B1028,              //  41 Q_KETSU.BIN
     (MagicEntry)0x801B1028,              //  42 Q_SHU.BIN
     (MagicEntry)0x801B0854,              //  43 BREAK.BIN
-    (MagicEntry)func_801B0000,           //  44 BARRIER.BIN
-    (MagicEntry)func_801B0000,           //  45 MABARIA.BIN
-    (MagicEntry)func_801B0000,           //  46 REFREC.BIN
-    (MagicEntry)func_801B0054,           //  47 DETHPER.BIN
-    (MagicEntry)func_801B0054,           //  48 DAISENP.BIN
-    (MagicEntry)func_801B0054,           //  49 AQUA.BIN
-    (MagicEntry)func_801B0054,           //  50 TODO.BIN
-    (MagicEntry)func_801B0054,           //  51 MINIMAM.BIN
-    (MagicEntry)func_801B0000,           //  52 ESNA.BIN
+    (MagicEntry)0x801B0000,              //  44 BARRIER.BIN
+    (MagicEntry)0x801B0000,              //  45 MABARIA.BIN
+    (MagicEntry)0x801B0000,              //  46 REFREC.BIN
+    (MagicEntry)0x801B0054,              //  47 DETHPER.BIN
+    (MagicEntry)0x801B0054,              //  48 DAISENP.BIN
+    (MagicEntry)0x801B0054,              //  49 AQUA.BIN
+    (MagicEntry)0x801B0054,              //  50 TODO.BIN
+    (MagicEntry)0x801B0054,              //  51 MINIMAM.BIN
+    (MagicEntry)0x801B0000,              //  52 ESNA.BIN
     (MagicEntry)0x801B02EC,              //  53 FIRE.BIN
-    (MagicEntry)func_801B0000,           //  54 HAKUGEK2.BIN
-    (MagicEntry)func_801B0000,           //  55 NAPALM.BIN
+    (MagicEntry)0x801B0000,              //  54 HAKUGEK2.BIN
+    (MagicEntry)0x801B0000,              //  55 NAPALM.BIN
     (MagicEntry)0x801B0730,              //  56 GRAVIDE.BIN
     (MagicEntry)0x801B0C10,              //  57 GRAVIRA.BIN
     (MagicEntry)0x801B0B38,              //  58 SUMI.BIN
     (MagicEntry)0x801B0FC4,              //  59 HARI1000.BIN
-    (MagicEntry)func_801B0000,           //  60 TBREATH.BIN
-    (MagicEntry)func_801B0054,           //  61 KUSAI.BIN
-    (MagicEntry)func_801B0000,           //  62 VEGET.BIN
+    (MagicEntry)0x801B0000,              //  60 TBREATH.BIN
+    (MagicEntry)0x801B0054,              //  61 KUSAI.BIN
+    (MagicEntry)0x801B0000,              //  62 VEGET.BIN
     (MagicEntry)0x801B0030,              //  63 VEGET.BIN
-    (MagicEntry)func_801B0060,           //  64 VEGET.BIN
+    (MagicEntry)0x801B0060,              //  64 VEGET.BIN
     (MagicEntry)0x801B0090,              //  65 VEGET.BIN
     (MagicEntry)0x801B00C0,              //  66 VEGET.BIN
-    (MagicEntry)func_801B00F0,           //  67 VEGET.BIN
+    (MagicEntry)0x801B00F0,              //  67 VEGET.BIN
     (MagicEntry)0x801B0120,              //  68 VEGET.BIN
-    (MagicEntry)func_801B0150            //  69 VEGET.BIN
+    (MagicEntry)0x801B0150               //  69 VEGET.BIN
 };
 
 // currentActionId 2 -- magic spells: entrypoint per slot.
@@ -699,82 +692,82 @@ MagicEntry D_800EFAF0[] = {
     (MagicEntry)0x801B0A8C,    //   2 CAREL.BIN
     (MagicEntry)0x801B0C44,    //   3 CAREL.BIN
     (MagicEntry)0x801B0B60,    //   4 CAREL.BIN
-    (MagicEntry)func_801B0000, //   5 ESNA.BIN
+    (MagicEntry)0x801B0000,    //   5 ESNA.BIN
     (MagicEntry)0x801B0564,    //   6 RESIST.BIN
     (MagicEntry)func_800C6CB8, //   7 RAISE.BIN
     (MagicEntry)func_800C6CB8, //   8 RAISE.BIN
-    (MagicEntry)func_801B0054, //   9 MINIMAM.BIN
-    (MagicEntry)func_801B0054, //  10 TODO.BIN
-    (MagicEntry)func_801B0054, //  11 SLIPL.BIN
+    (MagicEntry)0x801B0054,    //   9 MINIMAM.BIN
+    (MagicEntry)0x801B0054,    //  10 TODO.BIN
+    (MagicEntry)0x801B0054,    //  11 SLIPL.BIN
     (MagicEntry)func_800C6CB8, //  12 CONF.BIN
-    (MagicEntry)func_801B0054, //  13 SAILESS.BIN
+    (MagicEntry)0x801B0054,    //  13 SAILESS.BIN
     (MagicEntry)0x801B07D0,    //  14 BERSERK.BIN
-    (MagicEntry)func_801B0000, //  15 BARRIER.BIN
-    (MagicEntry)func_801B0000, //  16 MABARIA.BIN
-    (MagicEntry)func_801B0000, //  17 REFREC.BIN
-    (MagicEntry)func_801B0000, //  18 WALL.BIN
-    (MagicEntry)func_801B0054, //  19 HEIST.BIN
-    (MagicEntry)func_801B0000, //  20 SLOW.BIN
-    (MagicEntry)func_801B0054, //  21 STOP.BIN
+    (MagicEntry)0x801B0000,    //  15 BARRIER.BIN
+    (MagicEntry)0x801B0000,    //  16 MABARIA.BIN
+    (MagicEntry)0x801B0000,    //  17 REFREC.BIN
+    (MagicEntry)0x801B0000,    //  18 WALL.BIN
+    (MagicEntry)0x801B0054,    //  19 HEIST.BIN
+    (MagicEntry)0x801B0000,    //  20 SLOW.BIN
+    (MagicEntry)0x801B0054,    //  21 STOP.BIN
     (MagicEntry)0x801B0D4C,    //  22 DEBARIA.BIN
-    (MagicEntry)func_801B0054, //  23 DETHPER.BIN
+    (MagicEntry)0x801B0054,    //  23 DETHPER.BIN
     (MagicEntry)func_800C6CB8, //  24 DEATH.BIN
-    (MagicEntry)func_801B0000, //  25 ESCAPE.BIN
-    (MagicEntry)func_801B0000, //  26 DEJON.BIN
+    (MagicEntry)0x801B0000,    //  25 ESCAPE.BIN
+    (MagicEntry)0x801B0000,    //  26 DEJON.BIN
     (MagicEntry)0x801B02EC,    //  27 FIRE.BIN
-    (MagicEntry)func_801B0000, //  28 FAIRA.BIN
-    (MagicEntry)func_801B0084, //  29 FAIGA.BIN
-    (MagicEntry)func_801B037C, //  30 BRIZAD.BIN
+    (MagicEntry)0x801B0000,    //  28 FAIRA.BIN
+    (MagicEntry)0x801B0084,    //  29 FAIGA.BIN
+    (MagicEntry)0x801B037C,    //  30 BRIZAD.BIN
     (MagicEntry)0x801B0714,    //  31 BRIZARA.BIN
-    (MagicEntry)func_801B0054, //  32 BRIZAG.BIN
-    (MagicEntry)func_801B0000, //  33 THUNDER.BIN
-    (MagicEntry)func_801B0000, //  34 THUNDERA.BIN
-    (MagicEntry)func_801B000C, //  35 THUNDG1.BIN
-    (MagicEntry)func_801B0054, //  36 QUEIK.BIN
+    (MagicEntry)0x801B0054,    //  32 BRIZAG.BIN
+    (MagicEntry)0x801B0000,    //  33 THUNDER.BIN
+    (MagicEntry)0x801B0000,    //  34 THUNDERA.BIN
+    (MagicEntry)0x801B000C,    //  35 THUNDG1.BIN
+    (MagicEntry)0x801B0054,    //  36 QUEIK.BIN
     (MagicEntry)0x801B0074,    //  37 QUEIR.BIN
-    (MagicEntry)func_801B0054, //  38 QUEIG.BIN
+    (MagicEntry)0x801B0054,    //  38 QUEIG.BIN
     (MagicEntry)0x801B0640,    //  39 BIO.BIN
-    (MagicEntry)func_801B0000, //  40 BIORA.BIN
-    (MagicEntry)func_801B0000, //  41 BIOGA1.BIN
+    (MagicEntry)0x801B0000,    //  40 BIORA.BIN
+    (MagicEntry)0x801B0000,    //  41 BIOGA1.BIN
     (MagicEntry)0x801B0730,    //  42 GRAVIDE.BIN
     (MagicEntry)0x801B0C10,    //  43 GRAVIRA.BIN
     (MagicEntry)0x801B1464,    //  44 GRAVIGA1.BIN
-    (MagicEntry)func_801B0000, //  45 COMET.BIN
-    (MagicEntry)func_801B0000, //  46 COMETEO.BIN
-    (MagicEntry)func_801B0000, //  47 FREEZE.BIN
+    (MagicEntry)0x801B0000,    //  45 COMET.BIN
+    (MagicEntry)0x801B0000,    //  46 COMETEO.BIN
+    (MagicEntry)0x801B0000,    //  47 FREEZE.BIN
     (MagicEntry)0x801B0854,    //  48 BREAK.BIN
-    (MagicEntry)func_801B0000, //  49 TORNADO.BIN
-    (MagicEntry)func_801B0054, //  50 FLEA.BIN
-    (MagicEntry)func_801B0000, //  51 FULLCARE.BIN
-    (MagicEntry)func_801B0054, //  52 ALTEMA.BIN
-    (MagicEntry)func_801B0054  //  53 SEALD.BIN
+    (MagicEntry)0x801B0000,    //  49 TORNADO.BIN
+    (MagicEntry)0x801B0054,    //  50 FLEA.BIN
+    (MagicEntry)0x801B0000,    //  51 FULLCARE.BIN
+    (MagicEntry)0x801B0054,    //  52 ALTEMA.BIN
+    (MagicEntry)0x801B0054     //  53 SEALD.BIN
 };
 
 // currentActionId 13 -- enemy skills: entrypoint per slot.
 MagicEntry D_800EFBC8[] = {
-    (MagicEntry)func_801B0054, //   0 KAERU.BIN
+    (MagicEntry)0x801B0054,    //   0 KAERU.BIN
     (MagicEntry)0x801B0070,    //   1 LV4JIBAK.BIN
-    (MagicEntry)func_801B0054, //   2 HANMMER.BIN
-    (MagicEntry)func_801B04C0, //   3 W_WIND.BIN
-    (MagicEntry)func_801B0054, //   4 MYTYG.BIN
+    (MagicEntry)0x801B0054,    //   2 HANMMER.BIN
+    (MagicEntry)0x801B04C0,    //   3 W_WIND.BIN
+    (MagicEntry)0x801B0054,    //   4 MYTYG.BIN
     (MagicEntry)func_800C6CB8, //   5 RAISE.BIN
-    (MagicEntry)func_801B0054, //   6 DRAGONN.BIN
-    (MagicEntry)func_801B0054, //   7 DETHFO.BIN
-    (MagicEntry)func_801B0000, //   8 FLAME.BIN
+    (MagicEntry)0x801B0054,    //   6 DRAGONN.BIN
+    (MagicEntry)0x801B0054,    //   7 DETHFO.BIN
+    (MagicEntry)0x801B0000,    //   8 FLAME.BIN
     (MagicEntry)0x801B0088,    //   9 REAZER.BIN
     (MagicEntry)0x801B0070,    //  10 MATRA.BIN
-    (MagicEntry)func_801B0054, //  11 KUSAI.BIN
-    (MagicEntry)func_801B0054, //  12 BEATA.BIN
-    (MagicEntry)func_801B0054, //  13 AQUA.BIN
-    (MagicEntry)func_801B0054, //  14 TRAINN.BIN
-    (MagicEntry)func_801B0054, //  15 MAGIKAL.BIN
-    (MagicEntry)func_801B0054, //  16 HATENA.BIN
-    (MagicEntry)func_801B0054, //  17 GOBLINP.BIN
+    (MagicEntry)0x801B0054,    //  11 KUSAI.BIN
+    (MagicEntry)0x801B0054,    //  12 BEATA.BIN
+    (MagicEntry)0x801B0054,    //  13 AQUA.BIN
+    (MagicEntry)0x801B0054,    //  14 TRAINN.BIN
+    (MagicEntry)0x801B0054,    //  15 MAGIKAL.BIN
+    (MagicEntry)0x801B0054,    //  16 HATENA.BIN
+    (MagicEntry)0x801B0054,    //  17 GOBLINP.BIN
     (MagicEntry)func_800C6CB8, //  18 CONF.BIN
-    (MagicEntry)func_801B0054, //  19 LV5DETH.BIN
+    (MagicEntry)0x801B0054,    //  19 LV5DETH.BIN
     (MagicEntry)func_800C6CB8, //  20 SENNKOKU.BIN
     (MagicEntry)func_800C6CB8, //  21 SENNKOKU.BIN
-    (MagicEntry)func_801B0054, //  22 SFLEA.BIN
+    (MagicEntry)0x801B0054,    //  22 SFLEA.BIN
     (MagicEntry)0x801B006C     //  23 NANNTOKA.BIN
 };
 
@@ -782,377 +775,377 @@ MagicEntry D_800EFBC8[] = {
 MagicEntry D_800EFC28[] = {
     (MagicEntry)0x801B0030,                //   0 KOUDAN1.BIN
     (MagicEntry)0x801B0010,                //   1 KAEN.BIN
-    (MagicEntry)func_801B0000,             //   2 ITO.BIN
+    (MagicEntry)0x801B0000,                //   2 ITO.BIN
     (MagicEntry)0x801B0634,                //   3 TAN.BIN
     (MagicEntry)0x801B06F4,                //   4 LASER.BIN
     (MagicEntry)0x801B0010,                //   5 LASER2.BIN
-    (MagicEntry)func_801B0000,             //   6 MIZU.BIN
+    (MagicEntry)0x801B0000,                //   6 MIZU.BIN
     (MagicEntry)0x801B08D0,                //   7 SEED.BIN
     (MagicEntry)0x801B0F14,                //   8 CBREATH.BIN
     (MagicEntry)0x801B08C4,                //   9 DOKUFUKI.BIN
-    (MagicEntry)func_801B0000,             //  10 NONOSHI.BIN
-    (MagicEntry)func_801B0000,             //  11 ONPA.BIN
+    (MagicEntry)0x801B0000,                //  10 NONOSHI.BIN
+    (MagicEntry)0x801B0000,                //  11 ONPA.BIN
     (MagicEntry)0x801B0CDC,                //  12 SUNA.BIN
-    (MagicEntry)func_801B0000,             //  13 THUNDER2.BIN
+    (MagicEntry)0x801B0000,                //  13 THUNDER2.BIN
     (MagicEntry)0x801B0948,                //  14 KIEN.BIN
-    (MagicEntry)func_801B0000,             //  15 OIL.BIN
+    (MagicEntry)0x801B0000,                //  15 OIL.BIN
     (MagicEntry)0x801B0698,                //  16 HIKARI.BIN
     (MagicEntry)0x801B08B4,                //  17 SEARCH.BIN
-    (MagicEntry)func_801B0000,             //  18 NETSU.BIN
-    (MagicEntry)func_801B0000,             //  19 MISSILE.BIN
-    (MagicEntry)func_801B0000,             //  20 OSEN.BIN
+    (MagicEntry)0x801B0000,                //  18 NETSU.BIN
+    (MagicEntry)0x801B0000,                //  19 MISSILE.BIN
+    (MagicEntry)0x801B0000,                //  20 OSEN.BIN
     (MagicEntry)0x801B0B38,                //  21 SUMI.BIN
-    (MagicEntry)func_801B0000,             //  22 MGBEAM.BIN
+    (MagicEntry)0x801B0000,                //  22 MGBEAM.BIN
     (MagicEntry)0x801B1028,                //  23 Q_KETSU.BIN
-    (MagicEntry)func_801B0000,             //  24 GEKI1.BIN
-    (MagicEntry)func_801B0000,             //  25 GEKI2.BIN
-    (MagicEntry)func_801B0000,             //  26 OTSUNAMI.BIN
-    (MagicEntry)func_801B0000,             //  27 BACUME.BIN
+    (MagicEntry)0x801B0000,                //  24 GEKI1.BIN
+    (MagicEntry)0x801B0000,                //  25 GEKI2.BIN
+    (MagicEntry)0x801B0000,                //  26 OTSUNAMI.BIN
+    (MagicEntry)0x801B0000,                //  27 BACUME.BIN
     (MagicEntry)0x801B0338,                //  28 JIBAKU1.BIN
-    (MagicEntry)func_801B0000,             //  29 SOUTHERN.BIN
+    (MagicEntry)0x801B0000,                //  29 SOUTHERN.BIN
     (MagicEntry)0x801B02EC,                //  30 FIRE.BIN
     (MagicEntry)0x801B0FC4,                //  31 HARI1000.BIN
-    (MagicEntry)func_801B0000,             //  32 QUASAR.BIN
-    (MagicEntry)func_801B0000,             //  33 NADARE.BIN
+    (MagicEntry)0x801B0000,                //  32 QUASAR.BIN
+    (MagicEntry)0x801B0000,                //  33 NADARE.BIN
     (MagicEntry)0x801B0010,                //  34 KAMA.BIN
-    (MagicEntry)func_801B0000,             //  35 KONOHA.BIN
+    (MagicEntry)0x801B0000,                //  35 KONOHA.BIN
     (MagicEntry)0x801B0020,                //  36 RAKUSEKI.BIN
-    (MagicEntry)func_801B0000,             //  37 YU_WAKU.BIN
-    (MagicEntry)func_801B0000,             //  38 BLASTER.BIN
-    (MagicEntry)func_801B0000,             //  39 TRIANGLE.BIN
+    (MagicEntry)0x801B0000,                //  37 YU_WAKU.BIN
+    (MagicEntry)0x801B0000,                //  38 BLASTER.BIN
+    (MagicEntry)0x801B0000,                //  39 TRIANGLE.BIN
     (MagicEntry)0x801B1978,                //  40 ATOMIC.BIN
     (MagicEntry)0x801B02EC,                //  41 FIRE.BIN
-    (MagicEntry)func_801B0000,             //  42 HADO.BIN
-    (MagicEntry)func_801B0000,             //  43 HO_DEN.BIN
-    (MagicEntry)func_801B0000,             //  44 HARRIER.BIN
+    (MagicEntry)0x801B0000,                //  42 HADO.BIN
+    (MagicEntry)0x801B0000,                //  43 HO_DEN.BIN
+    (MagicEntry)0x801B0000,                //  44 HARRIER.BIN
     (MagicEntry)0x801B02EC,                //  45 FIRE.BIN
-    (MagicEntry)func_801B0054,             //  46 SPADE1.BIN
-    (MagicEntry)func_801B0054,             //  47 HEART1.BIN
-    (MagicEntry)func_801B0054,             //  48 CLUB1.BIN
-    (MagicEntry)func_801B0054,             //  49 DIA1.BIN
+    (MagicEntry)0x801B0054,                //  46 SPADE1.BIN
+    (MagicEntry)0x801B0054,                //  47 HEART1.BIN
+    (MagicEntry)0x801B0054,                //  48 CLUB1.BIN
+    (MagicEntry)0x801B0054,                //  49 DIA1.BIN
     (MagicEntry)func_800C6CB8,             //  50 JOKER1.BIN
-    (MagicEntry)func_801B0054,             //  51 SPADE2.BIN
-    (MagicEntry)func_801B0054,             //  52 HEART2.BIN
-    (MagicEntry)func_801B0054,             //  53 CLUB2.BIN
-    (MagicEntry)func_801B0054,             //  54 DIA2.BIN
-    (MagicEntry)func_801B0054,             //  55 JOKER2.BIN
+    (MagicEntry)0x801B0054,                //  51 SPADE2.BIN
+    (MagicEntry)0x801B0054,                //  52 HEART2.BIN
+    (MagicEntry)0x801B0054,                //  53 CLUB2.BIN
+    (MagicEntry)0x801B0054,                //  54 DIA2.BIN
+    (MagicEntry)0x801B0054,                //  55 JOKER2.BIN
     (MagicEntry)0x801B09D4,                //  56 KAMA2.BIN
     (MagicEntry)0x801B0030,                //  57 KOUDAN2.BIN
-    (MagicEntry)func_801B0000,             //  58 KAEN2.BIN
+    (MagicEntry)0x801B0000,                //  58 KAEN2.BIN
     (MagicEntry)0x801B0020,                //  59 FUBUKI.BIN
-    (MagicEntry)func_801B0000,             //  60 DOKUEKI.BIN
-    (MagicEntry)func_801B0000,             //  61 TOBOE.BIN
+    (MagicEntry)0x801B0000,                //  60 DOKUEKI.BIN
+    (MagicEntry)0x801B0000,                //  61 TOBOE.BIN
     (MagicEntry)0x801B0F18,                //  62 KAFUN.BIN
-    (MagicEntry)func_801B0000,             //  63 ROCKET.BIN
+    (MagicEntry)0x801B0000,                //  63 ROCKET.BIN
     (MagicEntry)0x801B0364,                //  64 THREAT.BIN
     (MagicEntry)0x801B1028,                //  65 Q_SHU.BIN
-    (MagicEntry)func_801B0000,             //  66 JIBASIRI.BIN
-    (MagicEntry)func_801B0000,             //  67 JIBAKU2.BIN
-    (MagicEntry)func_801B0000,             //  68 NORTHERN.BIN
-    (MagicEntry)func_801B0000,             //  69 HADOHO.BIN
-    (MagicEntry)func_801B0000,             //  70 ROLLFIRE.BIN
+    (MagicEntry)0x801B0000,                //  66 JIBASIRI.BIN
+    (MagicEntry)0x801B0000,                //  67 JIBAKU2.BIN
+    (MagicEntry)0x801B0000,                //  68 NORTHERN.BIN
+    (MagicEntry)0x801B0000,                //  69 HADOHO.BIN
+    (MagicEntry)0x801B0000,                //  70 ROLLFIRE.BIN
     (MagicEntry)0x801B01B4,                //  71 FLAME.BIN
-    (MagicEntry)func_801B0000,             //  72 GESUI.BIN
+    (MagicEntry)0x801B0000,                //  72 GESUI.BIN
     (MagicEntry)0x801B0020,                //  73 GESUI.BIN
-    (MagicEntry)func_801B0000,             //  74 MIZUFUKI.BIN
+    (MagicEntry)0x801B0000,                //  74 MIZUFUKI.BIN
     (MagicEntry)0x801B0C94,                //  75 SCOPE.BIN
-    (MagicEntry)func_801B0000,             //  76 TAIL.BIN
-    (MagicEntry)func_801B0054,             //  77 AYASII.BIN
-    (MagicEntry)func_801B0000,             //  78 TSURARA.BIN
-    (MagicEntry)func_801B0000,             //  79 AWA.BIN
-    (MagicEntry)func_801B0000,             //  80 SHOWER.BIN
-    (MagicEntry)func_801B0000,             //  81 CHIKASUI.BIN
-    (MagicEntry)func_801B0000,             //  82 ONSEN.BIN
-    (MagicEntry)func_801B0000,             //  83 MAGMA.BIN
-    (MagicEntry)func_801B0000,             //  84 KINZAN.BIN
+    (MagicEntry)0x801B0000,                //  76 TAIL.BIN
+    (MagicEntry)0x801B0054,                //  77 AYASII.BIN
+    (MagicEntry)0x801B0000,                //  78 TSURARA.BIN
+    (MagicEntry)0x801B0000,                //  79 AWA.BIN
+    (MagicEntry)0x801B0000,                //  80 SHOWER.BIN
+    (MagicEntry)0x801B0000,                //  81 CHIKASUI.BIN
+    (MagicEntry)0x801B0000,                //  82 ONSEN.BIN
+    (MagicEntry)0x801B0000,                //  83 MAGMA.BIN
+    (MagicEntry)0x801B0000,                //  84 KINZAN.BIN
     (MagicEntry)0x801B007C,                //  85 DAISENP.BIN
-    (MagicEntry)func_801B0054,             //  86 DAISENP.BIN
+    (MagicEntry)0x801B0054,                //  86 DAISENP.BIN
     (MagicEntry)0x801B0008,                //  87 SEKIKA.BIN
-    (MagicEntry)func_801B0000,             //  88 HAKUGEK1.BIN
-    (MagicEntry)func_801B0000,             //  89 HAKUGEK2.BIN
-    (MagicEntry)func_801B0000,             //  90 HAKAI.BIN
-    (MagicEntry)func_801B0000,             //  91 WLASER.BIN
-    (MagicEntry)func_801B0000,             //  92 AEROGA.BIN
-    (MagicEntry)func_801B0054,             //  93 ZENBAKU.BIN
+    (MagicEntry)0x801B0000,                //  88 HAKUGEK1.BIN
+    (MagicEntry)0x801B0000,                //  89 HAKUGEK2.BIN
+    (MagicEntry)0x801B0000,                //  90 HAKAI.BIN
+    (MagicEntry)0x801B0000,                //  91 WLASER.BIN
+    (MagicEntry)0x801B0000,                //  92 AEROGA.BIN
+    (MagicEntry)0x801B0054,                //  93 ZENBAKU.BIN
     (MagicEntry)0x801B0FCC,                //  94 CAREL.BIN
-    (MagicEntry)func_801B0000,             //  95 REITO.BIN
+    (MagicEntry)0x801B0000,                //  95 REITO.BIN
     (MagicEntry)0x801B0048,                //  96 FLAME.BIN
     (MagicEntry)0x801B0164,                //  97 FLAME.BIN
-    (MagicEntry)func_801B0000,             //  98 REIKI.BIN
-    (MagicEntry)func_801B0000,             //  99 HIKARI3.BIN
-    (MagicEntry)func_801B0000,             // 100 HIKARI2.BIN
-    (MagicEntry)func_801B0000,             // 101 ENERGY.BIN
-    (MagicEntry)func_801B0054,             // 102 HEATBU.BIN
-    (MagicEntry)func_801B0000,             // 103 WHIRL.BIN
-    (MagicEntry)func_801B0000,             // 104 YAMI.BIN
-    (MagicEntry)func_801B0000,             // 105 RMISSILE.BIN
-    (MagicEntry)func_801B0000,             // 106 TBREATH.BIN
-    (MagicEntry)func_801B0000,             // 107 NAPALM.BIN
+    (MagicEntry)0x801B0000,                //  98 REIKI.BIN
+    (MagicEntry)0x801B0000,                //  99 HIKARI3.BIN
+    (MagicEntry)0x801B0000,                // 100 HIKARI2.BIN
+    (MagicEntry)0x801B0000,                // 101 ENERGY.BIN
+    (MagicEntry)0x801B0054,                // 102 HEATBU.BIN
+    (MagicEntry)0x801B0000,                // 103 WHIRL.BIN
+    (MagicEntry)0x801B0000,                // 104 YAMI.BIN
+    (MagicEntry)0x801B0000,                // 105 RMISSILE.BIN
+    (MagicEntry)0x801B0000,                // 106 TBREATH.BIN
+    (MagicEntry)0x801B0000,                // 107 NAPALM.BIN
     (MagicEntry)0x801B0010,                // 108 GAS.BIN
-    (MagicEntry)func_801B0000,             // 109 SHAKU.BIN
-    (MagicEntry)func_801B0000,             // 110 RE_DO.BIN
-    (MagicEntry)func_801B0000,             // 111 KONA.BIN
-    (MagicEntry)func_801B0000,             // 112 PINK.BIN
-    (MagicEntry)func_801B0000,             // 113 JAMMER.BIN
-    (MagicEntry)func_801B0000,             // 114 TEARS.BIN
+    (MagicEntry)0x801B0000,                // 109 SHAKU.BIN
+    (MagicEntry)0x801B0000,                // 110 RE_DO.BIN
+    (MagicEntry)0x801B0000,                // 111 KONA.BIN
+    (MagicEntry)0x801B0000,                // 112 PINK.BIN
+    (MagicEntry)0x801B0000,                // 113 JAMMER.BIN
+    (MagicEntry)0x801B0000,                // 114 TEARS.BIN
     (MagicEntry)0x801B0E98,                // 115 ELECBALL.BIN
-    (MagicEntry)func_801B0054,             // 116 UTAGOE.BIN
-    (MagicEntry)func_801B0000,             // 117 SAIKYO.BIN
-    (MagicEntry)func_801B0000,             // 118 MAGMA2.BIN
-    (MagicEntry)func_801B0000,             // 119 TIMEDMG.BIN
-    (MagicEntry)func_801B0054,             // 120 KOROSI.BIN
-    (MagicEntry)func_801B0054,             // 121 RENBAKU.BIN
+    (MagicEntry)0x801B0054,                // 116 UTAGOE.BIN
+    (MagicEntry)0x801B0000,                // 117 SAIKYO.BIN
+    (MagicEntry)0x801B0000,                // 118 MAGMA2.BIN
+    (MagicEntry)0x801B0000,                // 119 TIMEDMG.BIN
+    (MagicEntry)0x801B0054,                // 120 KOROSI.BIN
+    (MagicEntry)0x801B0054,                // 121 RENBAKU.BIN
     (MagicEntry)0x801B096C,                // 122 DOKUFUKI.BIN
     (MagicEntry)0x801B0F94,                // 123 KAFUN.BIN
-    (MagicEntry)func_801B0000,             // 124 SMOG2.BIN
-    (MagicEntry)func_801B0000,             // 125 ELEVATOR.BIN
+    (MagicEntry)0x801B0000,                // 124 SMOG2.BIN
+    (MagicEntry)0x801B0000,                // 125 ELEVATOR.BIN
     (MagicEntry)0x801B0008,                // 126 FROG.BIN
     (MagicEntry)0x801B0048,                // 127 SHIELD.BIN
     (MagicEntry)0x801B0010,                // 128 SHIELD.BIN
     (MagicEntry)0x801B0048,                // 129 PUNCH.BIN
     (MagicEntry)0x801B0010,                // 130 PUNCH.BIN
     (MagicEntry)0x801B009C,                // 131 FLAME.BIN
-    (MagicEntry)func_801B0000,             // 132 DAIONPA.BIN
-    (MagicEntry)func_801B0054,             // 133 QUEIK.BIN
+    (MagicEntry)0x801B0000,                // 132 DAIONPA.BIN
+    (MagicEntry)0x801B0054,                // 133 QUEIK.BIN
     (MagicEntry)0x801B0074,                // 134 QUEIR.BIN
-    (MagicEntry)func_801B0054,             // 135 QUEIG.BIN
-    (MagicEntry)func_801B0000,             // 136 THUNDERA.BIN
-    (MagicEntry)func_801B0000,             // 137 JAMMER2.BIN
-    (MagicEntry)func_801B0000,             // 138 FLAME.BIN
-    (MagicEntry)func_801B00F0,             // 139 FLAME.BIN
-    (MagicEntry)func_801B0000,             // 140 KAKUSAN.BIN
-    (MagicEntry)func_801B0000,             // 141 CHO_KYU.BIN
-    (MagicEntry)func_801B0040,             // 142 LASBOSS.BIN
-    (MagicEntry)func_801B0040,             // 143 file id 318
+    (MagicEntry)0x801B0054,                // 135 QUEIG.BIN
+    (MagicEntry)0x801B0000,                // 136 THUNDERA.BIN
+    (MagicEntry)0x801B0000,                // 137 JAMMER2.BIN
+    (MagicEntry)0x801B0000,                // 138 FLAME.BIN
+    (MagicEntry)0x801B00F0,                // 139 FLAME.BIN
+    (MagicEntry)0x801B0000,                // 140 KAKUSAN.BIN
+    (MagicEntry)0x801B0000,                // 141 CHO_KYU.BIN
+    (MagicEntry)0x801B0040,                // 142 LASBOSS.BIN
+    (MagicEntry)0x801B0040,                // 143 file id 318
     (MagicEntry)func_800C6CB8,             // 144 RAISE.BIN
-    (MagicEntry)func_801B0000,             // 145 MAGEND.BIN
-    (MagicEntry)func_801B0000,             // 146 TO_SEKI.BIN
+    (MagicEntry)0x801B0000,                // 145 MAGEND.BIN
+    (MagicEntry)0x801B0000,                // 146 TO_SEKI.BIN
     (MagicEntry)BattleInitMagicCastEffect, // 147 DEADSEF.BIN
     (MagicEntry)0x801B0A8C,                // 148 CAREL.BIN
-    (MagicEntry)func_801B0040,             // 149 ANTLION.BIN
-    (MagicEntry)func_801B0040,             // 150 STING.BIN
-    (MagicEntry)func_801B0060,             // 151 STING.BIN
-    (MagicEntry)func_801B0054,             // 152 WEP3.BIN
-    (MagicEntry)func_801B0054,             // 153 BEAM.BIN
-    (MagicEntry)func_801B0054,             // 154 WEP4.BIN
-    (MagicEntry)func_801B0000,             // 155 DIA.BIN
+    (MagicEntry)0x801B0040,                // 149 ANTLION.BIN
+    (MagicEntry)0x801B0040,                // 150 STING.BIN
+    (MagicEntry)0x801B0060,                // 151 STING.BIN
+    (MagicEntry)0x801B0054,                // 152 WEP3.BIN
+    (MagicEntry)0x801B0054,                // 153 BEAM.BIN
+    (MagicEntry)0x801B0054,                // 154 WEP4.BIN
+    (MagicEntry)0x801B0000,                // 155 DIA.BIN
     (MagicEntry)0x801B007C,                // 156 BEAM.BIN
-    (MagicEntry)func_801B0000              // 157 CAREL.BIN
+    (MagicEntry)0x801B0000                 // 157 CAREL.BIN
 };
 
 // currentActionId 20 -- limit breaks: entrypoint per slot.
 MagicEntryResult D_800EFEA0[] = {
-    (MagicEntryResult)func_801B0000, //   0 BLAVER.BIN
+    (MagicEntryResult)0x801B0000,    //   0 BLAVER.BIN
     (MagicEntryResult)0x801B069C,    //   1 KYOGIRI.BIN
     (MagicEntryResult)0x801B0010,    //   2 HAKOU.BIN
-    (MagicEntryResult)func_801B0000, //   3 CLIMB.BIN
-    (MagicEntryResult)func_801B0054, //   4 MRAIN.BIN
-    (MagicEntryResult)func_801B0060, //   5 GARYU.BIN
+    (MagicEntryResult)0x801B0000,    //   3 CLIMB.BIN
+    (MagicEntryResult)0x801B0054,    //   4 MRAIN.BIN
+    (MagicEntryResult)0x801B0060,    //   5 GARYU.BIN
     (MagicEntryResult)0x801B0008,    //   6 BUSHIN2.BIN
-    (MagicEntryResult)func_801B0000, //   7 HVSHOT.BIN
-    (MagicEntryResult)func_801B0000, //   8 GRENADE.BIN
-    (MagicEntryResult)func_801B0000, //   9 M_BREAK.BIN
-    (MagicEntryResult)func_801B0000, //  10 H_BLOW.BIN
-    (MagicEntryResult)func_801B0000, //  11 S_BEAM.BIN
-    (MagicEntryResult)func_801B0000, //  12 ANGERMAX.BIN
+    (MagicEntryResult)0x801B0000,    //   7 HVSHOT.BIN
+    (MagicEntryResult)0x801B0000,    //   8 GRENADE.BIN
+    (MagicEntryResult)0x801B0000,    //   9 M_BREAK.BIN
+    (MagicEntryResult)0x801B0000,    //  10 H_BLOW.BIN
+    (MagicEntryResult)0x801B0000,    //  11 S_BEAM.BIN
+    (MagicEntryResult)0x801B0000,    //  12 ANGERMAX.BIN
     (MagicEntryResult)0x801B0058,    //  13 CATASTRO.BIN
-    (MagicEntryResult)func_801B0000, //  14 IYASHI.BIN
-    (MagicEntryResult)func_801B0000, //  15 JAKI.BIN
-    (MagicEntryResult)func_801B0000, //  16 DAICHI.BIN
+    (MagicEntryResult)0x801B0000,    //  14 IYASHI.BIN
+    (MagicEntryResult)0x801B0000,    //  15 JAKI.BIN
+    (MagicEntryResult)0x801B0000,    //  16 DAICHI.BIN
     (MagicEntryResult)0x801B0020,    //  17 BRAND.BIN
-    (MagicEntryResult)func_801B0000, //  18 S_GUARD.BIN
-    (MagicEntryResult)func_801B0000, //  19 BEAT.BIN
+    (MagicEntryResult)0x801B0000,    //  18 S_GUARD.BIN
+    (MagicEntryResult)0x801B0000,    //  19 BEAT.BIN
     (MagicEntryResult)0x801B0048,    //  20 GOSPEL.BIN
     (MagicEntryResult)0x801B0088,    //  21 TIFA.BIN
-    (MagicEntryResult)func_801B0000, //  22 TIFA.BIN
-    (MagicEntryResult)func_801B0000, //  23 TIFA.BIN
-    (MagicEntryResult)func_801B0000, //  24 TIFA.BIN
-    (MagicEntryResult)func_801B0000, //  25 TIFA.BIN
-    (MagicEntryResult)func_801B0000, //  26 TIFA.BIN
-    (MagicEntryResult)func_801B0000, //  27 TIFA.BIN
-    (MagicEntryResult)func_801B0000, //  28 BOOST.BIN
-    (MagicEntryResult)func_801B0000, //  29 MOD.BIN
-    (MagicEntryResult)func_801B0000, //  30 HYPER.BIN
-    (MagicEntryResult)func_801B0000, //  31 DYNAMITE.BIN
-    (MagicEntryResult)func_801B0000, //  32 DIVE.BIN
-    (MagicEntryResult)func_801B0000, //  33 RANTO.BIN
-    (MagicEntryResult)func_801B0000, //  34 HIWIND.BIN
-    (MagicEntryResult)func_801B0054, //  35 SLDFANG.BIN
-    (MagicEntryResult)func_801B0054, //  36 HMOON.BIN
+    (MagicEntryResult)0x801B0000,    //  22 TIFA.BIN
+    (MagicEntryResult)0x801B0000,    //  23 TIFA.BIN
+    (MagicEntryResult)0x801B0000,    //  24 TIFA.BIN
+    (MagicEntryResult)0x801B0000,    //  25 TIFA.BIN
+    (MagicEntryResult)0x801B0000,    //  26 TIFA.BIN
+    (MagicEntryResult)0x801B0000,    //  27 TIFA.BIN
+    (MagicEntryResult)0x801B0000,    //  28 BOOST.BIN
+    (MagicEntryResult)0x801B0000,    //  29 MOD.BIN
+    (MagicEntryResult)0x801B0000,    //  30 HYPER.BIN
+    (MagicEntryResult)0x801B0000,    //  31 DYNAMITE.BIN
+    (MagicEntryResult)0x801B0000,    //  32 DIVE.BIN
+    (MagicEntryResult)0x801B0000,    //  33 RANTO.BIN
+    (MagicEntryResult)0x801B0000,    //  34 HIWIND.BIN
+    (MagicEntryResult)0x801B0054,    //  35 SLDFANG.BIN
+    (MagicEntryResult)0x801B0054,    //  36 HMOON.BIN
     (MagicEntryResult)0x801B007C,    //  37 SLDFANG.BIN
-    (MagicEntryResult)func_801B0054, //  38 SDUST.BIN
-    (MagicEntryResult)func_801B0054, //  39 LUNATIC.BIN
-    (MagicEntryResult)func_801B0054, //  40 ERAVE.BIN
-    (MagicEntryResult)func_801B0000, //  41 COSMO.BIN
-    (MagicEntryResult)func_801B0054, //  42 DISE.BIN
-    (MagicEntryResult)func_801B0000, //  43 FIRE.BIN
-    (MagicEntryResult)func_801B0000, //  44 FIRE.BIN
-    (MagicEntryResult)func_801B0000, //  45 FIRE.BIN
-    (MagicEntryResult)func_801B0000, //  46 FIRE.BIN
-    (MagicEntryResult)func_801B0000, //  47 FIRE.BIN
-    (MagicEntryResult)func_801B0000, //  48 FIRE.BIN
-    (MagicEntryResult)func_801B0000, //  49 JINRAI.BIN
-    (MagicEntryResult)func_801B0000, //  50 MEIKYO.BIN
-    (MagicEntryResult)func_801B0000, //  51 GAISEI.BIN
-    (MagicEntryResult)func_801B0000, //  52 CHI.BIN
-    (MagicEntryResult)func_801B0000, //  53 GAISHU.BIN
-    (MagicEntryResult)func_801B0000, //  54 SEIJA.BIN
-    (MagicEntryResult)func_801B0000, //  55 SHINRA.BIN
+    (MagicEntryResult)0x801B0054,    //  38 SDUST.BIN
+    (MagicEntryResult)0x801B0054,    //  39 LUNATIC.BIN
+    (MagicEntryResult)0x801B0054,    //  40 ERAVE.BIN
+    (MagicEntryResult)0x801B0000,    //  41 COSMO.BIN
+    (MagicEntryResult)0x801B0054,    //  42 DISE.BIN
+    (MagicEntryResult)0x801B0000,    //  43 FIRE.BIN
+    (MagicEntryResult)0x801B0000,    //  44 FIRE.BIN
+    (MagicEntryResult)0x801B0000,    //  45 FIRE.BIN
+    (MagicEntryResult)0x801B0000,    //  46 FIRE.BIN
+    (MagicEntryResult)0x801B0000,    //  47 FIRE.BIN
+    (MagicEntryResult)0x801B0000,    //  48 FIRE.BIN
+    (MagicEntryResult)0x801B0000,    //  49 JINRAI.BIN
+    (MagicEntryResult)0x801B0000,    //  50 MEIKYO.BIN
+    (MagicEntryResult)0x801B0000,    //  51 GAISEI.BIN
+    (MagicEntryResult)0x801B0000,    //  52 CHI.BIN
+    (MagicEntryResult)0x801B0000,    //  53 GAISHU.BIN
+    (MagicEntryResult)0x801B0000,    //  54 SEIJA.BIN
+    (MagicEntryResult)0x801B0000,    //  55 SHINRA.BIN
     (MagicEntryResult)0x801B007C,    //  56 GATTAI.BIN
     (MagicEntryResult)func_800C6CB8, //  57 MDANCE.BIN
     (MagicEntryResult)func_800C6CB8, //  58 TSOL.BIN
-    (MagicEntryResult)func_801B0054, //  59 LGIRL.BIN
-    (MagicEntryResult)func_801B0054, //  60 LV5DETH.BIN
+    (MagicEntryResult)0x801B0054,    //  59 LGIRL.BIN
+    (MagicEntryResult)0x801B0054,    //  60 LV5DETH.BIN
     (MagicEntryResult)func_800C6CB8, //  61 DEATH.BIN
-    (MagicEntryResult)func_801B0054, //  62 BEAST.BIN
-    (MagicEntryResult)func_801B0054, //  63 BEAST.BIN
-    (MagicEntryResult)func_801B0054, //  64 BEAST.BIN
-    (MagicEntryResult)func_801B0054, //  65 SPARK.BIN
-    (MagicEntryResult)func_801B0054, //  66 BEAST.BIN
-    (MagicEntryResult)func_801B0054, //  67 NIGHT.BIN
-    (MagicEntryResult)func_801B0054, //  68 BEAST.BIN
+    (MagicEntryResult)0x801B0054,    //  62 BEAST.BIN
+    (MagicEntryResult)0x801B0054,    //  63 BEAST.BIN
+    (MagicEntryResult)0x801B0054,    //  64 BEAST.BIN
+    (MagicEntryResult)0x801B0054,    //  65 SPARK.BIN
+    (MagicEntryResult)0x801B0054,    //  66 BEAST.BIN
+    (MagicEntryResult)0x801B0054,    //  67 NIGHT.BIN
+    (MagicEntryResult)0x801B0054,    //  68 BEAST.BIN
     (MagicEntryResult)0x801B00E0,    //  69 SATAN.BIN
     (MagicEntryResult)0x801B0020,    //  70 RAKUSEKI.BIN
-    (MagicEntryResult)func_801B0000, //  71 TSURARA.BIN
+    (MagicEntryResult)0x801B0000,    //  71 TSURARA.BIN
     (MagicEntryResult)0x801B0074,    //  72 TOYBOX.BIN
-    (MagicEntryResult)func_801B0054, //  73 TOYBOX.BIN
+    (MagicEntryResult)0x801B0054,    //  73 TOYBOX.BIN
     (MagicEntryResult)0x801B0094,    //  74 TOYBOX.BIN
-    (MagicEntryResult)func_801B00B4, //  75 TOYBOX.BIN
-    (MagicEntryResult)func_801B0000, //  76 COMETEO.BIN
+    (MagicEntryResult)0x801B00B4,    //  75 TOYBOX.BIN
+    (MagicEntryResult)0x801B0000,    //  76 COMETEO.BIN
     (MagicEntryResult)0x801B0088,    //  77 GARYU.BIN
     (MagicEntryResult)0x801B0104,    //  78 SATAN.BIN
-    (MagicEntryResult)func_801B0038  //  79 HAKOU.BIN
+    (MagicEntryResult)0x801B0038     //  79 HAKOU.BIN
 };
 
 // currentActionId 8: entrypoint per slot.
 MagicEntry D_800EFFE0[] = {
-    (MagicEntry)func_801B0054, //   0 CAREL.BIN
-    (MagicEntry)func_801B0054, //   1 WPCU.BIN
-    (MagicEntry)0x801B008C,    //   2 WPCU.BIN
-    (MagicEntry)0x801B00C4,    //   3 WPCU.BIN
-    (MagicEntry)0x801B00FC,    //   4 WPCU.BIN
-    (MagicEntry)0x801B0134,    //   5 WPCU.BIN
-    (MagicEntry)0x801B016C,    //   6 WPCU.BIN
-    (MagicEntry)0x801B01A4,    //   7 WPCU.BIN
-    (MagicEntry)0x801B01DC,    //   8 WPCU.BIN
-    (MagicEntry)0x801B0214,    //   9 WPCU.BIN
-    (MagicEntry)0x801B024C,    //  10 WPCU.BIN
-    (MagicEntry)0x801B0284,    //  11 WPCU.BIN
-    (MagicEntry)0x801B02BC,    //  12 WPCU.BIN
-    (MagicEntry)0x801B02F4,    //  13 WPCU.BIN
-    (MagicEntry)0x801B032C,    //  14 WPCU.BIN
-    (MagicEntry)0x801B0364,    //  15 WPCU.BIN
-    (MagicEntry)0x801B0364,    //  16 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  17 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  18 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  19 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  20 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  21 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  22 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  23 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  24 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  25 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  26 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  27 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  28 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  29 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  30 CAREL.BIN
-    (MagicEntry)0x801B0364,    //  31 CAREL.BIN
-    (MagicEntry)func_801B0054, //  32 WPBA.BIN
-    (MagicEntry)0x801B008C,    //  33 WPBA.BIN
-    (MagicEntry)func_801B0054, //  34 WPBA.BIN
-    (MagicEntry)0x801B00C8,    //  35 WPBA.BIN
-    (MagicEntry)0x801B0100,    //  36 WPBA.BIN
-    (MagicEntry)0x801B013C,    //  37 WPBA.BIN
-    (MagicEntry)0x801B0174,    //  38 WPBA.BIN
-    (MagicEntry)0x801B01B0,    //  39 WPBA.BIN
-    (MagicEntry)0x801B01EC,    //  40 WPBA.BIN
-    (MagicEntry)0x801B0228,    //  41 WPBA.BIN
-    (MagicEntry)0x801B0260,    //  42 WPBA.BIN
-    (MagicEntry)0x801B029C,    //  43 WPBA.BIN
-    (MagicEntry)0x801B02D4,    //  44 WPBA.BIN
-    (MagicEntry)0x801B0310,    //  45 WPBA.BIN
-    (MagicEntry)0x801B0348,    //  46 WPBA.BIN
-    (MagicEntry)0x801B0384,    //  47 WPBA.BIN
-    (MagicEntry)func_801B0054, //  48 CAREL.BIN
-    (MagicEntry)func_801B0054, //  49 CAREL.BIN
-    (MagicEntry)func_801B0054, //  50 CAREL.BIN
-    (MagicEntry)func_801B0054, //  51 CAREL.BIN
-    (MagicEntry)func_801B0054, //  52 CAREL.BIN
-    (MagicEntry)func_801B0054, //  53 CAREL.BIN
-    (MagicEntry)func_801B0054, //  54 CAREL.BIN
-    (MagicEntry)func_801B0054, //  55 CAREL.BIN
-    (MagicEntry)func_801B0054, //  56 CAREL.BIN
-    (MagicEntry)func_801B0054, //  57 CAREL.BIN
-    (MagicEntry)func_801B0054, //  58 CAREL.BIN
-    (MagicEntry)func_801B0054, //  59 CAREL.BIN
-    (MagicEntry)func_801B0054, //  60 CAREL.BIN
-    (MagicEntry)func_801B0054, //  61 CAREL.BIN
-    (MagicEntry)func_801B0054, //  62 WPEA.BIN
-    (MagicEntry)0x801B00C0,    //  63 WPEA.BIN
-    (MagicEntry)0x801B012C,    //  64 WPEA.BIN
-    (MagicEntry)0x801B0198,    //  65 WPEA.BIN
-    (MagicEntry)0x801B0204,    //  66 WPEA.BIN
-    (MagicEntry)0x801B0270,    //  67 WPEA.BIN
-    (MagicEntry)0x801B02DC,    //  68 WPEA.BIN
-    (MagicEntry)0x801B0348,    //  69 WPEA.BIN
-    (MagicEntry)0x801B03B4,    //  70 WPEA.BIN
-    (MagicEntry)0x801B0420,    //  71 WPEA.BIN
-    (MagicEntry)0x801B048C,    //  72 WPEA.BIN
-    (MagicEntry)func_801B0054, //  73 WPSI.BIN
-    (MagicEntry)0x801B008C,    //  74 WPSI.BIN
-    (MagicEntry)0x801B00C4,    //  75 WPSI.BIN
-    (MagicEntry)0x801B00FC,    //  76 WPSI.BIN
-    (MagicEntry)0x801B0138,    //  77 WPSI.BIN
-    (MagicEntry)func_801B0170, //  78 WPSI.BIN
-    (MagicEntry)0x801B01AC,    //  79 WPSI.BIN
-    (MagicEntry)0x801B01E4,    //  80 WPSI.BIN
-    (MagicEntry)0x801B021C,    //  81 WPSI.BIN
-    (MagicEntry)0x801B0254,    //  82 WPSI.BIN
-    (MagicEntry)0x801B028C,    //  83 WPSI.BIN
-    (MagicEntry)0x801B02C8,    //  84 WPSI.BIN
-    (MagicEntry)0x801B0300,    //  85 WPSI.BIN
-    (MagicEntry)0x801B033C,    //  86 WPSI.BIN
-    (MagicEntry)func_801B0054, //  87 WPYU.BIN
-    (MagicEntry)0x801B008C,    //  88 WPYU.BIN
-    (MagicEntry)0x801B00C8,    //  89 WPYU.BIN
-    (MagicEntry)0x801B0100,    //  90 WPYU.BIN
-    (MagicEntry)0x801B013C,    //  91 WPYU.BIN
-    (MagicEntry)0x801B0174,    //  92 WPYU.BIN
-    (MagicEntry)0x801B01AC,    //  93 WPYU.BIN
-    (MagicEntry)0x801B01E4,    //  94 WPYU.BIN
-    (MagicEntry)0x801B021C,    //  95 WPYU.BIN
-    (MagicEntry)0x801B0258,    //  96 WPYU.BIN
-    (MagicEntry)0x801B0294,    //  97 WPYU.BIN
-    (MagicEntry)0x801B02D0,    //  98 WPYU.BIN
-    (MagicEntry)0x801B030C,    //  99 WPYU.BIN
-    (MagicEntry)0x801B0344,    // 100 WPYU.BIN
-    (MagicEntry)func_801B0054, // 101 WPKE.BIN
-    (MagicEntry)0x801B008C,    // 102 WPKE.BIN
-    (MagicEntry)0x801B00C4,    // 103 WPKE.BIN
-    (MagicEntry)0x801B00FC,    // 104 WPKE.BIN
-    (MagicEntry)0x801B0134,    // 105 WPKE.BIN
-    (MagicEntry)0x801B016C,    // 106 WPKE.BIN
-    (MagicEntry)0x801B01A4,    // 107 WPKE.BIN
-    (MagicEntry)0x801B01DC,    // 108 WPKE.BIN
-    (MagicEntry)0x801B0214,    // 109 WPKE.BIN
-    (MagicEntry)0x801B024C,    // 110 WPKE.BIN
-    (MagicEntry)0x801B0284,    // 111 WPKE.BIN
-    (MagicEntry)0x801B02BC,    // 112 WPKE.BIN
-    (MagicEntry)0x801B02F4,    // 113 WPKE.BIN
-    (MagicEntry)func_801B0054, // 114 WPBI.BIN
-    (MagicEntry)0x801B008C,    // 115 WPBI.BIN
-    (MagicEntry)0x801B00C4,    // 116 WPBI.BIN
-    (MagicEntry)0x801B00FC,    // 117 WPBI.BIN
-    (MagicEntry)0x801B0134,    // 118 WPBI.BIN
-    (MagicEntry)0x801B016C,    // 119 WPBI.BIN
-    (MagicEntry)0x801B01A4,    // 120 WPBI.BIN
-    (MagicEntry)0x801B01DC,    // 121 WPBI.BIN
-    (MagicEntry)0x801B0214,    // 122 WPBI.BIN
-    (MagicEntry)0x801B024C,    // 123 WPBI.BIN
-    (MagicEntry)0x801B0284,    // 124 WPBI.BIN
-    (MagicEntry)0x801B02BC,    // 125 WPBI.BIN
-    (MagicEntry)0x801B02F4     // 126 WPBI.BIN
+    (MagicEntry)0x801B0054, //   0 CAREL.BIN
+    (MagicEntry)0x801B0054, //   1 WPCU.BIN
+    (MagicEntry)0x801B008C, //   2 WPCU.BIN
+    (MagicEntry)0x801B00C4, //   3 WPCU.BIN
+    (MagicEntry)0x801B00FC, //   4 WPCU.BIN
+    (MagicEntry)0x801B0134, //   5 WPCU.BIN
+    (MagicEntry)0x801B016C, //   6 WPCU.BIN
+    (MagicEntry)0x801B01A4, //   7 WPCU.BIN
+    (MagicEntry)0x801B01DC, //   8 WPCU.BIN
+    (MagicEntry)0x801B0214, //   9 WPCU.BIN
+    (MagicEntry)0x801B024C, //  10 WPCU.BIN
+    (MagicEntry)0x801B0284, //  11 WPCU.BIN
+    (MagicEntry)0x801B02BC, //  12 WPCU.BIN
+    (MagicEntry)0x801B02F4, //  13 WPCU.BIN
+    (MagicEntry)0x801B032C, //  14 WPCU.BIN
+    (MagicEntry)0x801B0364, //  15 WPCU.BIN
+    (MagicEntry)0x801B0364, //  16 CAREL.BIN
+    (MagicEntry)0x801B0364, //  17 CAREL.BIN
+    (MagicEntry)0x801B0364, //  18 CAREL.BIN
+    (MagicEntry)0x801B0364, //  19 CAREL.BIN
+    (MagicEntry)0x801B0364, //  20 CAREL.BIN
+    (MagicEntry)0x801B0364, //  21 CAREL.BIN
+    (MagicEntry)0x801B0364, //  22 CAREL.BIN
+    (MagicEntry)0x801B0364, //  23 CAREL.BIN
+    (MagicEntry)0x801B0364, //  24 CAREL.BIN
+    (MagicEntry)0x801B0364, //  25 CAREL.BIN
+    (MagicEntry)0x801B0364, //  26 CAREL.BIN
+    (MagicEntry)0x801B0364, //  27 CAREL.BIN
+    (MagicEntry)0x801B0364, //  28 CAREL.BIN
+    (MagicEntry)0x801B0364, //  29 CAREL.BIN
+    (MagicEntry)0x801B0364, //  30 CAREL.BIN
+    (MagicEntry)0x801B0364, //  31 CAREL.BIN
+    (MagicEntry)0x801B0054, //  32 WPBA.BIN
+    (MagicEntry)0x801B008C, //  33 WPBA.BIN
+    (MagicEntry)0x801B0054, //  34 WPBA.BIN
+    (MagicEntry)0x801B00C8, //  35 WPBA.BIN
+    (MagicEntry)0x801B0100, //  36 WPBA.BIN
+    (MagicEntry)0x801B013C, //  37 WPBA.BIN
+    (MagicEntry)0x801B0174, //  38 WPBA.BIN
+    (MagicEntry)0x801B01B0, //  39 WPBA.BIN
+    (MagicEntry)0x801B01EC, //  40 WPBA.BIN
+    (MagicEntry)0x801B0228, //  41 WPBA.BIN
+    (MagicEntry)0x801B0260, //  42 WPBA.BIN
+    (MagicEntry)0x801B029C, //  43 WPBA.BIN
+    (MagicEntry)0x801B02D4, //  44 WPBA.BIN
+    (MagicEntry)0x801B0310, //  45 WPBA.BIN
+    (MagicEntry)0x801B0348, //  46 WPBA.BIN
+    (MagicEntry)0x801B0384, //  47 WPBA.BIN
+    (MagicEntry)0x801B0054, //  48 CAREL.BIN
+    (MagicEntry)0x801B0054, //  49 CAREL.BIN
+    (MagicEntry)0x801B0054, //  50 CAREL.BIN
+    (MagicEntry)0x801B0054, //  51 CAREL.BIN
+    (MagicEntry)0x801B0054, //  52 CAREL.BIN
+    (MagicEntry)0x801B0054, //  53 CAREL.BIN
+    (MagicEntry)0x801B0054, //  54 CAREL.BIN
+    (MagicEntry)0x801B0054, //  55 CAREL.BIN
+    (MagicEntry)0x801B0054, //  56 CAREL.BIN
+    (MagicEntry)0x801B0054, //  57 CAREL.BIN
+    (MagicEntry)0x801B0054, //  58 CAREL.BIN
+    (MagicEntry)0x801B0054, //  59 CAREL.BIN
+    (MagicEntry)0x801B0054, //  60 CAREL.BIN
+    (MagicEntry)0x801B0054, //  61 CAREL.BIN
+    (MagicEntry)0x801B0054, //  62 WPEA.BIN
+    (MagicEntry)0x801B00C0, //  63 WPEA.BIN
+    (MagicEntry)0x801B012C, //  64 WPEA.BIN
+    (MagicEntry)0x801B0198, //  65 WPEA.BIN
+    (MagicEntry)0x801B0204, //  66 WPEA.BIN
+    (MagicEntry)0x801B0270, //  67 WPEA.BIN
+    (MagicEntry)0x801B02DC, //  68 WPEA.BIN
+    (MagicEntry)0x801B0348, //  69 WPEA.BIN
+    (MagicEntry)0x801B03B4, //  70 WPEA.BIN
+    (MagicEntry)0x801B0420, //  71 WPEA.BIN
+    (MagicEntry)0x801B048C, //  72 WPEA.BIN
+    (MagicEntry)0x801B0054, //  73 WPSI.BIN
+    (MagicEntry)0x801B008C, //  74 WPSI.BIN
+    (MagicEntry)0x801B00C4, //  75 WPSI.BIN
+    (MagicEntry)0x801B00FC, //  76 WPSI.BIN
+    (MagicEntry)0x801B0138, //  77 WPSI.BIN
+    (MagicEntry)0x801B0170, //  78 WPSI.BIN
+    (MagicEntry)0x801B01AC, //  79 WPSI.BIN
+    (MagicEntry)0x801B01E4, //  80 WPSI.BIN
+    (MagicEntry)0x801B021C, //  81 WPSI.BIN
+    (MagicEntry)0x801B0254, //  82 WPSI.BIN
+    (MagicEntry)0x801B028C, //  83 WPSI.BIN
+    (MagicEntry)0x801B02C8, //  84 WPSI.BIN
+    (MagicEntry)0x801B0300, //  85 WPSI.BIN
+    (MagicEntry)0x801B033C, //  86 WPSI.BIN
+    (MagicEntry)0x801B0054, //  87 WPYU.BIN
+    (MagicEntry)0x801B008C, //  88 WPYU.BIN
+    (MagicEntry)0x801B00C8, //  89 WPYU.BIN
+    (MagicEntry)0x801B0100, //  90 WPYU.BIN
+    (MagicEntry)0x801B013C, //  91 WPYU.BIN
+    (MagicEntry)0x801B0174, //  92 WPYU.BIN
+    (MagicEntry)0x801B01AC, //  93 WPYU.BIN
+    (MagicEntry)0x801B01E4, //  94 WPYU.BIN
+    (MagicEntry)0x801B021C, //  95 WPYU.BIN
+    (MagicEntry)0x801B0258, //  96 WPYU.BIN
+    (MagicEntry)0x801B0294, //  97 WPYU.BIN
+    (MagicEntry)0x801B02D0, //  98 WPYU.BIN
+    (MagicEntry)0x801B030C, //  99 WPYU.BIN
+    (MagicEntry)0x801B0344, // 100 WPYU.BIN
+    (MagicEntry)0x801B0054, // 101 WPKE.BIN
+    (MagicEntry)0x801B008C, // 102 WPKE.BIN
+    (MagicEntry)0x801B00C4, // 103 WPKE.BIN
+    (MagicEntry)0x801B00FC, // 104 WPKE.BIN
+    (MagicEntry)0x801B0134, // 105 WPKE.BIN
+    (MagicEntry)0x801B016C, // 106 WPKE.BIN
+    (MagicEntry)0x801B01A4, // 107 WPKE.BIN
+    (MagicEntry)0x801B01DC, // 108 WPKE.BIN
+    (MagicEntry)0x801B0214, // 109 WPKE.BIN
+    (MagicEntry)0x801B024C, // 110 WPKE.BIN
+    (MagicEntry)0x801B0284, // 111 WPKE.BIN
+    (MagicEntry)0x801B02BC, // 112 WPKE.BIN
+    (MagicEntry)0x801B02F4, // 113 WPKE.BIN
+    (MagicEntry)0x801B0054, // 114 WPBI.BIN
+    (MagicEntry)0x801B008C, // 115 WPBI.BIN
+    (MagicEntry)0x801B00C4, // 116 WPBI.BIN
+    (MagicEntry)0x801B00FC, // 117 WPBI.BIN
+    (MagicEntry)0x801B0134, // 118 WPBI.BIN
+    (MagicEntry)0x801B016C, // 119 WPBI.BIN
+    (MagicEntry)0x801B01A4, // 120 WPBI.BIN
+    (MagicEntry)0x801B01DC, // 121 WPBI.BIN
+    (MagicEntry)0x801B0214, // 122 WPBI.BIN
+    (MagicEntry)0x801B024C, // 123 WPBI.BIN
+    (MagicEntry)0x801B0284, // 124 WPBI.BIN
+    (MagicEntry)0x801B02BC, // 125 WPBI.BIN
+    (MagicEntry)0x801B02F4  // 126 WPBI.BIN
 };
 // clang-format on
 
