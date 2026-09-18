@@ -203,7 +203,7 @@ static void BattleInitSetup(s32 sceneID) {
 
 extern u16 g_BattleUnitPresentMask;
 
-u16 BattleGetRndU16(void); // random, 16-bit
+u16 BattleGetRndU16(void);
 
 // Rolls the initial ATB timer of every present combatant and writes it into
 // g_BattleWork.turn[i].unk4. The battle type (encounterType) then biases
@@ -307,118 +307,120 @@ static void BattleInitPlayer(void) {
         setup = &g_BattleWork.setup[i];
         character = &g_ActiveCharacters[i];
         unit = &g_BattleState.combatant[i];
-        if (charId != 0xFF) {
-            for (j = 0; j < NUM_CHARACTERS; j++) {
-                member = &Savemap.party[j];
-                if (D_8016376A & 0x40) {
-                    D_80167938 = *member;
+        if (charId == 0xFF) {
+            continue;
+        }
+        for (j = 0; j < NUM_CHARACTERS; j++) {
+            member = &Savemap.party[j];
+            if (D_8016376A & 0x40) {
+                D_80167938 = *member;
+            }
+            if (member->char_id != charId) {
+                continue;
+            }
+            turn->turnFlags = 1;
+            turn->senseTargetMask = 0xFF;
+            bit = 1;
+            turn->formationIndex = 0xFF;
+            D_801636B8[i].D_801636B8 = charId;
+            unit->actorId = charId;
+            unit->formationIndex = charId + 0x10;
+            unit->level = member->level;
+            unit->unk16 = 0;
+            unit->unk56 = 8;
+            unit->hurtActionId = 5;
+            unit->stateFlags = 8;
+            party->partyMember = member;
+            g_BattleState.playerUnitMask |= bit << i;
+            if (!(member->order & 1)) {
+                unit->stateFlags |= 0x40;
+            }
+            unit->curHP = character->hp;
+            unit->curMP = character->mp;
+            party->curHP = unit->curHP;
+            party->curMP = unit->curMP;
+            BattleInitCharStats(character, party, unit);
+            unit->backDamageMult = 0x10;
+            unit->status = member->status_flags & 0x30;
+            unit->prevStatus = 0;
+            turn->statusProtectionMask = character->immuneStatuses;
+            setup->targetFlags = character->weapon.targetFlags;
+            setup->attackEffectId = character->weapon.attackEffectId;
+            setup->damageFormulaId = character->weapon.damageFormula;
+            setup->hitChance = character->weapon.attackPercent;
+            setup->impactEffectId = character->weapon.impactEffect;
+            setup->criticalHitChance = character->weapon.criticalPercent;
+            setup->attackElement = character->weapon.attackElement | character->physicalAttackElements;
+            setup->cameraMovementId = character->weapon.cameraMovementId;
+            setup->specialAttackFlags = character->weapon.specialAttackFlags;
+            setup->attackStatusMask = character->physicalAttackStatuses;
+            armor = &g_ArmorTable[member->armor];
+            unit->physEvade = armor->defensePercent;
+            unit->magEvade = armor->magicDefensePercent;
+            weapon = &character->weapon;
+            BattleInitApplyAccStatus(i, member->accessory);
+            unit->unk50 = 0;
+            unit->unk52 = 0xFFFF;
+            for (soundIdx = 0; soundIdx < 3; soundIdx++) {
+                soundId = weapon->attackSound[soundIdx];
+                if (weapon->soundIdMask & bit) {
+                    soundId |= 0x100;
                 }
-                if (member->char_id == charId) {
-                    turn->turnFlags = 1;
-                    turn->senseTargetMask = 0xFF;
-                    bit = 1;
-                    turn->formationIndex = 0xFF;
-                    D_801636B8[i].D_801636B8 = charId;
-                    unit->actorId = charId;
-                    unit->formationIndex = charId + 0x10;
-                    unit->level = member->level;
-                    unit->unk16 = 0;
-                    unit->unk56 = 8;
-                    unit->hurtActionId = 5;
-                    unit->stateFlags = 8;
-                    party->partyMember = member;
-                    g_BattleState.playerUnitMask |= bit << i;
-                    if (!(member->order & 1)) {
-                        unit->stateFlags |= 0x40;
+                setup->attackSound[soundIdx] = soundId;
+                bit <<= 1;
+            }
+            turn->turnFlags &= ~2;
+            if (character->characterFlags & CHARFLAG_LONG_RANGE) {
+                setup->targetFlags &= ~TARGET_SHORT_RANGE;
+            }
+            if (!(setup->targetFlags & TARGET_SHORT_RANGE)) {
+                turn->turnFlags |= 2;
+            }
+            turn->atbGauge = 0;
+            character->unk22 = 0;
+            character->atbTimer = 0;
+            character->counterActionIndex = 0;
+            character->counterChance = 0;
+            character->unk1A = 0;
+            character->limitLevel = 1;
+            party->limitLevel = 0xFF;
+            if (charId < NUM_CHARACTERS) {
+                limitLevel = member->limit_level - 1;
+                if (limitLevel < 4) {
+                    limitCharge = member->limit_charge;
+                    party->limitLevel = limitLevel;
+                    party->limitBar = limitCharge;
+                    party->limitBarUI = limitCharge;
+                    party->limitBreakHPDivisor = D_80082290[charId].hpDivisor[limitLevel];
+                    character->unk1A = party->limitBar << 8;
+                    character->limitLevel = member->limit_level;
+                    BattleInitLimits(charId, member->limit_learn, &character->limits);
+                    if (party->limitBreakHPDivisor == 0) {
+                        SysSetEngineErrorCode(0x26);
                     }
-                    unit->curHP = character->hp;
-                    unit->curMP = character->mp;
-                    party->curHP = unit->curHP;
-                    party->curMP = unit->curMP;
-                    BattleInitCharStats(character, party, unit);
-                    unit->backDamageMult = 0x10;
-                    unit->status = member->status_flags & 0x30;
-                    unit->prevStatus = 0;
-                    turn->statusProtectionMask = character->immuneStatuses;
-                    setup->targetFlags = character->weapon.targetFlags;
-                    setup->attackEffectId = character->weapon.attackEffectId;
-                    setup->damageFormulaId = character->weapon.damageFormula;
-                    setup->hitChance = character->weapon.attackPercent;
-                    setup->impactEffectId = character->weapon.impactEffect;
-                    setup->criticalHitChance = character->weapon.criticalPercent;
-                    setup->attackElement = character->weapon.attackElement | character->physicalAttackElements;
-                    setup->cameraMovementId = character->weapon.cameraMovementId;
-                    setup->specialAttackFlags = character->weapon.specialAttackFlags;
-                    setup->attackStatusMask = character->physicalAttackStatuses;
-                    armor = &g_ArmorTable[member->armor];
-                    unit->physEvade = armor->defensePercent;
-                    unit->magEvade = armor->magicDefensePercent;
-                    weapon = &character->weapon;
-                    BattleInitApplyAccStatus(i, member->accessory);
-                    unit->unk50 = 0;
-                    unit->unk52 = 0xFFFF;
-                    for (soundIdx = 0; soundIdx < 3; soundIdx++) {
-                        soundId = weapon->attackSound[soundIdx];
-                        if (weapon->soundIdMask & bit) {
-                            soundId |= 0x100;
-                        }
-                        setup->attackSound[soundIdx] = soundId;
-                        bit <<= 1;
-                    }
-                    turn->turnFlags &= ~2;
-                    if (character->characterFlags & CHARFLAG_LONG_RANGE) {
-                        setup->targetFlags &= ~TARGET_SHORT_RANGE;
-                    }
-                    if (!(setup->targetFlags & TARGET_SHORT_RANGE)) {
-                        turn->turnFlags |= 2;
-                    }
-                    turn->atbGauge = 0;
-                    character->unk22 = 0;
-                    character->atbTimer = 0;
-                    character->counterActionIndex = 0;
-                    character->counterChance = 0;
-                    character->unk1A = 0;
-                    character->limitLevel = 1;
-                    party->limitLevel = 0xFF;
-                    if (charId < NUM_CHARACTERS) {
-                        limitLevel = member->limit_level - 1;
-                        if (limitLevel < 4) {
-                            limitCharge = member->limit_charge;
-                            party->limitLevel = limitLevel;
-                            party->limitBar = limitCharge;
-                            party->limitBarUI = limitCharge;
-                            party->limitBreakHPDivisor = D_80082290[charId].hpDivisor[limitLevel];
-                            character->unk1A = party->limitBar << 8;
-                            character->limitLevel = member->limit_level;
-                            BattleInitLimits(charId, member->limit_learn, &character->limits);
-                            if (party->limitBreakHPDivisor == 0) {
-                                SysSetEngineErrorCode(0x26);
-                            }
-                        } else {
-                            SysSetEngineErrorCode(0x26);
-                        }
-                    }
-                    unit->stateFlags |= 8;
-                    if (unit->curHP == 0) {
-                        unit->status |= STATUS_DEATH;
-                    }
-                    BattleInitCharCmdMenu(i);
-                    BattleInitCharCmdState(i);
-                    if (party->limitBar == 0xFF) {
-                        BattleEnableLimitToPlayerWithSpeed(i);
-                        g_BattleWork.turn[i].limitSpeedFlag &= 0xFFFE;
-                    }
-                    if (unit->status != 0) {
-                        BattleInitUnitAction(i);
-                    }
-                    enemySkillMateria = BattleGetEquipMateriaVal(member);
-                    party->enemySkillMateriaData = enemySkillMateria;
-                    party->enemySkillMateriaData2 = enemySkillMateria;
-                    memberCount += 1;
-                    dexTotal += member->dexterity;
-                    break;
+                } else {
+                    SysSetEngineErrorCode(0x26);
                 }
             }
+            unit->stateFlags |= 8;
+            if (unit->curHP == 0) {
+                unit->status |= STATUS_DEATH;
+            }
+            BattleInitCharCmdMenu(i);
+            BattleInitCharCmdState(i);
+            if (party->limitBar == 0xFF) {
+                BattleEnableLimitToPlayerWithSpeed(i);
+                g_BattleWork.turn[i].limitSpeedFlag &= 0xFFFE;
+            }
+            if (unit->status != 0) {
+                BattleInitUnitAction(i);
+            }
+            enemySkillMateria = BattleGetEquipMateriaVal(member);
+            party->enemySkillMateriaData = enemySkillMateria;
+            party->enemySkillMateriaData2 = enemySkillMateria;
+            memberCount += 1;
+            dexTotal += member->dexterity;
+            break;
         }
     }
     if (memberCount != 0) {

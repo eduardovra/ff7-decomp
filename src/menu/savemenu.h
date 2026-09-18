@@ -42,8 +42,8 @@ typedef struct {
 #define SAVE_ICON_SIZE 0x3F6
 
 extern s32 D_801D4EC4;
-extern RECT D_801D4EC8;
-extern RECT D_801D4ED0;
+extern MenuRect D_801D4EC8;
+extern MenuRect D_801D4ED0;
 extern u8 D_801D4EDC[];
 extern u8 D_801E2DF8;
 extern u8 D_801E2E1C;
@@ -68,14 +68,14 @@ extern s32 D_801E36B4;
 extern DRAWENV D_801E36BC[2];
 extern DISPENV D_801E3774[2];
 extern Menus menus;
-extern u_long* D_801E3854; // otag pointer
-extern u_long* D_801E3858[2][1];
+extern OT_TYPE* D_801E3854;
+extern OT_TYPE* D_801E3858[2][1];
 extern SaveHeader D_801E3864[];
 extern s32 g_SaveSlot;
 extern s32 D_801E3D54;
-extern s32 D_801E3D58;     // backbuffer id?
-extern u_long* D_801E3D5C; // otag pointer
-extern u_long* D_801E3D60[2][4];
+extern s32 D_801E3D58; // backbuffer id?
+extern OT_TYPE* D_801E3D5C;
+extern OT_TYPE* D_801E3D60[2][4];
 extern MenuTable D_801E3DEC[2];
 extern DRAWENV D_801E3E34[2];
 extern DISPENV D_801E3EEC[2];
@@ -99,7 +99,7 @@ extern s32 D_801E3860;
 extern s32 D_801E8F44[];
 extern u8 D_801E2E88;
 extern u8 D_801E3158;
-extern RECT D_801E3668;
+extern MenuRect D_801E3668;
 extern MenuTable D_801E3D80[2];
 extern s32 D_801E3F14;
 extern s32 D_801E3F18;

@@ -14,10 +14,9 @@ set(FF7_SOURCES
     src/main/1C0EC.c
     src/main/1CDA4.c
     src/main/1F6B4.c
-    src/main/269C0.c
-    src/main/48F60.c
     src/main/26B70.c
     src/main/33B70.c
+    src/main/48F60.c
     src/main/akao.c
     src/main/btlinit.c
     src/main/btlrand.c
@@ -108,7 +107,7 @@ endif()
 
 add_library(${PROJECT_NAME} ${FF7_STR_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE include include/psxsdk)
-target_compile_definitions(${PROJECT_NAME} PRIVATE SKIP_ASM=1 FF7_STR)
+target_compile_definitions(${PROJECT_NAME} PRIVATE VERSION_PC SKIP_ASM=1 FF7_STR)
 target_compile_options(${PROJECT_NAME} PRIVATE
     -Wno-implicit-function-declaration
     -Wno-int-conversion

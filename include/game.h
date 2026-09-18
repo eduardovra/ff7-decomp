@@ -10,6 +10,7 @@
 #define _SL(len, x) x // same as _S, but for fixed-length strings with padding
 #endif
 
+#define NUM_PARTY 3
 #define NUM_CHARACTERS 9
 #define MAX_INVENTORY_COUNT 320
 #define MAX_MATERIA_COUNT 200
@@ -273,6 +274,25 @@ typedef struct {
 } MenuTable;           // size: 0x12
 
 typedef struct {
+    /* 0x0 */ s16 visibleRows; // rows shown at once, sets slider length
+    /* 0x2 */ s16 totalRows;   // rows in the whole list, the divisor
+    /* 0x4 */ s16 topRow;      // index of the first visible row
+    /* 0x6 */ RECT track;      // full extent of the scrollbar
+} MenuScrollbar;               // size: 0xE
+
+typedef struct {
+    /* 0x00 */ u16 x;
+    /* 0x02 */ u16 y;
+    /* 0x04 */ s16 w;
+    /* 0x06 */ u16 h;
+    /* 0x08 */ s16 barValue;  // length of the second bar, same scale as max
+    /* 0x0A */ s16 max;       // full-scale value; nothing is drawn when zero
+    /* 0x0C */ s16 barMode;   // 0:hidden, 1:green tint, else black
+    /* 0x0E */ s16 fillValue; // length of the main coloured fill
+    /* 0x10 */ u8 r, g, b;    // colour of the main fill
+} MenuHpMpBar;                // size: 0x14
+
+typedef struct {
     s16 id;
     s16 quantity;
     s16 enabled;
@@ -286,14 +306,28 @@ typedef struct {
     s16 newLimitBreaks;
 } CharacterLevelData; // size: 0xC
 
+// Screen-space geometry of a menu window. Same layout as RECT, but these are
+// window coordinates rather than a VRAM region, so they never reach libgpu.
+typedef struct {
+    s16 x;
+    s16 y;
+    s16 w;
+    s16 h;
+} MenuRect;
+
 typedef union {
     void* poly;
     POLY_FT4* ft4;
+    POLY_G4* polyg4;
     SPRT* sprt;
+    SPRT_8* sprt8;
     TILE* tile;
     TILE_1* tile1;
     BLK_FILL* blk_fill;
     LINE_F2* linef2;
+    LINE_F4* linef4;
+    DR_MODE* dr_mode;
+    DR_ENV* dr_env;
 } Gpu;
 
 typedef struct {
@@ -711,9 +745,7 @@ typedef struct {
     } limitData[3];
 } BattleLimitData; // size:0x5C
 
-// Runtime data for a battle participant.
-// ActiveCharacterData.characterFlags (offset 0x23), documented as
-// "Underwater, Long Range, HP<->MP" in
+// ActiveCharacterData.characterFlags bits.
 // https://ff7-mods.github.io/ff7-flat-wiki/FF7/Battle/Battle_Mechanics.html
 typedef enum {
     CHARFLAG_LONG_RANGE = 0x04, // clears TARGET_SHORT_RANGE on the character's attacks
@@ -739,13 +771,12 @@ typedef struct {
     s16 baseHp;
     s16 mp;
     s16 baseMp;
-    u16 atbTimer;           // seeded from BattleWork.turn[].unk4 (wiki: 0x18 "Timer")
-    u16 unk1A;              // set to BattlePartyWork.limitBar << 8; the wiki folds
-                            // 0x18-0x1B into one 32-bit "Timer", so PSX differs here
-    u16 counterActionIndex; // wiki: 0x1C "Counter Attack Action Index"
-    u16 counterChance;      // wiki: 0x1E "Counter Attack Chance"
-    s8 limitLevel;          // 1-based, unlike BattlePartyWork.limitLevel
-    s8 unk21;
+    u16 atbTimer; // seeded from BattleWork.turn[].unk4
+    u16 unk1A;    // BattlePartyWork.limitBar << 8
+    u16 counterActionIndex;
+    u16 counterChance;
+    s8 limitLevel; // 1-based, unlike BattlePartyWork.limitLevel
+    u8 unk21;
     s8 unk22;
     u8 characterFlags; // CharacterFlags bits
     ActiveCharEnabledCounter enabledCounters[8];
@@ -1321,7 +1352,7 @@ void SysCalcTotalLureGilPreempVal(void);
 s32 SysMenuGetMateriaColorByType(s32 arg0);
 void SysMemCopy32(void* dst, const void* src, const s32 len);
 s32 SysAddCommandToTemp(s32);
-void SysMenuSetDrawMode(s32 dfe, s32 dtd, u16 tpage, RECT* tw);
+void SysMenuSetDrawMode(s32 dfe, s32 dtd, s32 tpage, RECT* tw);
 void SysMovieAbortPlay(void);
 s32 func_80048540(s32 arg0);
 s32 func_80034410(void);
@@ -1332,6 +1363,7 @@ s32 func_80034D5C(void);
 s32 func_800484A8(void);
 u32 InputReadPadsRaw(void);
 void func_80036244(void* anim, u16 frame);
+void func_800354CC(void);
 
 int func_80033DAC(int sector_no, void (*cb)());
 int func_80033DE4(int sector_no);

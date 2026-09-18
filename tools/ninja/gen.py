@@ -15,6 +15,7 @@ objs: list[str] = []
 work_dir = "build/us"
 if len(sys.argv) > 1:
     work_dir = sys.argv[1]
+sym_extern_ld_path = f"{work_dir}/sym_extern_ld.us.txt"
 progress_report = os.environ.get("FF7_PROGRESS_REPORT") == "1"
 dummy_object = bytes()
 if progress_report:
@@ -186,6 +187,17 @@ def add_s(cfg: any, file_name: str, is_hasm=False):
         )
 
 
+def add_s_as(cfg: any, in_path: str, out_path: str):
+    if out_path in objs:
+        return
+    objs.append(out_path)
+    nw.build(
+        rule=f"{platform(cfg)}-as",
+        outputs=[out_path],
+        inputs=[in_path],
+    )
+
+
 def add_c(cfg: any, file_name: str):
     in_path = f"{src_path(cfg)}/{file_name}.c"
     out_path = f"{build_path(cfg)}/{in_path}.o"
@@ -246,6 +258,11 @@ def add_splat_config(file_name: str):
     is_magic = "/magic" in src_path(cfg)
     if platform(cfg) == "psx" and is_main:
         add_s(cfg, "header")
+        add_s_as(
+            cfg,
+            f"{src_path(cfg)}/common.s",
+            f"{build_path(cfg)}/{asm_path(cfg)}/data/common.bss.s.o",
+        )
     for segment in cfg["segments"]:
         if not "type" in segment:
             continue
@@ -288,7 +305,7 @@ def add_splat_config(file_name: str):
         objs.append(sym_export)
     sym_paths = [
         f"-T {cfg["options"]["undefined_syms_auto_path"]}",
-        f"-T config/sym_extern.us.txt",
+        f"-T {sym_extern_ld_path}",
     ]
     if is_main:
         sym_paths.append("-T config/sym_ovl_export.us.txt")
@@ -400,8 +417,14 @@ with open("build.ninja", "w") as f:
     )
     nw.rule(
         "sym-export",
-        command=".venv/bin/python3 tools/symbols.py $in > $out",
+        command=".venv/bin/python3 tools/symbols.py -o $out $in",
         description="sym export $in",
+        restat=True,
+    )
+    nw.rule(
+        "strip-ld-comments",
+        command="sed 's#//.*##' $in > $out",
+        description="strip ld comments $in",
     )
     nw.rule(
         "check",
@@ -414,6 +437,11 @@ with open("build.ninja", "w") as f:
             outputs=["build/check.dummy"],
             inputs=get_check_list(check_path),
         )
+    nw.build(
+        rule="strip-ld-comments",
+        outputs=[sym_extern_ld_path],
+        inputs=["config/sym_extern.us.txt"],
+    )
     for ovl in [
         "main",
         # BATTLE
