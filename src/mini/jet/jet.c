@@ -4,6 +4,7 @@
 #include <game.h>
 
 // Nine write cursors, each reset to the start of its own buffer below.
+// PC: prim pools inside Class_coaster_D8
 typedef struct {
     /* 0x0000 */ u_long* unk0;
     /* 0x0004 */ u_long* unk4;
@@ -27,6 +28,7 @@ typedef struct {
 
 // Offsets 0x00 and 0x5C are fixed by SetDefDrawEnv/SetDefDispEnv in
 // func_800A7C88; both tables are sized by their ClearOTagR calls.
+// PC: Class_coaster_D8 (renderer)
 typedef struct {
     /* 0x0000 */ DRAWENV draw;
     /* 0x005C */ DISPENV disp;
@@ -38,39 +40,44 @@ typedef struct {
 
 // Doubly linked list node. func_800A80A8 initialises the matrix to identity
 // and func_800A8010 chains the arrays with a 0x38 stride.
+// PC: t_coaster_Node
 typedef struct Unk800EE1D4 {
-    /* 0x00 */ s32 unk0;
-    /* 0x04 */ MATRIX m;
-    /* 0x24 */ void* unk24;
-    /* 0x28 */ s16 unk28;
-    /* 0x2A */ s16 unk2A;
-    /* 0x2C */ u16 unk2C;
+    /* 0x00 */ s32 unk0;    // PC: pModel
+    /* 0x04 */ MATRIX m;    // PC: sMatrixWorld
+    /* 0x24 */ void* unk24; // PC: pParentNode
+    /* 0x28 */ s16 unk28;   // PC: wModelId
+    /* 0x2A */ s16 unk2A;   // PC: wIndex
+    /* 0x2C */ u16 unk2C;   // PC: wDepth
     /* 0x2E */ s16 unk2E;
-    /* 0x30 */ struct Unk800EE1D4* unk30;
-    /* 0x34 */ struct Unk800EE1D4* unk34;
-} Unk800EE1D4; // size: 0x38
+    /* 0x30 */ struct Unk800EE1D4* unk30; // PC: pPrev
+    /* 0x34 */ struct Unk800EE1D4* unk34; // PC: pNext
+} Unk800EE1D4;                            // size: 0x38
 
+// PC: t_coaster_Model
 typedef struct {
     /* 0x00 */ s32 unk0;
     /* 0x04 */ char pad4[0x1C];
 } Unk800D0554; // size: 0x20
 
+// PC: t_coaster_Quad
 typedef struct {
     /* 0x00 */ s32 unk0;
     /* 0x04 */ char pad4[0x24];
 } Unk800D1968; // size: 0x28
 
+// PC: t_coaster_Triangle
 typedef struct {
     /* 0x00 */ s32 unk0;
     /* 0x04 */ char pad4[0x20];
 } Unk800A8CCC; // size: 0x24
 
+// PC: t_coaster_GameObject
 typedef struct {
     /* 0x00 */ u8 unk0[0xD4];
-    /* 0xD4 */ Unk800EE1D4* unkD4;
-    /* 0xD8 */ s16 unkD8;
-    /* 0xDA */ s16 unkDA;
-} Unk800A4390; // size: at least 0xDC
+    /* 0xD4 */ Unk800EE1D4* unkD4; // PC: pNode
+    /* 0xD8 */ s16 unkD8;          // PC: wObjIndex
+    /* 0xDA */ s16 unkDA;          // PC: wIsActive
+} Unk800A4390;                     // size: at least 0xDC
 
 extern RECT D_800A0000;
 extern s32 D_800A8310;
@@ -86,46 +93,46 @@ extern s32 D_800A833C;
 extern s32 D_800A83C8;
 extern s32 D_800A83CC;
 extern s32 D_800A83D0;
-extern s32 D_800A892C;
-extern s32 D_800A8930;
-extern s32 D_800A8934;
-extern s32 D_800A893C;
-extern s32 D_800A8940;
-extern s32 D_800A8944;
+extern s32 D_800A892C; // PC: sLNormal.vx
+extern s32 D_800A8930; // PC: sLNormal.vy
+extern s32 D_800A8934; // PC: sLNormal.vz
+extern s32 D_800A893C; // PC: sRNormal.vx
+extern s32 D_800A8940; // PC: sRNormal.vy
+extern s32 D_800A8944; // PC: sRNormal.vz
 extern s32 D_800A8988;
-extern s32 D_800A89D8;
+extern s32 D_800A89D8; // PC: D_00C5D0E4 (model info stream)
 extern u_long D_800A89E4;
-extern s32 D_800A8A5C;
-extern s32 D_800A8A64;
-extern s32 D_800A8A70;
-extern u32 D_800A8A8C;
-extern Unk800EE1D4 D_800A8A90[10];
-extern s32* D_800A8CC0;
-extern Unk800A8CCC* D_800A8CCC;
-extern Unk800EE1D4 D_800A8CD0[0xC8];
-extern Unk800D1964 D_800AB898[2];
-extern Unk800D0554 D_800D0554[];
-extern Unk800EE1D4 D_800D16E4;
-extern s32 D_800D171C;
-extern s32 D_800D1724;
-extern s32 D_800D1730[];
-extern s8 D_800D1960;
-extern Unk800D1964* D_800D1964[1];
-extern Unk800D1968* D_800D1968;
-extern u16 D_800D1970[];
-extern s16 D_800D1A40[0xC8];
+extern s32 D_800A8A5C;               // PC: dwLDistance
+extern s32 D_800A8A64;               // PC: dwRDistance
+extern s32 D_800A8A70;               // PC: D_00C5D0E0 (read triangles index)
+extern u32 D_800A8A8C;               // PC: D_00C5D0EC (allocated models)
+extern Unk800EE1D4 D_800A8A90[10];   // PC: D_00C60320 (list heads per depth)
+extern s32* D_800A8CC0;              // PC: D_00C3F898 (track offsets, stream 5)
+extern Unk800A8CCC* D_800A8CCC;      // PC: D_00C5D0E8 (triangles stream)
+extern Unk800EE1D4 D_800A8CD0[0xC8]; // PC: D_00C5D590 (node pool)
+extern Unk800D1964 D_800AB898[2];    // PC: Class_coaster_D8
+extern Unk800D0554 D_800D0554[];     // PC: D_00C5BF60 (model pool)
+extern Unk800EE1D4 D_800D16E4;       // PC: D_00C60150 (top node)
+extern s32 D_800D171C;               // PC: D_00C5D320 (read quads index)
+extern s32 D_800D1724;               // PC: D_00C3F894
+extern s32 D_800D1730[];             // PC: D_00C5D0F0 (model pointer table)
+extern s8 D_800D1960;                // PC: D_00C3F890 (release mode)
+extern Unk800D1964* D_800D1964[1];   // PC: D_00C3F888 (renderer)
+extern Unk800D1968* D_800D1968;      // PC: D_00C5BF58 (quads stream)
+extern u16 D_800D1970[];             // PC: D_00C3FA80 (object index pool)
+extern s16 D_800D1A40[0xC8];         // PC: D_00C60190 (node index pool)
 extern u_long D_800D1BD4;
-extern s32 D_800D1BD8;
-extern s32 D_800D1BE4;
-extern s32* D_800D1BE8;
-extern s32* D_800D1BEC;
-extern Unk800A8CCC* D_800D1BFC;
-extern Unk800D1968* D_800D1C14;
-extern u16 D_800D9940;
-extern s16 D_800D9944;
-extern s32* D_800E2604;
-extern Unk800EE1D4 D_800EE1D4[10];
-extern u16 D_800EE42C;
+extern s32 D_800D1BD8;             // PC: xbin stream 1 (model info)
+extern s32 D_800D1BE4;             // PC: xbin stream 4 (track data)
+extern s32* D_800D1BE8;            // PC: xbin stream 5 (track offsets)
+extern s32* D_800D1BEC;            // PC: xbin stream 6
+extern Unk800A8CCC* D_800D1BFC;    // PC: xbin stream 0xA (triangles)
+extern Unk800D1968* D_800D1C14;    // PC: xbin stream 0x10 (quads)
+extern u16 D_800D9940;             // PC: D_00C3FA6C (next object index)
+extern s16 D_800D9944;             // PC: D_00C60188 (next node index)
+extern s32* D_800E2604;            // PC: D_00C3F8C0
+extern Unk800EE1D4 D_800EE1D4[10]; // PC: D_00C5D360 (list tails per depth)
+extern u16 D_800EE42C;             // PC: D_00C3FB54 (active object count)
 
 void func_800A7E70(Unk800A7FAC* arg0);
 void func_800A7FAC(Unk800A7FAC* arg0);
@@ -208,6 +215,7 @@ void func_800A27F0(u_long* addr) {
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2860);
 
+// PC: C_005E9436, fade out music and SFX
 void func_800A2938(void) {
     D_8009A000[0] = 0xC1;
     D_8009A004 = 0xF0;
@@ -223,6 +231,7 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A29AC);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2AA0);
 
+// PC: part of C_005E938D, set channel volumes
 void func_800A2B78(void) {
     D_8009A000[0] = 0xA2;
     D_8009A004 = D_800A8338;
@@ -232,6 +241,7 @@ void func_800A2B78(void) {
     SystemAkaoExecute();
 }
 
+// PC: C_005EA8C0, camera/track module init
 void func_800A2BE0(void) {
     D_800A83CC = -0x1B76;
     D_800A83C8 = 0;
@@ -244,6 +254,7 @@ void func_800A2BE0(void) {
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2C50);
 
+// PC: C_005EAAF3, select track data from stream 4
 void func_800A2DE4(s32 arg0, s32 arg1) {
     s32 elem;
     s32 base;
@@ -286,6 +297,7 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3E58);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A40F4);
 
+// PC: C_005EB2DF, release game object
 void func_800A4390(Unk800A4390* arg0) {
     u16* temp;
 
@@ -299,6 +311,7 @@ void func_800A4390(Unk800A4390* arg0) {
     }
 }
 
+// PC: C_005EB342, allocate object index
 s16 func_800A4400(void) {
     u16* temp;
     s16 result;
@@ -310,6 +323,7 @@ s16 func_800A4400(void) {
     return result;
 }
 
+// PC: C_005EB36E, release object index
 void func_800A442C(s16 arg0) {
     u16* temp;
     u16* temp2;
@@ -338,6 +352,7 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7414);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7544);
 
+// PC: __005EEEAD, half-space test against the left frustum plane
 s32 func_800A7688(s32 arg0, s32 arg1, s32 arg2) {
     s32 a;
     s32 b;
@@ -350,6 +365,7 @@ s32 func_800A7688(s32 arg0, s32 arg1, s32 arg2) {
     return (a * (arg0 >> 2)) + (b * (arg1 >> 2)) + (c * (arg2 >> 2)) + D_800A8A5C;
 }
 
+// PC: __005EEEEA, half-space test against the right frustum plane
 s32 func_800A76DC(s32 arg0, s32 arg1, s32 arg2) {
     s32 a;
     s32 b;
@@ -367,6 +383,7 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7928);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7A10);
 
+// PC: C_005EE7F0, model module init
 void func_800A7AF8(void) {
     D_800A8A70 = 0;
     D_800D171C = 0;
@@ -378,6 +395,7 @@ void func_800A7AF8(void) {
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7B48);
 
+// PC: C_005EE9C2, allocate model
 s32* func_800A7BF4(void) {
     u32* counter;
     Unk800D0554* base;
@@ -390,6 +408,7 @@ s32* func_800A7BF4(void) {
     return &base[index].unk0;
 }
 
+// PC: C_005EE9EC, read triangles
 s32* func_800A7C20(s32 count) {
     s32* cursor;
     Unk800A8CCC* base;
@@ -402,6 +421,7 @@ s32* func_800A7C20(s32 count) {
     return &base[index].unk0;
 }
 
+// PC: C_005EEA19, read quads
 s32* func_800A7C54(s32 count) {
     s32* cursor;
     Unk800D1968* base;
@@ -414,6 +434,7 @@ s32* func_800A7C54(s32 count) {
     return &base[index].unk0;
 }
 
+// No PC counterpart; the port replaced the PSX double buffer with the DirectX driver
 void func_800A7C88(void) {
     Unk800A7FAC* temp_s1;
     Unk800D1964* db = D_800AB898;
@@ -470,6 +491,7 @@ void func_800A7FAC(Unk800A7FAC* arg0) {
     arg0->unk20 = arg0->unkE2E4;
 }
 
+// PC: C_005EF1C0, node module init
 void func_800A8010(void) {
     Unk800EE1D4* a;
     Unk800EE1D4* b;
@@ -491,6 +513,7 @@ void func_800A8010(void) {
     }
 }
 
+// PC: C_005EF281, init node
 void func_800A80A8(Unk800EE1D4* arg0, s16 arg1) {
     arg0->m.m[0][0] = 0x1000;
     arg0->m.m[1][1] = 0x1000;
@@ -510,6 +533,7 @@ void func_800A80A8(Unk800EE1D4* arg0, s16 arg1) {
     arg0->unk34 = 0;
 }
 
+// PC: C_005EF31E, allocate node (modelId, parent, x, y, z, rotation)
 Unk800EE1D4* func_800A80F8(s16 arg0, s32 arg1, s32 arg2, s32 arg3, Unk800EE1D4* arg4, s32 arg5, s32 arg6, s32 arg7,
                            u16 arg8, u16 arg9, u16 arg10) {
     SVECTOR sp10;
@@ -534,11 +558,13 @@ Unk800EE1D4* func_800A80F8(s16 arg0, s32 arg1, s32 arg2, s32 arg3, Unk800EE1D4* 
     return temp_s0;
 }
 
+// PC: C_005EF3BF, release node
 void func_800A8204(Unk800EE1D4* arg0) {
     func_800A82F0(arg0);
     func_800A8264(arg0->unk2A);
 }
 
+// PC: C_005EF3E0, allocate node index
 s16 func_800A8238(void) {
     s16* head;
     s16 result;
@@ -550,6 +576,7 @@ s16 func_800A8238(void) {
     return result;
 }
 
+// PC: C_005EF40C, release node index
 void func_800A8264(s16 arg0) {
     s16* temp;
     s16* temp2;
@@ -560,6 +587,7 @@ void func_800A8264(s16 arg0) {
     *temp = arg0;
 }
 
+// PC: C_005EF42F, insert node at its parent's depth + 1
 void func_800A8290(Unk800EE1D4* arg0, Unk800EE1D4* arg1) {
     Unk800EE1D4* temp_v0_2;
     Unk800EE1D4* temp_v1;
@@ -576,6 +604,7 @@ void func_800A8290(Unk800EE1D4* arg0, Unk800EE1D4* arg1) {
     temp_v1->unk30 = arg0;
 }
 
+// PC: C_005EF49E, unlink node
 void func_800A82F0(Unk800EE1D4* arg0) {
     arg0->unk30->unk34 = arg0->unk34;
     arg0->unk34->unk30 = arg0->unk30;
