@@ -2281,6 +2281,7 @@ func_800A8264 = 0x800a8264;
 func_800A8290 = 0x800a8290;
 func_800A82F0 = 0x800a82f0;
 func_800A83F0 = 0x800a83f0;
+jet_gte_s = 0x800a83f0;
 func_800A84A4 = 0x800a84a4;
 func_800A84DC = 0x800a84dc;
 func_800A8604 = 0x800a8604;
