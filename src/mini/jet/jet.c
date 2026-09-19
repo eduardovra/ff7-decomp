@@ -207,7 +207,7 @@ Unk800D0554* func_800A7BF4(void);
 s32* func_800A7C20(s32 count);
 s32* func_800A7C54(s32 count);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0450);
+INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", MINI_Jet);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0874);
 
