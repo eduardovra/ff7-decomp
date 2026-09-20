@@ -29,15 +29,14 @@ typedef struct {
     /* 0xE2E4 */ LINE_F2 unkE2E4[1];
 } Unk800A7FAC; // size: 0xE2F4
 
-// Offsets 0x00 and 0x5C are fixed by SetDefDrawEnv/SetDefDispEnv in
-// func_800A7C88; both tables are sized by their ClearOTagR calls.
-// PC: Class_coaster_D8 (renderer)
+// Offsets 0x00 and 0x5C are fixed by SetDefDrawEnv/SetDefDispEnv; both
+// tables are sized by their ClearOTagR calls. PC: Class_coaster_D8
 typedef struct {
     /* 0x0000 */ DRAWENV draw;
     /* 0x005C */ DISPENV disp;
-    /* 0x0070 */ u_long* unk70[0x1000];
-    /* 0x4070 */ u_long* unk4070[10];
-    /* 0x4098 */ u_long* unk4098[0xB4];
+    /* 0x0070 */ u_long unk70[0x1000];
+    /* 0x4070 */ u_long unk4070[10];
+    /* 0x4098 */ u_long unk4098[0xB4];
     /* 0x4368 */ Unk800A7FAC unk4368;
 } Unk800D1964; // size: 0x1265C
 
@@ -66,8 +65,7 @@ typedef struct {
     /* 0x1C */ char pad1C[4];
 } Unk800D0554; // size: 0x20
 
-// Doubly linked list node. func_800A80A8 initialises the matrix to identity
-// and func_800A8010 chains the arrays with a 0x38 stride.
+// Doubly linked list node, chained by func_800A8010 with a 0x38 stride.
 // PC: t_coaster_Node
 typedef struct Unk800EE1D4 {
     /* 0x00 */ Unk800D0554* unk0;         // PC: pModel
@@ -108,7 +106,7 @@ typedef struct {
 typedef struct {
     /* 0x0 */ s32* tris;
     /* 0x4 */ u_long* prim;
-    /* 0x8 */ u_long** ot;
+    /* 0x8 */ u_long* ot;
     /* 0xC */ Unk800D0554* model;
 } Unk800A8604; // size: 0x10
 
@@ -164,6 +162,9 @@ VECTOR D_800A83D8 = {0, 0, 0, 0}; // PC: D_00C3F908
 s32 D_800A83E8[2] = {0, 0};
 
 extern u8 D_800A8928;
+extern s32 D_800A8A84;
+extern void* D_800A891C;
+extern void* D_800A8920;
 extern s32 D_800A892C; // PC: sLNormal.vx
 extern s32 D_800A8930; // PC: sLNormal.vy
 extern s32 D_800A8934; // PC: sLNormal.vz
@@ -213,18 +214,21 @@ extern s32 D_800D0550;               // PC: dwRNormalLength
 extern Unk800D0554 D_800D0554[];     // PC: D_00C5BF60 (model pool)
 extern s32 D_800D16D8;               // PC: D_00C3F76C (last shoot score)
 extern u8 D_800D16DC;                // PC: D_00C3F760 (pause mode)
+extern void* D_800D16D4;
 extern s32 D_800D16E0;
 extern Unk800EE1D4 D_800D16E4; // PC: D_00C60150 (top node)
 extern s32 D_800D171C;         // PC: D_00C5D320 (read quads index)
 extern s32 D_800D1724;         // PC: D_00C3F894
-extern s32 D_800D172C;
+extern u32 D_800D172C;
 extern Unk800D0554* D_800D1730[];  // PC: D_00C5D0F0 (model pointer table)
 extern s8 D_800D1960;              // PC: D_00C3F890 (release mode)
 extern Unk800D1964* D_800D1964[1]; // PC: D_00C3F888 (renderer)
-extern void* D_800D196C;
+extern u16* D_800D196C;
 extern Unk800D1968* D_800D1968; // PC: D_00C5BF58 (quads stream)
 extern u16 D_800D1970[];        // PC: D_00C3FA80 (object index pool)
 extern s16 D_800D1A40[0xC8];    // PC: D_00C60190 (node index pool)
+extern void* D_800D1A38;
+extern void* D_800D1A3C;
 extern Unk800D0554* D_800D186C; // shadow triangles
 extern MATRIX* D_800D1728;      // view matrix
 extern MATRIX* D_800D1BD0;      // world matrix
@@ -249,8 +253,8 @@ extern s8 D_800D1C4C;           // PC: D_00C3FA70 (shoot)
 extern u16 D_800D1C50;          // PC: D_00C5BF30 (track element count)
 extern s32 D_800D1C54;          // PC: D_00C3F764 (camera path position)
 extern SVECTOR* D_800D1C58;     // PC: D_00C3F874 (left track vectors)
-extern s16 D_800D1C5C;          // PC: D_00C3FB50 (shoot power)
-extern void* D_800D1C60;
+extern u16 D_800D1C5C;          // PC: D_00C3FB50 (shoot power)
+extern u16* D_800D1C60;
 extern u16 D_800D1C78;               // PC: D_00C5039C (bg triangle count)
 extern s8 D_800D1C7C;                // PC: D_00C3FA74 (shoot repeat counter)
 extern u16 D_800D1C80;               // PC: D_00C5BF38 (track list tail)
@@ -265,20 +269,21 @@ extern u16 D_800E25EC;           // PC: D_00C3FB58 (cursor X)
 extern u16 D_800E25F0;           // PC: D_00C3FB5C (cursor Y)
 extern u8 D_800E25E8;
 extern u8 D_800E25F4;
-extern s8 D_800E25F8;
+extern u8 D_800E25F8;
 extern s32 D_800E25FC;
 extern u8 D_800E2600;
 extern s32* D_800E2604;        // PC: D_00C3F8C0
 extern Unk800E2608 D_800E2608; // PC: D_00C503B0 (bg triangle list nodes)
-extern void* D_800EE188;
+extern u16* D_800EE188;
 extern SVECTOR D_800EE18C;
 extern u16 D_800EE198[];           // sprite clut table
 extern SVECTOR* D_800EE194;        // PC: D_00C3F878 (right track vectors)
 extern Unk800EE1D4 D_800EE1D4[10]; // PC: D_00C5D360 (list tails per depth)
 extern MATRIX D_800EE404;          // camera rotation
 extern SVECTOR* D_800EE424;        // PC: D_00C3F870 (track camera)
-extern void* D_800EE428;
+extern u16* D_800EE428;
 extern u16 D_800EE42C; // PC: D_00C3FB54 (active object count)
+extern void* D_80110BB8;
 
 void func_800A7E70(Unk800A7FAC* arg0);
 void func_800A7FAC(Unk800A7FAC* arg0);
@@ -292,8 +297,11 @@ void func_800A8204(Unk800EE1D4* arg0);
 void func_800A442C(s16 arg0);
 void func_800A2DE4(s32 arg0, s32 arg1);
 s16 func_800A40F4(Unk800A4390* arg0, s16 arg1);
-u_long* func_800A8734(Unk800A8CCC* arg0, u_long* arg1, u_long** arg2, Unk800A8CCC* arg3);
-u_long* func_800A882C(SVECTOR* arg0, u_long* arg1, u_long** arg2, SVECTOR* arg3);
+void* func_800A84DC(Unk800A8604* arg0);
+void func_800A84A4(s32* arg0, u_long* arg1);
+void* func_800A8604(Unk800A8604* arg0);
+u_long* func_800A8734(Unk800A8CCC* arg0, u_long* arg1, u_long* arg2, Unk800A8CCC* arg3);
+u_long* func_800A882C(SVECTOR* arg0, u_long* arg1, u_long* arg2, SVECTOR* arg3);
 Unk800D0554* func_800A7BF4(void);
 s32* func_800A7C20(s32 count);
 s32* func_800A7C54(s32 count);
@@ -303,6 +311,15 @@ void func_800A13AC(void);
 void func_800A1450();
 void func_800A1A64();
 void func_800A1B64(Unk800D1964* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4);
+void func_800A2420(void);
+void func_800A2BE0(void);
+void func_800A334C(void);
+void func_800A3AAC(void);
+void func_800A70D4(void);
+void func_800A7AF8(void);
+Unk800D0554* func_800A7B48(s32 arg0);
+void func_800A7C88(void);
+void func_800A8010(void);
 void func_800A16A4(s32 arg0, s32 arg1, VECTOR* arg2, SVECTOR* arg3);
 void func_800A1CD8(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_800A1F18(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans);
@@ -345,61 +362,58 @@ u16 MINI_Jet(void) {
     func_800A2860();
     SetFogNearFar(D_800A89D0, D_800A89D4, 0x100);
     D_800A8A74[0] = func_800A80F8(0x1E, 0, 0, 1, &D_800D16E4, 0x4B0, 0x32, 0xBB8, 0, 0x3E8, 0);
-    // A loop keyword makes gcc duplicate the exit test and hoist loop constants;
-    // the target has neither.
+    // A loop keyword makes gcc duplicate the exit test and hoist loop constants.
 loop:
     if ((D_800D16E0 * 4) > (D_800D1724 - 0x10) || D_800E2600 == 1) {
         goto done;
     }
-    {
-        func_800A2E38();
-        if (D_800D16DC == 0) {
-            func_800A2C50(9);
-            func_800A35DC(*speed);
-            func_800A1450();
-            func_800A13AC();
-            func_800A12EC();
-            func_800A1B64(db[0], D_800A8A88, 5, 0x28, 0);
-            func_800A372C(*speed);
-            func_800A46E8(db[0]);
-            func_800A1CD8(D_800D16D8, 0xF4, 0xC8, 0, 0);
-            func_800A1F18(7, 0xCC, 0xC8, 0x27, 0x11, 0, 0, 0x27, 0x11, 0);
-            func_800A1F18(0xB, 0x12, 0x56, 0xC, 0x8C, 0, 0x70, 0xC, 0x8C, 0);
-            func_800A1A64();
-            if (*speed < 0x4000) {
-                D_800A8338 = 0;
-            } else {
-                D_800A8338 = 0x7F;
-            }
-        } else {
-            func_800A1F18(9, 0xCA, 0xC0, 0x60, temp_s0, 0, 0x50, 0x60, temp_s0, 0);
+    func_800A2E38();
+    if (D_800D16DC == 0) {
+        func_800A2C50(9);
+        func_800A35DC(*speed);
+        func_800A1450();
+        func_800A13AC();
+        func_800A12EC();
+        func_800A1B64(db[0], D_800A8A88, 5, 0x28, 0);
+        func_800A372C(*speed);
+        func_800A46E8(db[0]);
+        func_800A1CD8(D_800D16D8, 0xF4, 0xC8, 0, 0);
+        func_800A1F18(7, 0xCC, 0xC8, 0x27, 0x11, 0, 0, 0x27, 0x11, 0);
+        func_800A1F18(0xB, 0x12, 0x56, 0xC, 0x8C, 0, 0x70, 0xC, 0x8C, 0);
+        func_800A1A64();
+        if (*speed < 0x4000) {
             D_800A8338 = 0;
-            D_800A833C = 0;
+        } else {
+            D_800A8338 = 0x7F;
         }
-        func_800A2B78();
-        func_800A2058();
-        func_800A1F18(0xA, 0xC8, 0xC0, 0x6F, 0x1F, 0, 0x30, 0x70, temp_s0, 0);
-        DrawSync(0);
-        VSync(0);
-        ResetGraph(1);
-        PutDrawEnv(&db[0]->draw);
-        PutDispEnv(&db[0]->disp);
-        ClearImage(&db[0]->draw.clip, 0, 0, 0);
-        if (D_800E25F4 != 0) {
-            DrawOTag((u_long*)&db[0]->unk70[0xFFF]);
-            DrawOTag((u_long*)&db[0]->unk4098[0xB3]);
-        }
-        var_a2 = D_800AB898;
-        D_800E25FC = 0;
-        if (db[0] == var_a2) {
-            var_a2++;
-        }
-        db[0] = var_a2;
-        ClearOTagR((u_long*)var_a2->unk70, 0x1000);
-        ClearOTagR((u_long*)db[0]->unk4098, 0xB4);
-        func_800A7FAC(&db[0]->unk4368);
-        goto loop;
+    } else {
+        func_800A1F18(9, 0xCA, 0xC0, 0x60, temp_s0, 0, 0x50, 0x60, temp_s0, 0);
+        D_800A8338 = 0;
+        D_800A833C = 0;
     }
+    func_800A2B78();
+    func_800A2058();
+    func_800A1F18(0xA, 0xC8, 0xC0, 0x6F, 0x1F, 0, 0x30, 0x70, temp_s0, 0);
+    DrawSync(0);
+    VSync(0);
+    ResetGraph(1);
+    PutDrawEnv(&db[0]->draw);
+    PutDispEnv(&db[0]->disp);
+    ClearImage(&db[0]->draw.clip, 0, 0, 0);
+    if (D_800E25F4 != 0) {
+        DrawOTag(&db[0]->unk70[0xFFF]);
+        DrawOTag(&db[0]->unk4098[0xB3]);
+    }
+    var_a2 = D_800AB898;
+    D_800E25FC = 0;
+    if (db[0] == var_a2) {
+        var_a2++;
+    }
+    db[0] = var_a2;
+    ClearOTagR(var_a2->unk70, 0x1000);
+    ClearOTagR(db[0]->unk4098, 0xB4);
+    func_800A7FAC(&db[0]->unk4368);
+    goto loop;
 done:
     *D_8009A000 = 0xB8;
     D_8009A004 = 0;
@@ -518,7 +532,7 @@ void func_800A1198(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex, s32 arg3, s3
 }
 
 // Draw every background triangle on the draw list, front to back.
-// PC: C_005E9E7E, render every background triangle on the draw list
+// PC: C_005E9E7E
 void func_800A12EC(void) {
     Unk800E2608* list;
     Unk800A8CCC* tris;
@@ -539,7 +553,7 @@ void func_800A12EC(void) {
 }
 
 // Draw every track element on the draw list, front to back.
-// PC: C_005E9F33, render every track element on the draw list
+// PC: C_005E9F33
 void func_800A13AC(void) {
     Unk800E2608* list;
     SVECTOR* left;
@@ -550,7 +564,7 @@ void func_800A13AC(void) {
     trackId = D_800A89DC;
     ot = D_800D1964[0]->unk4368.unk14;
     list = D_800D9948;
-// This needs to be refactored to get rid of the goto.
+// A loop keyword makes gcc duplicate the exit test, so the goto is load-bearing.
 loop:
     left = D_800D1C58;
     right = D_800EE194;
@@ -674,9 +688,94 @@ void func_800A1F18(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, 
     db[0]->unk4368.unk14 = poly;
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2058);
+// Queue two blank textured quads, one at each end of the background OT.
+void func_800A2058(void) {
+    Unk800D1964** db;
+    POLY_FT4* poly;
 
+    db = D_800D1964;
+    poly = db[0]->unk4368.unk14;
+    setXY4(poly, 0, 0, 0, 0, 0, 0, 0, 0);
+    setRGB0(poly, 0x80, 0x80, 0x80);
+    setUV4(poly, 0, 0, 0, 0, 0, 0, 0, 0);
+    poly->tpage = D_800A8990[5];
+    poly->clut = D_800EE198[5];
+    SetSemiTrans(poly, 0);
+    addPrim(&db[0]->unk70[0xFFF], poly);
+    poly++;
+    setXY4(poly, 0, 0, 0, 0, 0, 0, 0, 0);
+    setRGB0(poly, 0x80, 0x80, 0x80);
+    setUV4(poly, 0, 0, 0, 0, 0, 0, 0, 0);
+    poly->tpage = D_800A8990[5];
+    poly->clut = D_800EE198[5];
+    SetSemiTrans(poly, 0);
+    addPrim(&db[0]->unk70[2], poly);
+    poly++;
+    db[0]->unk4368.unk14 = poly;
+}
+
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2214);
+#else
+// Point every matrix and vector at scratchpad, then build the world.
+// Off by one delay slot, which the target fills with the loop counter.
+void func_800A2214(void) {
+    s32* state;
+    s32 i;
+
+    state = &D_800A8A84;
+    state[0] = 0;
+    D_80110BB8 = (void*)0x1F800000;
+    D_800D16D4 = (void*)0x1F800000;
+    D_800D16DC = 0;
+    D_800D1BD0 = (MATRIX*)0x1F800010;
+    D_800D1728 = (MATRIX*)0x1F800030;
+    D_800D1A38 = (void*)0x1F800050;
+    D_800D1A3C = (void*)0x1F800058;
+    D_800A891C = (void*)0x1F800060;
+    D_800A8920 = (void*)0x1F800064;
+    D_800D1728->m[0][0] = 0x1000;
+    D_800D1728->m[0][1] = 0;
+    D_800D1728->m[0][2] = 0;
+    D_800D1728->m[1][0] = 0;
+    D_800D1728->m[1][1] = 0x1000;
+    D_800D1728->m[1][2] = 0;
+    D_800D1728->m[2][0] = 0;
+    D_800D1728->m[2][1] = 0;
+    D_800D1728->m[2][2] = 0x1000;
+    func_800A7C88();
+    func_800A2420();
+    state[0] = 0x99;
+    func_800A334C();
+    func_800A8010();
+    func_800A7AF8();
+    func_800A2BE0();
+    func_800A3AAC();
+    func_800A70D4();
+    for (i = 0; i < 0x64; i++) {
+        D_800D1730[i] = func_800A7B48(i);
+    }
+    D_800A897C = 0x2710;
+    D_800A89D0 = 0x28AA;
+    D_800A89D4 = 0x37DC;
+    D_800D16E0 = 0;
+    D_800D1C54 = 0;
+    D_800D16D8 = 0;
+    D_800E25F4 = 0;
+    D_800E2600 = 0;
+    D_800A8A88 = 0;
+    D_800E25E8 = 0;
+    D_800EE18C.vx = 0;
+    D_800EE18C.vy = 0;
+    D_800EE18C.vz = 0;
+    D_800A8928 = 0;
+    D_800A8330 = 0x7F;
+    D_800A8334 = 0x7F;
+    D_800A8338 = 0;
+    D_800A833C = 0;
+    D_800A89CC = 0;
+}
+#endif
 
 void func_800A2420(void) {
     RECT unused;
@@ -921,7 +1020,80 @@ void func_800A334C(void) {
     D_800E25F8 = 1;
 }
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3414);
+#else
+// Step the track streams forward, spawning whatever each segment lists.
+// Off by register allocation; unused[] only reproduces the frame size.
+void func_800A3414(s32 advance) {
+    u16** tri;
+    u16** quad;
+    u32* pos;
+    s32* segment;
+    u32 prev;
+    u32 next;
+    u32 steps;
+    u32 i;
+    u16 id;
+    s32 unused[4];
+
+    pos = &D_800D172C;
+    prev = pos[0];
+    next = prev + advance;
+    D_800A8CC8 = prev;
+    pos[0] = next;
+    steps = (next >> 18) - (prev >> 18);
+    segment = &D_800D16E0;
+    segment[0] = segment[0] + steps;
+    i = 0;
+    if (steps + D_800E25F8 != 0) {
+        tri = &D_800D1C60;
+        quad = &D_800EE428;
+        do {
+            for (;;) {
+                id = *tri[0]++;
+                if (id == 0xFFFF) {
+                    break;
+                }
+                func_800A385C(id);
+            }
+            for (;;) {
+                id = *quad[0]++;
+                if (id == 0xFFFF) {
+                    break;
+                }
+                func_800A38D4(id);
+            }
+            i++;
+        } while (i < steps + D_800E25F8);
+    }
+    i = 0;
+    if (steps != 0) {
+        tri = &D_800D196C;
+        quad = &D_800EE188;
+        do {
+            for (;;) {
+                id = *tri[0]++;
+                if (id == 0xFFFF) {
+                    break;
+                }
+                func_800A3980(id);
+            }
+            for (;;) {
+                id = *quad[0]++;
+                if (id == 0xFFFF) {
+                    break;
+                }
+                func_800A3A20(id);
+            }
+            i++;
+        } while (i < steps);
+    }
+    if (D_800E25F8 == 1) {
+        D_800E25F8 = 0;
+    }
+}
+#endif
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A35DC);
 
@@ -1213,8 +1385,8 @@ void func_800A442C(s16 arg0) {
 #ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A4458);
 #else
-// Off by the hoist order of the two loop-invariant addresses.
 // Spawn the objects scheduled for every track segment reached this frame.
+// Off by the hoist order of the two loop-invariant addresses.
 void func_800A4458(void) {
     Unk800D1C0C* spawns;
     Unk800D1C0C* spawn;
@@ -1279,7 +1451,7 @@ void func_800A6B08(Unk800A4390* arg0) {
     s32 y;
     s32 z;
 
-    amount = (u16)D_800D1C5C >> 5;
+    amount = D_800D1C5C >> 5;
     if (amount == 0) {
         amount = 1;
     }
@@ -1625,16 +1797,16 @@ void func_800A7C88(void) {
     func_800A7E70(&D_800AB898[1].unk4368);
     func_800A7FAC(temp_s1);
     func_800A7FAC(&D_800AB898[1].unk4368);
-    ClearOTagR((u_long*)&D_800AB898[0].unk70, LEN(D_800AB898[0].unk70));
-    ClearOTagR((u_long*)&D_800AB898[1].unk70, LEN(D_800AB898[1].unk70));
-    ClearOTagR((u_long*)&D_800AB898[0].unk4098, LEN(D_800AB898[0].unk4098));
-    ClearOTagR((u_long*)&D_800AB898[1].unk4098, LEN(D_800AB898[1].unk4098));
+    ClearOTagR(D_800AB898[0].unk70, LEN(D_800AB898[0].unk70));
+    ClearOTagR(D_800AB898[1].unk70, LEN(D_800AB898[1].unk70));
+    ClearOTagR(D_800AB898[0].unk4098, LEN(D_800AB898[0].unk4098));
+    ClearOTagR(D_800AB898[1].unk4098, LEN(D_800AB898[1].unk4098));
     *D_800D1964 = &D_800AB898[0];
 }
 
 void func_800A7E1C(void) {
-    ClearOTagR((u_long*)D_800D1964[0]->unk70, LEN(D_800D1964[0]->unk70));
-    ClearOTagR((u_long*)D_800D1964[0]->unk4098, LEN(D_800D1964[0]->unk4098));
+    ClearOTagR(D_800D1964[0]->unk70, LEN(D_800D1964[0]->unk70));
+    ClearOTagR(D_800D1964[0]->unk4098, LEN(D_800D1964[0]->unk4098));
     func_800A7FAC(&D_800D1964[0]->unk4368);
 }
 
