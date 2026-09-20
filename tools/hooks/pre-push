@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Runs the checks .github/workflows/build.yaml gates on: formatting, the
-# sha1 build, the generated ovl export being committed, and the modern
-# host build that enforces warnings as errors.
+# sha1 build, the generated ovl export being committed, overlapping
+# symbols, and the modern host build that enforces warnings as errors.
 # Skip with `git push --no-verify`.
 set -e
 
@@ -35,6 +35,9 @@ if ! git diff --quiet -- config/sym_ovl_export.us.txt; then
 	echo "pre-push: config/sym_ovl_export.us.txt is stale, commit it"
 	exit 1
 fi
+
+echo "pre-push: lint"
+make lint
 
 # The build-modern job: a host compiler with -Werror on the warnings CI
 # enforces. Quiet unless it fails, since it warns plenty on its way through.
