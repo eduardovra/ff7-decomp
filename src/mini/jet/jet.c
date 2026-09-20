@@ -148,8 +148,10 @@ extern s32 D_800A8934;          // PC: sLNormal.vz
 extern s32 D_800A893C;          // PC: sRNormal.vx
 extern s32 D_800A8940;          // PC: sRNormal.vy
 extern s32 D_800A8944;          // PC: sRNormal.vz
+extern s32 D_800A8950;          // PC: dwLHelper
 extern SVECTOR* D_800A8954;     // PC: D_00C3FB60 (current path)
 extern s32 D_800A897C;          // PC: D_00C3F768 (speed)
+extern s32 D_800A8968;          // PC: dwRHelper
 extern s32 D_800A8984;          // PC: D_00C476E0 (current path length)
 extern SVECTOR* D_800A8988;     // PC: D_00C3F8D0 (selected track path)
 extern s32 D_800A898C;          // PC: D_00C3F91C (current object number)
@@ -172,7 +174,9 @@ extern s32* D_800A8CC0;            // PC: D_00C3F898 (track offsets, stream 5)
 extern Unk800A8CCC* D_800A8CCC;    // PC: D_00C5D0E8 (triangles stream)
 extern s32 D_800A8CC8;
 extern Unk800EE1D4 D_800A8CD0[0xC8]; // PC: D_00C5D590 (node pool)
+extern s32 D_800AB890;               // PC: dwLNormalLength
 extern Unk800D1964 D_800AB898[2];    // PC: Class_coaster_D8
+extern s32 D_800D0550;               // PC: dwRNormalLength
 extern Unk800D0554 D_800D0554[];     // PC: D_00C5BF60 (model pool)
 extern s32 D_800D16D8;               // PC: D_00C3F76C (last shoot score)
 extern u8 D_800D16DC;                // PC: D_00C3F760 (pause mode)
@@ -921,9 +925,69 @@ s32 func_800A76DC(s32 arg0, s32 arg1, s32 arg2) {
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7730);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7928);
+// PC: __005EF071, sphere test against the left frustum plane
+s32 func_800A7928(s32 arg0, s32 arg1, s32 arg2, s16 arg3) {
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 hs;
+    s32 ok;
+    s32 len;
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7A10);
+    a = D_800A892C;
+    b = D_800A8930;
+    c = D_800A8934;
+    ok = 0;
+    hs = (a * (arg0 >> 2)) + (b * (arg1 >> 2)) + (c * (arg2 >> 2)) + D_800A8A5C;
+    if (D_800A8950 > 0 && hs >= 0) {
+        ok = 1;
+    }
+    if (D_800A8950 < 0 && hs <= 0) {
+        ok = 1;
+    }
+    if (ok == 0) {
+        len = D_800AB890;
+        if (hs < 0) {
+            hs = -hs;
+        }
+        if (hs / len < arg3) {
+            ok = 1;
+        }
+    }
+    return ok;
+}
+
+// PC: __005EF114, sphere test against the right frustum plane
+s32 func_800A7A10(s32 arg0, s32 arg1, s32 arg2, s16 arg3) {
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 hs;
+    s32 ok;
+    s32 len;
+
+    a = D_800A893C;
+    b = D_800A8940;
+    c = D_800A8944;
+    ok = 0;
+    hs = (a * (arg0 >> 2)) + (b * (arg1 >> 2)) + (c * (arg2 >> 2)) + D_800A8A64;
+    if (D_800A8968 > 0 && hs >= 0) {
+        ok = 1;
+    }
+    if (D_800A8968 < 0 && hs <= 0) {
+        ok = 1;
+    }
+    if (ok == 0) {
+        len = D_800D0550;
+        if (hs < 0) {
+            hs = -hs;
+        }
+        if (hs / len < arg3) {
+            ok = 1;
+        }
+    }
+    return ok;
+}
 
 // PC: C_005EE7F0, model module init
 void func_800A7AF8(void) {
