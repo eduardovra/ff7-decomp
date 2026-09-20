@@ -77,6 +77,7 @@ void SetFogNear(long a, long h); // Distance between visual point and screen
 void SetFogNearFar(long a, long b, long h);
 
 extern long SquareRoot0(long a);
+extern void OuterProduct0(VECTOR* v0, VECTOR* v1, VECTOR* v2);
 extern long SquareRoot12(long a);
 extern int rcos(int a);
 extern int rsin(int a);

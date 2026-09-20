@@ -7,7 +7,6 @@
 #include <libetc.h>
 
 // Nine write cursors, each reset to the start of its own buffer below.
-// PC: prim pools inside Class_coaster_D8
 typedef struct {
     /* 0x0000 */ void* unk0;
     /* 0x0004 */ void* unk4;
@@ -119,7 +118,11 @@ typedef struct {
 // PC: t_coaster_GameObject
 typedef struct {
     /* 0x00 */ VECTOR unk0; // PC: sPos
-    /* 0x10 */ char pad10[0x18];
+    /* 0x10 */ char pad10[8];
+    /* 0x18 */ s16 unk18; // spawn rotation
+    /* 0x1A */ s16 unk1A;
+    /* 0x1C */ s16 unk1C;
+    /* 0x1E */ char pad1E[0xA];
     /* 0x28 */ s32 unk28; // PC: f_028.dwType
     /* 0x2C */ s32 unk2C; // PC: f_028.dwIsHit
     /* 0x30 */ s32 unk30; // PC: f_028.dwModelId
@@ -134,11 +137,17 @@ typedef struct {
     /* 0xD4 */ Unk800EE1D4* unkD4; // PC: pNode
     /* 0xD8 */ s16 unkD8;          // PC: wObjIndex
     /* 0xDA */ s16 unkDA;          // PC: wIsActive
-    /* 0xDC */ char padDC[0x60];
+    /* 0xDC */ SVECTOR unkDC[6];   // the model bounding box's six face centres
+    /* 0x10C */ char pad10C[0x30];
 } Unk800A4390; // size: 0x13C
 
 extern RECT D_800A0000;
-// .data, in ROM order. Sector and size pairs feed the four loads in func_800A2420
+// The four view frustum corner rays at the projection distance, screen order.
+extern VECTOR D_800A0410; // bottom left
+extern VECTOR D_800A0420; // bottom right
+extern VECTOR D_800A0430; // top left
+extern VECTOR D_800A0440; // top right
+// .data in ROM order, the sector and size pairs feeding func_800A2420's loads.
 s32 D_800A8310 = 0x9D8;
 u32 D_800A8314 = 0x28;
 s32 D_800A8318 = 0x9D9;
@@ -171,6 +180,7 @@ extern s32 D_800A8934; // PC: sLNormal.vz
 extern s32 D_800A893C; // PC: sRNormal.vx
 extern s32 D_800A8940; // PC: sRNormal.vy
 extern s32 D_800A8944; // PC: sRNormal.vz
+extern s32 D_800A894C; // PC: D_00C503A0 (track segments stepped this frame)
 extern s32 D_800A8950; // PC: dwLHelper
 extern s16 D_800A895C;
 extern s16 D_800A8960;
@@ -193,11 +203,12 @@ extern Unk800A89D8* D_800A89D8; // PC: D_00C5D0E4 (model info stream)
 extern u16 D_800A89DC;          // PC: D_00C503A4 (track list head)
 extern s32 D_800A89E0;          // PC: D_00C476D8 (object stream index)
 extern s32 D_800A8958;
-extern u_long D_800A89E4;
-extern s32 D_800A8A5C; // PC: dwLDistance
-extern u16 D_800A8A60; // PC: D_00C5BF44 (bg triangle list head)
-extern s32 D_800A8A64; // PC: dwRDistance
-extern s32 D_800A8A70; // PC: D_00C5D0E0 (read triangles index)
+extern u_long D_800A89E4; // loaded TIM address table
+extern u16 D_800A8A68;    // background clut
+extern s32 D_800A8A5C;    // PC: dwLDistance
+extern u16 D_800A8A60;    // PC: D_00C5BF44 (bg triangle list head)
+extern s32 D_800A8A64;    // PC: dwRDistance
+extern s32 D_800A8A70;    // PC: D_00C5D0E0 (read triangles index)
 extern s16 D_800A89CC;
 extern s16 D_800A8CC4;
 extern Unk800EE1D4* D_800A8A74[1]; // PC: D_00C3F880 (score node)
@@ -206,8 +217,9 @@ extern u32 D_800A8A8C;             // PC: D_00C5D0EC (allocated models)
 extern Unk800EE1D4 D_800A8A90[10]; // PC: D_00C60320 (list heads per depth)
 extern s32* D_800A8CC0;            // PC: D_00C3F898 (track offsets, stream 5)
 extern Unk800A8CCC* D_800A8CCC;    // PC: D_00C5D0E8 (triangles stream)
-extern s32 D_800A8CC8;
+extern u32 D_800A8CC8;
 extern Unk800EE1D4 D_800A8CD0[0xC8]; // PC: D_00C5D590 (node pool)
+extern u16 D_800AB894;               // background tpage
 extern s32 D_800AB890;               // PC: dwLNormalLength
 extern Unk800D1964 D_800AB898[2];    // PC: Class_coaster_D8
 extern s32 D_800D0550;               // PC: dwRNormalLength
@@ -218,6 +230,7 @@ extern void* D_800D16D4;
 extern s32 D_800D16E0;
 extern Unk800EE1D4 D_800D16E4; // PC: D_00C60150 (top node)
 extern s32 D_800D171C;         // PC: D_00C5D320 (read quads index)
+extern u8 D_800D1720;          // laser beam texture scroll
 extern s32 D_800D1724;         // PC: D_00C3F894
 extern u32 D_800D172C;
 extern Unk800D0554* D_800D1730[];  // PC: D_00C5D0F0 (model pointer table)
@@ -249,7 +262,7 @@ extern s32* D_800D1C08;         // PC: xbin stream 0xD (path lengths)
 extern Unk800D1C0C* D_800D1C0C; // PC: xbin stream 0xE (object spawns)
 extern u8* D_800D1C10;          // PC: xbin stream 0xF (spawns per segment)
 extern Unk800D1968* D_800D1C14; // PC: xbin stream 0x10 (quads)
-extern s8 D_800D1C4C;           // PC: D_00C3FA70 (shoot)
+extern u8 D_800D1C4C;           // PC: D_00C3FA70 (shoot)
 extern u16 D_800D1C50;          // PC: D_00C5BF30 (track element count)
 extern s32 D_800D1C54;          // PC: D_00C3F764 (camera path position)
 extern SVECTOR* D_800D1C58;     // PC: D_00C3F874 (left track vectors)
@@ -292,9 +305,11 @@ void func_800A8264(s16);
 void func_800A82F0(Unk800EE1D4*);
 s16 func_800A8238(void);
 void func_800A8290(Unk800EE1D4* arg0, Unk800EE1D4* arg1);
-void func_800A2518();
+void func_800A2518(void);
+void func_800A27F0(u_long* addr);
 void func_800A8204(Unk800EE1D4* arg0);
 void func_800A442C(s16 arg0);
+s16 func_800A4400(void);
 void func_800A2DE4(s32 arg0, s32 arg1);
 s16 func_800A40F4(Unk800A4390* arg0, s16 arg1);
 void* func_800A84DC(Unk800A8604* arg0);
@@ -321,7 +336,7 @@ Unk800D0554* func_800A7B48(s32 arg0);
 void func_800A7C88(void);
 void func_800A8010(void);
 void func_800A16A4(s32 arg0, s32 arg1, VECTOR* arg2, SVECTOR* arg3);
-void func_800A1CD8(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
+void func_800A1CD8(s32 value, u16 x, s16 y, s16 padWithZero, u16 v);
 void func_800A1F18(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans);
 void func_800A2058();
 void func_800A2214();
@@ -330,16 +345,19 @@ void func_800A2B78(void);
 void func_800A2C50(s32 arg0);
 void func_800A2E38();
 void func_800A35DC(s32 arg0);
+void func_800A385C(u16 arg0);
+void func_800A38D4(u16 arg0);
+void func_800A3980(u16 arg0);
+void func_800A3A20(u16 arg0);
 void func_800A372C(s32 arg0);
 void func_800A46E8(Unk800D1964* arg0);
 Unk800EE1D4* func_800A80F8(s16 arg0, s32 arg1, s32 arg2, s32 arg3, Unk800EE1D4* arg4, s32 arg5, s32 arg6, s32 arg7,
-                           u16 arg8, u16 arg9, u16 arg10);
+                           s16 arg8, s16 arg9, s16 arg10);
 
 #ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", MINI_Jet);
 #else
-// Off by instruction scheduling only: the load-delay slot in the prologue and
-// the address form of the D_800E25FC store.
+// The dummy local reproduces the target stack frame.
 u16 MINI_Jet(void) {
     volatile s32 dummy;
     Unk800D1964** db;
@@ -427,8 +445,7 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0874);
 #ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0D78);
 #else
-// Off by the tail's register allocation. The two locals before screen are
-// sized to reproduce the target stack frame; the originals are unknown.
+// The two locals before screen exist only to reproduce the target stack frame.
 void func_800A0D78(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex) {
     Unk800A8604 args;
     MATRIX unused;
@@ -634,7 +651,6 @@ void func_800A1A64(void) {
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1B64);
 #else
 // Spin and draw the score model, alternating it with the title every so often.
-// Off by one instruction: the target keeps D_800A8A74's address in a register.
 void func_800A1B64(Unk800D1964* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) {
     u8* alternate;
     s16* counter;
@@ -668,7 +684,55 @@ void func_800A1B64(Unk800D1964* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) {
 }
 #endif
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1CD8);
+#else
+// PC: C_005F2119, draw a number as four digits from the HUD digit sprite.
+void func_800A1CD8(s32 value, u16 x, s16 y, s16 padWithZero, u16 v) {
+    POLY_FT4* poly;
+    s32 digit;
+    s32 power;
+    s32 remain;
+    s32 i;
+    s16 left;
+    s32 w;
+    u8 leading;
+
+    power = 1000;
+    leading = 1;
+    remain = value + 1;
+    w = 0x10;
+    left = x;
+    poly = D_800D1964[0]->unk4368.unk14;
+    for (i = 0; i < 4; i++) {
+        digit = 0;
+        while (remain > power) {
+            remain -= power;
+            digit++;
+        }
+        if (digit) {
+            leading = 0;
+        }
+        if (value == 0 && power == 1) {
+            leading = 0;
+        }
+        if (padWithZero == 1 || digit || leading == 0) {
+            setXY4(poly, left, y, x + w, y, left, y + 0x10, x + w, y + 0x10);
+            setRGB0(poly, 0x80, 0x80, 0x80);
+            setUVWH(poly, digit * 0x10 + 0x30, v, 0x10, 0x12);
+            poly->tpage = D_800A8990[8];
+            poly->clut = D_800EE198[8];
+            SetSemiTrans(poly, 1);
+            addPrim(&D_800D1964[0]->unk4098[1], poly);
+            poly++;
+        }
+        power /= 10;
+        w += 0xE;
+        left += 0xE;
+    }
+    D_800D1964[0]->unk4368.unk14 = poly;
+}
+#endif
 
 // Draw one sprite from the HUD sprite table.
 void func_800A1F18(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans) {
@@ -718,7 +782,6 @@ void func_800A2058(void) {
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2214);
 #else
 // Point every matrix and vector at scratchpad, then build the world.
-// Off by one delay slot, which the target fills with the loop counter.
 void func_800A2214(void) {
     s32* state;
     s32 i;
@@ -799,7 +862,49 @@ void func_800A2420(void) {
         ;
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2518);
+// Upload the nine loaded TIMs and build the sprite tpage/clut tables.
+void func_800A2518(void) {
+    TIM_IMAGE timimg;
+    u_long** tims;
+    s32 i;
+    u_long* addr;
+
+    // i is created before tims so the two take the registers the target uses.
+    i = 0;
+    tims = (u_long**)&D_800A89E4;
+    for (; i < 9; i++) {
+        addr = *tims++;
+        func_800A27F0(addr);
+        OpenTIM(addr);
+        ReadTIM(&timimg);
+    }
+    D_800AB894 = GetTPage(0, 2, 0x280, 0);
+    D_800A8A68 = GetClut(0, 0x1E0);
+    D_800A8990[0] = GetTPage(0, 1, 0x280, 0);
+    D_800EE198[0] = GetClut(0, 0x1E0);
+    D_800A8990[1] = GetTPage(1, 1, 0x2C0, 0);
+    D_800EE198[1] = GetClut(0, 0x1E1);
+    D_800A8990[2] = GetTPage(1, 1, 0x2D0, 0);
+    D_800EE198[2] = GetClut(0, 0x1E1);
+    D_800A8990[3] = GetTPage(1, 1, 0x2E0, 0);
+    D_800EE198[3] = GetClut(0, 0x1E1);
+    D_800A8990[4] = GetTPage(0, 1, 0x280, 0x100);
+    D_800EE198[4] = GetClut(0, 0x1FF);
+    D_800A8990[5] = GetTPage(0, 1, 0x280, 0x100);
+    D_800EE198[5] = GetClut(0, 0x1FE);
+    D_800A8990[6] = GetTPage(0, 1, 0x300, 0);
+    D_800EE198[6] = GetClut(0x10, 0x1E0);
+    D_800A8990[7] = GetTPage(0, 1, 0x240, 0);
+    D_800EE198[7] = GetClut(0x40, 0x1E0);
+    D_800A8990[8] = GetTPage(0, 1, 0x240, 0x18);
+    D_800EE198[8] = GetClut(0x30, 0x1E0);
+    D_800A8990[9] = GetTPage(0, 1, 0x240, 0x50);
+    D_800EE198[9] = GetClut(0x50, 0x1E0);
+    D_800A8990[10] = GetTPage(0, 1, 0x240, 0x30);
+    D_800EE198[10] = GetClut(0x20, 0x1E0);
+    D_800A8990[11] = GetTPage(0, 1, 0x240, 0);
+    D_800EE198[11] = GetClut(0x60, 0x1E0);
+}
 
 void func_800A27F0(u_long* addr) {
     TIM_IMAGE timimg;
@@ -1024,7 +1129,6 @@ void func_800A334C(void) {
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3414);
 #else
 // Step the track streams forward, spawning whatever each segment lists.
-// Off by register allocation; unused[] only reproduces the frame size.
 void func_800A3414(s32 advance) {
     u16** tri;
     u16** quad;
@@ -1095,9 +1199,88 @@ void func_800A3414(s32 advance) {
 }
 #endif
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A35DC);
+#else
+// PC: C_005EDC59, step the track position and append what the new segments list.
+void func_800A35DC(s32 advance) {
+    u32* pos;
+    s32* segment;
+    u32 prev;
+    u32 next;
+    u32 i;
+    u16** tri;
+    u16** track;
+    u32 id;
 
+    pos = &D_800D172C;
+    D_800A8CC8 = pos[0];
+    pos[0] = D_800A8CC8 + advance;
+    prev = D_800A8CC8 >> 18;
+    next = pos[0] >> 18;
+    D_800A894C = next - prev;
+    segment = &D_800D16E0;
+    segment[0] = segment[0] + D_800A894C;
+    for (i = 0; i < D_800A894C + D_800E25F8; i++) {
+        tri = &D_800D1C60;
+        while (1) {
+            id = *tri[0]++;
+            if (id == 0xFFFF) {
+                break;
+            }
+            func_800A385C(id);
+        }
+    }
+    for (i = 0; i < D_800A894C; i++) {
+        track = &D_800D196C;
+        while (1) {
+            id = *track[0]++;
+            if (id == 0xFFFF) {
+                break;
+            }
+            func_800A3980(id);
+        }
+    }
+}
+#endif
+
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A372C);
+#else
+// PC: C_005EDD82, unlink the track and background elements just passed.
+void func_800A372C(s32 advance) {
+    u32 i;
+    u16** tri;
+    u16** track;
+    u32 id;
+    u8* first;
+
+    for (i = 0; i < D_800A894C + D_800E25F8; i++) {
+        tri = &D_800EE428;
+        while (1) {
+            id = *tri[0]++;
+            if (id == 0xFFFF) {
+                break;
+            }
+            func_800A38D4(id);
+        }
+    }
+    for (i = 0; i < D_800A894C; i++) {
+        track = &D_800EE188;
+        while (1) {
+            id = *track[0]++;
+            if (id == 0xFFFF) {
+                break;
+            }
+            func_800A3A20(id);
+        }
+    }
+    first = &D_800E25F8;
+    if (*first == 1) {
+        *first = 0;
+    }
+}
+#endif
 
 // PC: C_005EDE71, append a background triangle to the draw list
 void func_800A385C(u16 arg0) {
@@ -1251,7 +1434,6 @@ void func_800A3AAC(void) {
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3B58);
 #else
 // PC: C_005EAC30, start path (mode 0: objects, mode 1: player car).
-// Off by the operand order of the final add only.
 void func_800A3B58(u8 pathIndex, u8 mode) {
     s32* lengths;
     s32* offsets;
@@ -1274,7 +1456,7 @@ void func_800A3B58(u8 pathIndex, u8 mode) {
 }
 #endif
 
-// Sample a path at a 16.16 position. flag == 0 mirrors y and z.
+// Sample a path at a 16.16 position, mirroring y and z when flag is zero.
 void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
     SVECTOR seg[2];
     VECTOR delta;
@@ -1341,9 +1523,117 @@ void func_800A3D50(Unk800D1964* arg0) {
     arg0->unk4368.unk14 = poly;
 }
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3E58);
+#else
+// Draw the two laser beams, from each gun muzzle to the aiming cursor.
+void func_800A3E58(void) {
+    Unk800D1964** db;
+    POLY_FT4* poly;
+    u8* scroll;
+    s16 power;
+    s32 spread;
 
+    if (D_800D1C4C == 1) {
+        db = D_800D1964;
+        scroll = &D_800D1720;
+        power = D_800D1C5C;
+        spread = power >> 3;
+        poly = db[0]->unk4368.unk14;
+        setXY4(poly, D_800A895C + spread, D_800A8964, D_800E25EC, D_800E25F0, D_800A895C - spread, D_800A8964,
+               D_800E25EC, D_800E25F0);
+        setRGB0(poly, 0x80, 0x80, 0x80);
+        setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
+        poly->tpage = D_800A8990[1];
+        poly->clut = D_800EE198[1];
+        SetSemiTrans(poly, 1);
+        addPrim(&db[0]->unk70[1], poly);
+        poly++;
+        setXY4(poly, D_800A8970 + spread, D_800A8978, D_800E25EC, D_800E25F0, D_800A8970 - spread, D_800A8978,
+               D_800E25EC, D_800E25F0);
+        setRGB0(poly, 0x80, 0x80, 0x80);
+        setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
+        poly->tpage = D_800A8990[1];
+        poly->clut = D_800EE198[1];
+        SetSemiTrans(poly, 1);
+        addPrim(&db[0]->unk70[1], poly);
+        poly++;
+        db[0]->unk4368.unk14 = poly;
+    }
+}
+#endif
+
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A40F4);
+#else
+// PC: C_005EB3A6, take an object from the pool and give it a node and its
+// model's six bounding box face centres.
+s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
+    s16* count;
+    Unk800A4390* obj;
+    Unk800A89D8* info;
+    Unk800EE1D4* parent;
+    s16 index;
+    s32 modelId;
+    s32 midX;
+    s32 midY;
+    s32 midZ;
+    s16 maxX;
+    s16 minX;
+    s16 minY;
+    s16 maxY;
+    s16 minZ;
+    s16 maxZ;
+
+    count = (s16*)&D_800EE42C;
+    if (*count < 0x63) {
+        *count = *count + 1;
+        index = func_800A4400();
+        D_800D1DC0[index] = *src;
+        obj = &D_800D1DC0[index];
+        modelId = src->unk30;
+        obj->unkDA = 1;
+        obj->unkD8 = index;
+        if (parentIndex == 0) {
+            parent = &D_800D16E4;
+        } else {
+            parent = D_800D1DC0[parentIndex].unkD4;
+        }
+        obj->unkD4 = func_800A80F8(
+            modelId, 0, 0, 1, parent, src->unk0.vx, src->unk0.vy, src->unk0.vz, src->unk18, src->unk1A, src->unk1C);
+        info = &D_800A89D8[(s16)modelId];
+        obj = &D_800D1DC0[index];
+        maxX = info->unkC.vx;
+        minX = info->unk4.vx;
+        minY = info->unk4.vy;
+        maxY = info->unkC.vy;
+        minZ = info->unk4.vz;
+        maxZ = info->unkC.vz;
+        midX = (maxX + minX) >> 1;
+        midY = (maxY + minY) >> 1;
+        obj->unkDC[0].vz = maxZ;
+        obj->unkDC[1].vz = minZ;
+        midZ = (maxZ + minZ) >> 1;
+        obj->unkDC[0].vx = midX;
+        obj->unkDC[0].vy = midY;
+        obj->unkDC[1].vx = midX;
+        obj->unkDC[1].vy = midY;
+        obj->unkDC[2].vx = midX;
+        obj->unkDC[2].vy = maxY;
+        obj->unkDC[2].vz = midZ;
+        obj->unkDC[3].vx = midX;
+        obj->unkDC[3].vy = minY;
+        obj->unkDC[3].vz = midZ;
+        obj->unkDC[4].vx = maxX;
+        obj->unkDC[4].vy = midY;
+        obj->unkDC[4].vz = midZ;
+        obj->unkDC[5].vx = minX;
+        obj->unkDC[5].vy = midY;
+        obj->unkDC[5].vz = midZ;
+    }
+    return index;
+}
+#endif
 
 // PC: C_005EB2DF, release game object
 void func_800A4390(Unk800A4390* arg0) {
@@ -1386,7 +1676,6 @@ void func_800A442C(s16 arg0) {
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A4458);
 #else
 // Spawn the objects scheduled for every track segment reached this frame.
-// Off by the hoist order of the two loop-invariant addresses.
 void func_800A4458(void) {
     Unk800D1C0C* spawns;
     Unk800D1C0C* spawn;
@@ -1444,7 +1733,6 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A46E8);
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A6B08);
 #else
 // Spawn an object at this one's position once its timer runs out.
-// Off by the register allocation of arg0 and the object base only.
 void func_800A6B08(Unk800A4390* arg0) {
     u8 amount;
     s32 x;
@@ -1475,7 +1763,60 @@ void func_800A6B08(Unk800A4390* arg0) {
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A6BD8);
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A70D4);
+#else
+// Build the left and right frustum planes from the four corner rays.
+void func_800A70D4(void) {
+    VECTOR tl;
+    VECTOR bl;
+    VECTOR tr;
+    VECTOR br;
+    VECTOR blCorner;
+    VECTOR brCorner;
+    VECTOR tlCorner;
+    VECTOR trCorner;
+    s32 lx;
+    s32 ly;
+    s32 lz;
+    s32 rx;
+    s32 ry;
+    s32 rz;
+
+    blCorner = D_800A0410;
+    brCorner = D_800A0420;
+    tlCorner = D_800A0430;
+    trCorner = D_800A0440;
+
+    tl.vx = tlCorner.vx >> 2;
+    tl.vy = tlCorner.vy >> 2;
+    tl.vz = tlCorner.vz >> 2;
+    bl.vx = blCorner.vx >> 2;
+    bl.vy = blCorner.vy >> 2;
+    bl.vz = blCorner.vz >> 2;
+    tr.vx = trCorner.vx >> 2;
+    tr.vy = trCorner.vy >> 2;
+    tr.vz = trCorner.vz >> 2;
+    br.vx = brCorner.vx >> 2;
+    br.vy = brCorner.vy >> 2;
+    br.vz = brCorner.vz >> 2;
+    OuterProduct0(&tl, &bl, (VECTOR*)&D_800A892C);
+    OuterProduct0(&tr, &br, (VECTOR*)&D_800A893C);
+
+    lx = D_800A892C;
+    ly = D_800A8930;
+    lz = D_800A8934;
+    rx = D_800A893C;
+    ry = D_800A8940;
+    rz = D_800A8944;
+    D_800A8A5C = -(lx * (tlCorner.vx >> 2)) - (ly * (tlCorner.vy >> 2)) - (lz * (tlCorner.vz >> 2));
+    D_800A8A64 = -(rx * (trCorner.vx >> 2)) - (ry * (trCorner.vy >> 2)) - (rz * (trCorner.vz >> 2));
+    D_800A8950 = (lx * (trCorner.vx >> 2)) + (ly * (trCorner.vy >> 2)) + (lz * (trCorner.vz >> 2)) + D_800A8A5C;
+    D_800A8968 = (rx * (tlCorner.vx >> 2)) + (ry * (tlCorner.vy >> 2)) + (rz * (tlCorner.vz >> 2)) + D_800A8A64;
+    D_800AB890 = SquareRoot0((lx * lx) + (ly * ly) + (lz * lz));
+    D_800D0550 = SquareRoot0((D_800A893C * D_800A893C) + (D_800A8940 * D_800A8940) + (D_800A8944 * D_800A8944));
+}
+#endif
 
 // PC: C_005EECB5, is a point inside both frustum planes
 s32 func_800A7414(VECTOR* arg0) {
@@ -1899,7 +2240,7 @@ void func_800A80A8(Unk800EE1D4* arg0, s16 arg1) {
 
 // PC: C_005EF31E, allocate node (modelId, parent, x, y, z, rotation)
 Unk800EE1D4* func_800A80F8(s16 arg0, s32 arg1, s32 arg2, s32 arg3, Unk800EE1D4* arg4, s32 arg5, s32 arg6, s32 arg7,
-                           u16 arg8, u16 arg9, u16 arg10) {
+                           s16 arg8, s16 arg9, s16 arg10) {
     SVECTOR sp10;
     Unk800EE1D4* temp_s0;
     Unk800EE1D4* temp_v1;

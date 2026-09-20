@@ -192,9 +192,33 @@ Neither a chained assignment, a volatile pointer, an index variable nor a
 that CSE folds. The pattern is unique in the tree, so treat it as a
 last-resort explanation, not a first guess.
 
+**A commutative operator's operand order follows what the operands were at
+expansion time.** `global + local` puts the local first (`addu v0,local,base`):
+gcc swaps a memory first operand behind a register second one before it loads
+the memory into a register. Two memory operands, or two registers, keep the
+source order. When the target has the loaded global first and the local
+second, the source did not hold that local in a register at that point, and
+no rewrite of the expression alone will move it. `-fforce-mem` (the load
+happens before the swap test) reproduces that order and scores
+`func_800A372C` and `func_800A3B58` in `jet.c` at 0, but it is not the
+shipped configuration: inside the same file it breaks `func_800A7B48`, which
+matches without it, 0 to 70, and a tree-wide `make build` with it fails six
+other overlays. The cc1 default is right, so a diff of this shape is a
+dead end rather than something to rewrite around. Tested 2026-09-20 by
+adding the flag to `default_compiler_params` in `tools/ninja/gen.py`.
+
 **Declarations must start a block.** gcc 2.6.3 is C89: a declaration after a
 statement is a `parse error`. Any nested `{ }` opens a new block, which is a
 legitimate way to keep a declaration next to its use.
+
+**A constant array index whose element splat named separately scores
+nonzero and is still correct.** `D_800A8990[1]` assembles to
+`%hi(D_800A8990)` + `%lo(D_800A8990+0x2)`, while the target names the element
+splat labelled, `%hi(D_800A8992)` + `%lo(D_800A8992)`. The `%hi` is the same
+word either way, so the linked bytes are identical and only the relocation's
+symbol differs -- which asm-differ cannot see through. `func_800A2518` in
+`jet.c` sits at 220 for 24 such stores and the overlay still passes its sha1.
+Let `make build` settle it rather than inventing per-element externs.
 
 ## Data layout failures look like nothing is wrong
 
