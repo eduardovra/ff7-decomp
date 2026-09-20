@@ -110,7 +110,8 @@ typedef struct {
     /* 0x38 */ s32 unk38; // PC: f_028.dwMustInit
     /* 0x3C */ char pad3C[0x6C];
     /* 0xA8 */ s32 unkA8; // PC: f_028.f_50[0xC]
-    /* 0xAC */ char padAC[0x28];
+    /* 0xAC */ s32 unkAC;
+    /* 0xB0 */ char padB0[0x24];
     /* 0xD4 */ Unk800EE1D4* unkD4; // PC: pNode
     /* 0xD8 */ s16 unkD8;          // PC: wObjIndex
     /* 0xDA */ s16 unkDA;          // PC: wIsActive
@@ -205,7 +206,7 @@ extern Unk800D1968* D_800D1C14; // PC: xbin stream 0x10 (quads)
 extern s8 D_800D1C4C;           // PC: D_00C3FA70 (shoot)
 extern u16 D_800D1C50;          // PC: D_00C5BF30 (track element count)
 extern SVECTOR* D_800D1C58;     // PC: D_00C3F874 (left track vectors)
-extern s16 D_800D1C5C;          // PC: D_00C3FB50 (shoot power)
+extern u16 D_800D1C5C;          // PC: D_00C3FB50 (shoot power)
 extern void* D_800D1C60;
 extern u16 D_800D1C78;               // PC: D_00C5039C (bg triangle count)
 extern s8 D_800D1C7C;                // PC: D_00C3FA74 (shoot repeat counter)
@@ -249,6 +250,7 @@ u_long* func_800A882C(SVECTOR* arg0, u_long* arg1, u_long** arg2, SVECTOR* arg3)
 Unk800D0554* func_800A7BF4(void);
 s32* func_800A7C20(s32 count);
 s32* func_800A7C54(s32 count);
+void func_800A6BD8(Unk800A4390* arg0);
 void func_800A12EC(void);
 void func_800A13AC(void);
 void func_800A1450();
@@ -851,7 +853,38 @@ void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A46E8);
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A6B08);
+#else
+// Spawn an object at this one's position once its timer runs out.
+// Off by the register allocation of arg0 and the object base only.
+void func_800A6B08(Unk800A4390* arg0) {
+    u8 amount;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    amount = D_800D1C5C >> 5;
+    if (amount == 0) {
+        amount = 1;
+    }
+    arg0->unkAC -= amount;
+    if (arg0->unkAC < 0) {
+        func_800A6BD8(arg0);
+        return;
+    }
+    x = arg0->unk0.vx;
+    y = arg0->unk0.vy;
+    z = arg0->unk0.vz;
+    D_800D1C84.unk28 = 0xCA;
+    D_800D1C84.unk38 = 1;
+    D_800D1C84.unk30 = 0x3F;
+    D_800D1C84.unk2C = 0;
+    D_800D1C84.unkA8 = 0;
+    setVector(&D_800D1C84.unk0, (s16)x, (s16)y, (s16)z);
+    func_800A40F4(&D_800D1C84, 0);
+}
+#endif
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A6BD8);
 
