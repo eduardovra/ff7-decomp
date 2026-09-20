@@ -894,9 +894,81 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A6BD8);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A70D4);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7414);
+// PC: C_005EECB5, is a point inside both frustum planes
+s32 func_800A7414(VECTOR* arg0) {
+    s32 hsLeft;
+    s32 rightOk;
+    s32 leftOk;
+    s32 hsRight;
+    s32 lx;
+    s32 ly;
+    s32 lz;
+    s32 rx;
+    s32 ry;
+    s32 rz;
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7544);
+    leftOk = 0;
+    rightOk = 0;
+    lx = D_800A892C;
+    ly = D_800A8930;
+    lz = D_800A8934;
+    hsLeft = (lx * (arg0->vx >> 2)) + (ly * (arg0->vy >> 2)) + (lz * (arg0->vz >> 2)) + D_800A8A5C;
+    rx = D_800A893C;
+    ry = D_800A8940;
+    rz = D_800A8944;
+    hsRight = (rx * (arg0->vx >> 2)) + (ry * (arg0->vy >> 2)) + (rz * (arg0->vz >> 2)) + D_800A8A64;
+    if (hsLeft > 0 && D_800A8950 > 0) {
+        leftOk = 1;
+    }
+    if (hsLeft < 0 && D_800A8950 < 0) {
+        leftOk = 1;
+    }
+    if (hsRight > 0 && D_800A8968 > 0) {
+        rightOk = 1;
+    }
+    if (hsRight < 0 && D_800A8968 < 0) {
+        rightOk = 1;
+    }
+    return leftOk & rightOk;
+}
+
+// PC: __005EEDAE, is a point inside both frustum planes
+s32 func_800A7544(SVECTOR* arg0) {
+    s32 hsLeft;
+    s32 rightOk;
+    s32 leftOk;
+    s32 hsRight;
+    s32 lx;
+    s32 ly;
+    s32 lz;
+    s32 rx;
+    s32 ry;
+    s32 rz;
+
+    leftOk = 0;
+    rightOk = 0;
+    lx = D_800A892C;
+    ly = D_800A8930;
+    lz = D_800A8934;
+    hsLeft = (lx * (arg0->vx >> 2)) + (ly * (arg0->vy >> 2)) + (lz * (arg0->vz >> 2)) + D_800A8A5C;
+    rx = D_800A893C;
+    ry = D_800A8940;
+    rz = D_800A8944;
+    hsRight = (rx * (arg0->vx >> 2)) + (ry * (arg0->vy >> 2)) + (rz * (arg0->vz >> 2)) + D_800A8A64;
+    if (hsLeft > 0 && D_800A8950 > 0) {
+        leftOk = 1;
+    }
+    if (hsLeft < 0 && D_800A8950 < 0) {
+        leftOk = 1;
+    }
+    if (hsRight > 0 && D_800A8968 > 0) {
+        rightOk = 1;
+    }
+    if (hsRight < 0 && D_800A8968 < 0) {
+        rightOk = 1;
+    }
+    return leftOk & rightOk;
+}
 
 // PC: __005EEEAD, half-space test against the left frustum plane
 s32 func_800A7688(s32 arg0, s32 arg1, s32 arg2) {
