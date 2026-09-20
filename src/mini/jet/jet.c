@@ -9,24 +9,24 @@
 // Nine write cursors, each reset to the start of its own buffer below.
 // PC: prim pools inside Class_coaster_D8
 typedef struct {
-    /* 0x0000 */ u_long* unk0;
-    /* 0x0004 */ u_long* unk4;
-    /* 0x0008 */ u_long* unk8;
-    /* 0x000C */ u_long* unkC;
-    /* 0x0010 */ u_long* unk10;
-    /* 0x0014 */ u_long* unk14;
-    /* 0x0018 */ u_long* unk18;
-    /* 0x001C */ u_long* unk1C;
-    /* 0x0020 */ u_long* unk20;
-    /* 0x0024 */ u_long unk24[5];
-    /* 0x0038 */ u_long unk38[6];
-    /* 0x0050 */ u_long unk50[11200];
-    /* 0xAF50 */ u_long unkAF50[270];
-    /* 0xB388 */ u_long unkB388[8];
-    /* 0xB3A8 */ u_long unkB3A8[3000];
-    /* 0xE288 */ u_long unkE288[10];
-    /* 0xE2B0 */ u_long unkE2B0[13];
-    /* 0xE2E4 */ u_long unkE2E4[4];
+    /* 0x0000 */ void* unk0;
+    /* 0x0004 */ void* unk4;
+    /* 0x0008 */ void* unk8;
+    /* 0x000C */ void* unkC;
+    /* 0x0010 */ void* unk10;
+    /* 0x0014 */ void* unk14;
+    /* 0x0018 */ void* unk18;
+    /* 0x001C */ void* unk1C;
+    /* 0x0020 */ void* unk20;
+    /* 0x0024 */ POLY_F3 unk24[1];
+    /* 0x0038 */ POLY_F4 unk38[1];
+    /* 0x0050 */ POLY_G3 unk50[0x640];
+    /* 0xAF50 */ POLY_G4 unkAF50[0x1E];
+    /* 0xB388 */ POLY_FT3 unkB388[1];
+    /* 0xB3A8 */ POLY_FT4 unkB3A8[0x12C];
+    /* 0xE288 */ POLY_GT3 unkE288[1];
+    /* 0xE2B0 */ POLY_GT4 unkE2B0[1];
+    /* 0xE2E4 */ LINE_F2 unkE2E4[1];
 } Unk800A7FAC; // size: 0xE2F4
 
 // Offsets 0x00 and 0x5C are fixed by SetDefDrawEnv/SetDefDispEnv in
@@ -40,21 +40,6 @@ typedef struct {
     /* 0x4098 */ u_long* unk4098[0xB4];
     /* 0x4368 */ Unk800A7FAC unk4368;
 } Unk800D1964; // size: 0x1265C
-
-// Doubly linked list node. func_800A80A8 initialises the matrix to identity
-// and func_800A8010 chains the arrays with a 0x38 stride.
-// PC: t_coaster_Node
-typedef struct Unk800EE1D4 {
-    /* 0x00 */ s32 unk0;    // PC: pModel
-    /* 0x04 */ MATRIX m;    // PC: sMatrixWorld
-    /* 0x24 */ void* unk24; // PC: pParentNode
-    /* 0x28 */ s16 unk28;   // PC: wModelId
-    /* 0x2A */ s16 unk2A;   // PC: wIndex
-    /* 0x2C */ u16 unk2C;   // PC: wDepth
-    /* 0x2E */ s16 unk2E;
-    /* 0x30 */ struct Unk800EE1D4* unk30; // PC: pPrev
-    /* 0x34 */ struct Unk800EE1D4* unk34; // PC: pNext
-} Unk800EE1D4;                            // size: 0x38
 
 // PC: t_coaster_ModelInfo
 typedef struct {
@@ -81,6 +66,21 @@ typedef struct {
     /* 0x1C */ char pad1C[4];
 } Unk800D0554; // size: 0x20
 
+// Doubly linked list node. func_800A80A8 initialises the matrix to identity
+// and func_800A8010 chains the arrays with a 0x38 stride.
+// PC: t_coaster_Node
+typedef struct Unk800EE1D4 {
+    /* 0x00 */ Unk800D0554* unk0;         // PC: pModel
+    /* 0x04 */ MATRIX m;                  // PC: sMatrixWorld
+    /* 0x24 */ struct Unk800EE1D4* unk24; // PC: pParentNode
+    /* 0x28 */ s16 unk28;                 // PC: wModelId
+    /* 0x2A */ s16 unk2A;                 // PC: wIndex
+    /* 0x2C */ u16 unk2C;                 // PC: wDepth
+    /* 0x2E */ s16 unk2E;
+    /* 0x30 */ struct Unk800EE1D4* unk30; // PC: pPrev
+    /* 0x34 */ struct Unk800EE1D4* unk34; // PC: pNext
+} Unk800EE1D4;                            // size: 0x38
+
 // PC: t_coaster_Quad
 typedef struct {
     /* 0x00 */ s32 unk0;
@@ -92,6 +92,25 @@ typedef struct {
     /* 0x00 */ s32 unk0;
     /* 0x04 */ char pad4[0x20];
 } Unk800A8CCC; // size: 0x24
+
+// One scheduled object spawn, read from xbin stream 0xE.
+typedef struct {
+    /* 0x00 */ s16 unk0;
+    /* 0x02 */ char pad2[2];
+    /* 0x04 */ s16 unk4;
+    /* 0x06 */ char pad6[2];
+    /* 0x08 */ s32 unk8;
+    /* 0x0C */ s32 unkC;
+    /* 0x10 */ s32 unk10[0x14];
+} Unk800D1C0C; // size: 0x60
+
+// Argument block for the GTE renderers in jet_gte.s.
+typedef struct {
+    /* 0x0 */ s32* tris;
+    /* 0x4 */ u_long* prim;
+    /* 0x8 */ u_long** ot;
+    /* 0xC */ Unk800D0554* model;
+} Unk800A8604; // size: 0x10
 
 // PC: t_coaster_LinkedList
 typedef struct {
@@ -108,10 +127,12 @@ typedef struct {
     /* 0x30 */ s32 unk30; // PC: f_028.dwModelId
     /* 0x34 */ char pad34[4];
     /* 0x38 */ s32 unk38; // PC: f_028.dwMustInit
-    /* 0x3C */ char pad3C[0x6C];
-    /* 0xA8 */ s32 unkA8; // PC: f_028.f_50[0xC]
-    /* 0xAC */ s32 unkAC;
-    /* 0xB0 */ char padB0[0x24];
+    /* 0x3C */ char pad3C[4];
+    /* 0x40 */ s32 unk40;
+    /* 0x44 */ s32 unk44;
+    /* 0x48 */ char pad48[0x30];
+    /* 0x78 */ s32 unk78[0x14]; // PC: f_028.f_50
+    /* 0xC8 */ char padC8[0xC];
     /* 0xD4 */ Unk800EE1D4* unkD4; // PC: pNode
     /* 0xD8 */ s16 unkD8;          // PC: wObjIndex
     /* 0xDA */ s16 unkDA;          // PC: wIsActive
@@ -143,20 +164,28 @@ VECTOR D_800A83D8 = {0, 0, 0, 0}; // PC: D_00C3F908
 s32 D_800A83E8[2] = {0, 0};
 
 extern u8 D_800A8928;
-extern s32 D_800A892C;          // PC: sLNormal.vx
-extern s32 D_800A8930;          // PC: sLNormal.vy
-extern s32 D_800A8934;          // PC: sLNormal.vz
-extern s32 D_800A893C;          // PC: sRNormal.vx
-extern s32 D_800A8940;          // PC: sRNormal.vy
-extern s32 D_800A8944;          // PC: sRNormal.vz
-extern s32 D_800A8950;          // PC: dwLHelper
+extern s32 D_800A892C; // PC: sLNormal.vx
+extern s32 D_800A8930; // PC: sLNormal.vy
+extern s32 D_800A8934; // PC: sLNormal.vz
+extern s32 D_800A893C; // PC: sRNormal.vx
+extern s32 D_800A8940; // PC: sRNormal.vy
+extern s32 D_800A8944; // PC: sRNormal.vz
+extern s32 D_800A8950; // PC: dwLHelper
+extern s16 D_800A895C;
+extern s16 D_800A8960;
+extern s16 D_800A8964;
+extern s16 D_800A896C;
+extern s16 D_800A8970;
+extern s16 D_800A8974;
+extern s16 D_800A8978;
+extern s16 D_800A8980;
 extern SVECTOR* D_800A8954;     // PC: D_00C3FB60 (current path)
 extern s32 D_800A897C;          // PC: D_00C3F768 (speed)
 extern s32 D_800A8968;          // PC: dwRHelper
 extern s32 D_800A8984;          // PC: D_00C476E0 (current path length)
 extern SVECTOR* D_800A8988;     // PC: D_00C3F8D0 (selected track path)
 extern s32 D_800A898C;          // PC: D_00C3F91C (current object number)
-extern u16 D_800A8990;          // cursor sprite tpage
+extern u16 D_800A8990[];        // sprite tpage table
 extern s32 D_800A89D0;          // fog near
 extern s32 D_800A89D4;          // fog far
 extern Unk800A89D8* D_800A89D8; // PC: D_00C5D0E4 (model info stream)
@@ -187,13 +216,16 @@ extern Unk800EE1D4 D_800D16E4; // PC: D_00C60150 (top node)
 extern s32 D_800D171C;         // PC: D_00C5D320 (read quads index)
 extern s32 D_800D1724;         // PC: D_00C3F894
 extern s32 D_800D172C;
-extern s32 D_800D1730[];           // PC: D_00C5D0F0 (model pointer table)
+extern Unk800D0554* D_800D1730[];  // PC: D_00C5D0F0 (model pointer table)
 extern s8 D_800D1960;              // PC: D_00C3F890 (release mode)
 extern Unk800D1964* D_800D1964[1]; // PC: D_00C3F888 (renderer)
 extern void* D_800D196C;
 extern Unk800D1968* D_800D1968; // PC: D_00C5BF58 (quads stream)
 extern u16 D_800D1970[];        // PC: D_00C3FA80 (object index pool)
 extern s16 D_800D1A40[0xC8];    // PC: D_00C60190 (node index pool)
+extern Unk800D0554* D_800D186C; // shadow triangles
+extern MATRIX* D_800D1728;      // view matrix
+extern MATRIX* D_800D1BD0;      // world matrix
 extern u_long D_800D1BD4;
 extern Unk800A89D8* D_800D1BD8; // PC: xbin stream 1 (model info)
 extern void* D_800D1BDC;        // PC: xbin stream 2
@@ -208,6 +240,8 @@ extern Unk800A8CCC* D_800D1BFC; // PC: xbin stream 0xA (triangles)
 extern u8* D_800D1C00;          // PC: xbin stream 0xB (object paths)
 extern s32* D_800D1C04;         // PC: xbin stream 0xC (path offsets)
 extern s32* D_800D1C08;         // PC: xbin stream 0xD (path lengths)
+extern Unk800D1C0C* D_800D1C0C; // PC: xbin stream 0xE (object spawns)
+extern u8* D_800D1C10;          // PC: xbin stream 0xF (spawns per segment)
 extern Unk800D1968* D_800D1C14; // PC: xbin stream 0x10 (quads)
 extern s8 D_800D1C4C;           // PC: D_00C3FA70 (shoot)
 extern u16 D_800D1C50;          // PC: D_00C5BF30 (track element count)
@@ -233,9 +267,10 @@ extern u8 D_800E2600;
 extern s32* D_800E2604;        // PC: D_00C3F8C0
 extern Unk800E2608 D_800E2608; // PC: D_00C503B0 (bg triangle list nodes)
 extern void* D_800EE188;
-extern u16 D_800EE198;             // cursor sprite clut
+extern u16 D_800EE198[];           // sprite clut table
 extern SVECTOR* D_800EE194;        // PC: D_00C3F878 (right track vectors)
 extern Unk800EE1D4 D_800EE1D4[10]; // PC: D_00C5D360 (list tails per depth)
+extern MATRIX D_800EE404;          // camera rotation
 extern SVECTOR* D_800EE424;        // PC: D_00C3F870 (track camera)
 extern void* D_800EE428;
 extern u16 D_800EE42C; // PC: D_00C3FB54 (active object count)
@@ -264,7 +299,7 @@ void func_800A1450();
 void func_800A1A64();
 void func_800A1B64(Unk800D1964* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_800A1CD8(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
-void func_800A1F18(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6, s32 arg7, s32 arg8, s32 arg9);
+void func_800A1F18(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans);
 void func_800A2058();
 void func_800A2214();
 void func_800A2860(void);
@@ -369,9 +404,112 @@ done:
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0874);
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0D78);
+#else
+// Off by the tail's register allocation. The two locals before screen are
+// sized to reproduce the target stack frame; the originals are unknown.
+void func_800A0D78(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex) {
+    Unk800A8604 args;
+    MATRIX unused;
+    u_long screen[12];
+    MATRIX** world;
+    MATRIX* m;
+    MATRIX* wm;
+    MATRIX* cam;
+    Unk800D0554** shadow;
+    u_long xy1;
+    u_long xy2;
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1198);
+    world = &D_800D1BD0;
+    m = world[0];
+    m->m[0][0] = node->m.m[0][0];
+    m->m[0][1] = node->m.m[0][1];
+    m->m[0][2] = node->m.m[0][2];
+    m->m[1][0] = node->m.m[1][0];
+    m->m[1][1] = node->m.m[1][1];
+    m->m[1][2] = node->m.m[1][2];
+    m->m[2][0] = node->m.m[2][0];
+    m->m[2][1] = node->m.m[2][1];
+    m->m[2][2] = node->m.m[2][2];
+    m->t[0] = node->m.t[0];
+    m->t[1] = node->m.t[1];
+    m->t[2] = node->m.t[2];
+    if (node->unk24 != &D_800D16E4) {
+        CompMatrix(&node->unk24->m, m, m);
+    }
+    wm = world[0];
+    wm->t[0] -= D_800A83A8.vx;
+    wm->t[1] -= D_800A83A8.vy;
+    wm->t[2] -= D_800A83A8.vz;
+    cam = &D_800EE404;
+    gte_SetRotMatrix2(cam);
+    gte_ldclmv2(&world[0]->m[0][0]);
+    gte_rtir();
+    gte_stclmv2(&world[0]->m[0][0]);
+    gte_ldclmv2(&world[0]->m[0][1]);
+    gte_rtir();
+    gte_stclmv2(&world[0]->m[0][1]);
+    gte_ldclmv2(&world[0]->m[0][2]);
+    gte_rtir();
+    gte_stclmv2(&world[0]->m[0][2]);
+    gte_SetTransMatrix2(cam);
+    gte_ldlv0_2(&world[0]->t[0]);
+    gte_rtv0();
+    gte_stlvnl2(&world[0]->t[0]);
+    gte_SetRotMatrix2(world[0]);
+    gte_SetTransMatrix2(world[0]);
+    args.tris = node->unk0->unkC;
+    args.prim = db->unk4368.unk8;
+    args.ot = &db->unk4098[otIndex];
+    args.model = node->unk0;
+    db->unk4368.unk8 = func_800A84DC(&args);
+    shadow = &D_800D186C;
+    func_800A84A4(shadow[0]->unkC, screen);
+    xy1 = screen[1];
+    D_800A8964 = xy1 >> 16;
+    D_800A895C = xy1;
+    xy1 = screen[2];
+    D_800A896C = xy1 >> 16;
+    D_800A8960 = xy1;
+    func_800A84A4(shadow[0]->unkC + 9, screen);
+    xy1 = screen[1];
+    xy2 = screen[2];
+    D_800A8978 = xy1 >> 16;
+    D_800A8970 = xy1;
+    D_800A8980 = xy2 >> 16;
+    D_800A8974 = xy2;
+}
+#endif
+
+// Load a node's matrix into the GTE and draw its model's triangles.
+void func_800A1198(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex, s32 arg3, s32 arg4) {
+    Unk800A8604 args;
+    MATRIX** world;
+    MATRIX* m;
+
+    world = &D_800D1BD0;
+    m = world[0];
+    m->m[0][0] = node->m.m[0][0];
+    m->m[0][1] = node->m.m[0][1];
+    m->m[0][2] = node->m.m[0][2];
+    m->m[1][0] = node->m.m[1][0];
+    m->m[1][1] = node->m.m[1][1];
+    m->m[1][2] = node->m.m[1][2];
+    m->m[2][0] = node->m.m[2][0];
+    m->m[2][1] = node->m.m[2][1];
+    m->m[2][2] = node->m.m[2][2];
+    m->t[0] = node->m.t[0];
+    m->t[1] = node->m.t[1];
+    m->t[2] = node->m.t[2];
+    gte_SetRotMatrix2(world[0]);
+    gte_SetTransMatrix2(world[0]);
+    args.tris = node->unk0->unkC;
+    args.prim = db->unk4368.unk8;
+    args.ot = &db->unk4098[otIndex];
+    args.model = node->unk0;
+    db->unk4368.unk8 = func_800A8604(&args);
+}
 
 // Draw every background triangle on the draw list, front to back.
 // PC: C_005E9E7E, render every background triangle on the draw list
@@ -418,7 +556,35 @@ loop:
     D_800D1964[0]->unk4368.unk14 = ot;
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1450);
+// Build the world matrix from the camera rotation and the view position.
+void func_800A1450(void) {
+    MATRIX** view;
+    MATRIX** world;
+    MATRIX* cam;
+
+    view = &D_800D1728;
+    view[0]->t[0] = -D_800A83A8.vx;
+    view[0]->t[1] = -D_800A83A8.vy;
+    view[0]->t[2] = -D_800A83A8.vz;
+    cam = &D_800EE404;
+    gte_SetRotMatrix2(cam);
+    gte_ldclmv2(&view[0]->m[0][0]);
+    gte_rtir();
+    world = &D_800D1BD0;
+    gte_stclmv2(&world[0]->m[0][0]);
+    gte_ldclmv2(&view[0]->m[0][1]);
+    gte_rtir();
+    gte_stclmv2(&world[0]->m[0][1]);
+    gte_ldclmv2(&view[0]->m[0][2]);
+    gte_rtir();
+    gte_stclmv2(&world[0]->m[0][2]);
+    gte_SetTransMatrix2(cam);
+    gte_ldlv0_2(&view[0]->t[0]);
+    gte_rtv0();
+    gte_stlvnl2(&world[0]->t[0]);
+    gte_SetRotMatrix2(world[0]);
+    gte_SetTransMatrix2(world[0]);
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A16A4);
 
@@ -430,7 +596,7 @@ void func_800A1A64(void) {
     s32 top;
 
     db = D_800D1964;
-    poly = (POLY_G4*)db[0]->unk4368.unkC;
+    poly = db[0]->unk4368.unkC;
     power = D_800D1C5C;
     top = 0xDC - power;
     setXY4(poly, 0x14, top, 0x1C, top, 0x14, 0xDC, 0x1C, 0xDC);
@@ -441,14 +607,30 @@ void func_800A1A64(void) {
     SetSemiTrans(poly, 0);
     addPrim(&db[0]->unk4098[1], poly);
     poly++;
-    db[0]->unk4368.unkC = (u_long*)poly;
+    db[0]->unk4368.unkC = poly;
 }
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1B64);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1CD8);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1F18);
+// Draw one sprite from the HUD sprite table.
+void func_800A1F18(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans) {
+    Unk800D1964** db;
+    POLY_FT4* poly;
+
+    db = D_800D1964;
+    poly = db[0]->unk4368.unk14;
+    setXYWH(poly, x, y, w, h);
+    setRGB0(poly, 0x80, 0x80, 0x80);
+    setUVWH(poly, u, v, uw, vh);
+    poly->tpage = D_800A8990[spriteId];
+    poly->clut = D_800EE198[spriteId];
+    SetSemiTrans(poly, semiTrans);
+    addPrim(&db[0]->unk4098[1], poly);
+    poly++;
+    db[0]->unk4368.unk14 = poly;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2058);
 
@@ -836,7 +1018,48 @@ void func_800A3B58(u8 pathIndex, u8 mode) {
 }
 #endif
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3C04);
+// Sample a path at a 16.16 position. flag == 0 mirrors y and z.
+void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
+    SVECTOR seg[2];
+    VECTOR delta;
+    s32 idx;
+    s32 dx;
+    s32 dy;
+    s32 dz;
+    s32 frac;
+
+    idx = pos >> 16;
+    frac = pos & 0xFFFF;
+    // seg is dead and the scale/shift are split on purpose: both are needed
+    // for the stack frame and the codegen to match.
+    seg[0].vx = path[idx].vx;
+    seg[0].vy = path[idx].vy;
+    seg[0].vz = path[idx].vz;
+    seg[1].vx = path[idx + 1].vx;
+    seg[1].vy = path[idx + 1].vy;
+    seg[1].vz = path[idx + 1].vz;
+    dx = seg[1].vx - seg[0].vx;
+    dy = seg[1].vy - seg[0].vy;
+    dz = seg[1].vz - seg[0].vz;
+    delta.vx = dx;
+    delta.vy = dy;
+    delta.vz = dz;
+    delta.vx = dx * frac;
+    delta.vy = dy * frac;
+    delta.vz = dz * frac;
+    delta.vx = delta.vx >> 16;
+    delta.vy = delta.vy >> 16;
+    delta.vz = delta.vz >> 16;
+    if (flag == 0) {
+        out->vx = path[idx].vx + delta.vx;
+        out->vy = -path[idx].vy - delta.vy;
+        out->vz = -path[idx].vz - delta.vz;
+    } else {
+        out->vx = path[idx].vx + delta.vx;
+        out->vy = path[idx].vy + delta.vy;
+        out->vz = path[idx].vz + delta.vz;
+    }
+}
 
 #ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3D50);
@@ -850,7 +1073,7 @@ void func_800A3D50(Unk800D1964* arg0) {
     s32 right;
     s32 bottom;
 
-    poly = (POLY_FT4*)arg0->unk4368.unk14;
+    poly = arg0->unk4368.unk14;
     left = D_800E25EC - 0x10;
     top = D_800E25F0 - 0x10;
     right = D_800E25EC + 0x10;
@@ -858,12 +1081,12 @@ void func_800A3D50(Unk800D1964* arg0) {
     setXY4(poly, left, top, right, top, left, bottom, right, bottom);
     setRGB0(poly, 0x80, 0x80, 0x80);
     setUV4(poly, 0, 0, 0x40, 0, 0, 0x40, 0x40, 0x40);
-    poly->tpage = D_800A8990;
-    poly->clut = D_800EE198;
+    poly->tpage = D_800A8990[0];
+    poly->clut = D_800EE198[0];
     SetSemiTrans(poly, 0);
     addPrim(&arg0->unk70[1], poly);
     poly++;
-    arg0->unk4368.unk14 = (u_long*)poly;
+    arg0->unk4368.unk14 = poly;
 }
 #endif
 
@@ -908,7 +1131,40 @@ void func_800A442C(s16 arg0) {
     *temp = arg0;
 }
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A4458);
+#else
+// Off by the hoist order of the two loop-invariant addresses.
+// Spawn the objects scheduled for every track segment reached this frame.
+void func_800A4458(void) {
+    Unk800D1C0C* spawns;
+    Unk800D1C0C* spawn;
+    s32* streamIndex;
+    u8* counts;
+    u8* count;
+    s32 segment;
+    s32 i;
+    s32 j;
+
+    for (segment = D_800A898C; segment < D_800D16E0; segment++) {
+        streamIndex = &D_800A89E0;
+        counts = D_800D1C10;
+        count = counts + segment;
+        for (i = 0; i < *count; i++) {
+            spawns = D_800D1C0C;
+            for (j = 0; j < 0x14; j++) {
+                D_800D1C84.unk78[j] = spawns[*streamIndex].unk10[j];
+            }
+            spawn = &spawns[*streamIndex];
+            D_800D1C84.unk40 = spawn->unk8;
+            D_800D1C84.unk44 = spawn->unkC;
+            func_800A45C0(0, 0, 0, spawn->unk0, spawn->unk4);
+            *streamIndex = *streamIndex + 1;
+        }
+    }
+    D_800A898C = D_800D16E0;
+}
+#endif
 
 // PC: C_005EB507, create an object at a position
 void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
@@ -927,7 +1183,7 @@ void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
     D_800D1C84.unk38 = 1;
     D_800D1C84.unk30 = arg4;
     D_800D1C84.unk2C = 0;
-    D_800D1C84.unkA8 = 0;
+    D_800D1C84.unk78[0xC] = 0;
     func_800A40F4(&D_800D1C84, 0);
 }
 
@@ -948,8 +1204,8 @@ void func_800A6B08(Unk800A4390* arg0) {
     if (amount == 0) {
         amount = 1;
     }
-    arg0->unkAC -= amount;
-    if (arg0->unkAC < 0) {
+    arg0->unk78[0xD] -= amount;
+    if (arg0->unk78[0xD] < 0) {
         func_800A6BD8(arg0);
         return;
     }
@@ -960,7 +1216,7 @@ void func_800A6B08(Unk800A4390* arg0) {
     D_800D1C84.unk38 = 1;
     D_800D1C84.unk30 = 0x3F;
     D_800D1C84.unk2C = 0;
-    D_800D1C84.unkA8 = 0;
+    D_800D1C84.unk78[0xC] = 0;
     setVector(&D_800D1C84.unk0, (s16)x, (s16)y, (s16)z);
     func_800A40F4(&D_800D1C84, 0);
 }
@@ -1303,7 +1559,38 @@ void func_800A7E1C(void) {
     func_800A7FAC(&D_800D1964[0]->unk4368);
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7E70);
+// Tag every primitive in the nine pools with its type and length.
+void func_800A7E70(Unk800A7FAC* arg0) {
+    s32 i;
+
+    for (i = 0; i < LEN(arg0->unk24); i++) {
+        SetPolyF3(&arg0->unk24[i]);
+    }
+    for (i = 0; i < LEN(arg0->unk38); i++) {
+        SetPolyF4(&arg0->unk38[i]);
+    }
+    for (i = 0; i < LEN(arg0->unk50); i++) {
+        SetPolyG3(&arg0->unk50[i]);
+    }
+    for (i = 0; i < LEN(arg0->unkAF50); i++) {
+        SetPolyG4(&arg0->unkAF50[i]);
+    }
+    for (i = 0; i < LEN(arg0->unkB388); i++) {
+        SetPolyFT3(&arg0->unkB388[i]);
+    }
+    for (i = 0; i < LEN(arg0->unkB3A8); i++) {
+        SetPolyFT4(&arg0->unkB3A8[i]);
+    }
+    for (i = 0; i < LEN(arg0->unkE288); i++) {
+        SetPolyGT3(&arg0->unkE288[i]);
+    }
+    for (i = 0; i < LEN(arg0->unkE2B0); i++) {
+        SetPolyGT4(&arg0->unkE2B0[i]);
+    }
+    for (i = 0; i < LEN(arg0->unkE2E4); i++) {
+        SetLineF2(&arg0->unkE2E4[i]);
+    }
+}
 
 void func_800A7FAC(Unk800A7FAC* arg0) {
     arg0->unk0 = arg0->unk24;
