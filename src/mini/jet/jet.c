@@ -211,7 +211,7 @@ extern Unk800D1968* D_800D1C14; // PC: xbin stream 0x10 (quads)
 extern s8 D_800D1C4C;           // PC: D_00C3FA70 (shoot)
 extern u16 D_800D1C50;          // PC: D_00C5BF30 (track element count)
 extern SVECTOR* D_800D1C58;     // PC: D_00C3F874 (left track vectors)
-extern u16 D_800D1C5C;          // PC: D_00C3FB50 (shoot power)
+extern s16 D_800D1C5C;          // PC: D_00C3FB50 (shoot power)
 extern void* D_800D1C60;
 extern u16 D_800D1C78;               // PC: D_00C5039C (bg triangle count)
 extern s8 D_800D1C7C;                // PC: D_00C3FA74 (shoot repeat counter)
@@ -420,7 +420,27 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1450);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A16A4);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1A64);
+// PC: C_005F15C7, draw the shoot power gauge
+void func_800A1A64(void) {
+    Unk800D1964** db;
+    POLY_G4* poly;
+    s16 power;
+    s32 top;
+
+    db = D_800D1964;
+    poly = (POLY_G4*)db[0]->unk4368.unkC;
+    power = D_800D1C5C;
+    top = 0xDC - power;
+    setXY4(poly, 0x14, top, 0x1C, top, 0x14, 0xDC, 0x1C, 0xDC);
+    setRGB0(poly, -0x80 - power, power, 0);
+    setRGB1(poly, -0x80 - power, power, 0);
+    setRGB2(poly, 0x80, 0, 0);
+    setRGB3(poly, 0x80, 0, 0);
+    SetSemiTrans(poly, 0);
+    addPrim(&db[0]->unk4098[1], poly);
+    poly++;
+    db[0]->unk4368.unkC = (u_long*)poly;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1B64);
 
@@ -895,7 +915,7 @@ void func_800A6B08(Unk800A4390* arg0) {
     s32 y;
     s32 z;
 
-    amount = D_800D1C5C >> 5;
+    amount = (u16)D_800D1C5C >> 5;
     if (amount == 0) {
         amount = 1;
     }
