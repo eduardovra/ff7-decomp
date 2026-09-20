@@ -142,6 +142,7 @@ VECTOR D_800A83C8 = {0, 0, 0, 0}; // PC: D_00C3F8F8
 VECTOR D_800A83D8 = {0, 0, 0, 0}; // PC: D_00C3F908
 s32 D_800A83E8[2] = {0, 0};
 
+extern u8 D_800A8928;
 extern s32 D_800A892C;          // PC: sLNormal.vx
 extern s32 D_800A8930;          // PC: sLNormal.vy
 extern s32 D_800A8934;          // PC: sLNormal.vz
@@ -504,7 +505,33 @@ void func_800A2938(void) {
     SystemAkaoExecute();
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A29AC);
+// Alternate the two laser channels on each shot.
+void func_800A29AC(s16 arg0) {
+    u8* pChannel;
+    s32 channel;
+
+    pChannel = &D_800A8928;
+    channel = (*pChannel + 1) & 1;
+    *pChannel = channel;
+    if (channel == 0) {
+        D_8009A000[0] = 0xB0;
+        D_8009A004 = 0;
+        SystemAkaoExecute();
+        D_8009A000[0] = 0x28;
+        D_8009A004 = 0x40;
+        D_8009A008 = arg0;
+        SystemAkaoExecute();
+    }
+    if (*pChannel == 1) {
+        D_8009A000[0] = 0xB1;
+        D_8009A004 = 0;
+        SystemAkaoExecute();
+        D_8009A000[0] = 0x29;
+        D_8009A004 = 0x40;
+        D_8009A008 = arg0;
+        SystemAkaoExecute();
+    }
+}
 
 void func_800A2AA0(s32 arg0) {
     s32* temp;
