@@ -156,6 +156,7 @@ extern s32 D_800A8968;          // PC: dwRHelper
 extern s32 D_800A8984;          // PC: D_00C476E0 (current path length)
 extern SVECTOR* D_800A8988;     // PC: D_00C3F8D0 (selected track path)
 extern s32 D_800A898C;          // PC: D_00C3F91C (current object number)
+extern u16 D_800A8990;          // cursor sprite tpage
 extern s32 D_800A89D0;          // fog near
 extern s32 D_800A89D4;          // fog far
 extern Unk800A89D8* D_800A89D8; // PC: D_00C5D0E4 (model info stream)
@@ -223,8 +224,8 @@ extern DR_MODE D_800D9934;
 extern u16 D_800D9940;           // PC: D_00C3FA6C (next object index)
 extern s16 D_800D9944;           // PC: D_00C60188 (next node index)
 extern Unk800E2608 D_800D9948[]; // PC: D_00C476F0 (track list nodes)
-extern s16 D_800E25EC;           // PC: D_00C3FB58 (cursor X)
-extern s16 D_800E25F0;           // PC: D_00C3FB5C (cursor Y)
+extern u16 D_800E25EC;           // PC: D_00C3FB58 (cursor X)
+extern u16 D_800E25F0;           // PC: D_00C3FB5C (cursor Y)
 extern u8 D_800E25F4;
 extern s8 D_800E25F8;
 extern s32 D_800E25FC;
@@ -232,6 +233,7 @@ extern u8 D_800E2600;
 extern s32* D_800E2604;        // PC: D_00C3F8C0
 extern Unk800E2608 D_800E2608; // PC: D_00C503B0 (bg triangle list nodes)
 extern void* D_800EE188;
+extern u16 D_800EE198;             // cursor sprite clut
 extern SVECTOR* D_800EE194;        // PC: D_00C3F878 (right track vectors)
 extern Unk800EE1D4 D_800EE1D4[10]; // PC: D_00C5D360 (list tails per depth)
 extern SVECTOR* D_800EE424;        // PC: D_00C3F870 (track camera)
@@ -836,7 +838,34 @@ void func_800A3B58(u8 pathIndex, u8 mode) {
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3C04);
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3D50);
+#else
+// Off by the scheduling of the corner arithmetic only.
+// Draw the aiming cursor sprite.
+void func_800A3D50(Unk800D1964* arg0) {
+    POLY_FT4* poly;
+    s32 left;
+    s32 top;
+    s32 right;
+    s32 bottom;
+
+    poly = (POLY_FT4*)arg0->unk4368.unk14;
+    left = D_800E25EC - 0x10;
+    top = D_800E25F0 - 0x10;
+    right = D_800E25EC + 0x10;
+    bottom = D_800E25F0 + 0x10;
+    setXY4(poly, left, top, right, top, left, bottom, right, bottom);
+    setRGB0(poly, 0x80, 0x80, 0x80);
+    setUV4(poly, 0, 0, 0x40, 0, 0, 0x40, 0x40, 0x40);
+    poly->tpage = D_800A8990;
+    poly->clut = D_800EE198;
+    SetSemiTrans(poly, 0);
+    addPrim(&arg0->unk70[1], poly);
+    poly++;
+    arg0->unk4368.unk14 = (u_long*)poly;
+}
+#endif
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3E58);
 
