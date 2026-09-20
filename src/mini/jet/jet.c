@@ -4,6 +4,7 @@
 
 #include "types.h"
 #include <game.h>
+#include <libetc.h>
 
 // Nine write cursors, each reset to the start of its own buffer below.
 // PC: prim pools inside Class_coaster_D8
@@ -140,24 +141,30 @@ VECTOR D_800A83C8 = {0, 0, 0, 0}; // PC: D_00C3F8F8
 VECTOR D_800A83D8 = {0, 0, 0, 0}; // PC: D_00C3F908
 s32 D_800A83E8[2] = {0, 0};
 
-extern s32 D_800A892C;      // PC: sLNormal.vx
-extern s32 D_800A8930;      // PC: sLNormal.vy
-extern s32 D_800A8934;      // PC: sLNormal.vz
-extern s32 D_800A893C;      // PC: sRNormal.vx
-extern s32 D_800A8940;      // PC: sRNormal.vy
-extern s32 D_800A8944;      // PC: sRNormal.vz
-extern SVECTOR* D_800A8954; // PC: D_00C3FB60 (current path)
-extern s32 D_800A8984;      // PC: D_00C476E0 (current path length)
-extern s32 D_800A8988;
+extern s32 D_800A892C;          // PC: sLNormal.vx
+extern s32 D_800A8930;          // PC: sLNormal.vy
+extern s32 D_800A8934;          // PC: sLNormal.vz
+extern s32 D_800A893C;          // PC: sRNormal.vx
+extern s32 D_800A8940;          // PC: sRNormal.vy
+extern s32 D_800A8944;          // PC: sRNormal.vz
+extern SVECTOR* D_800A8954;     // PC: D_00C3FB60 (current path)
+extern s32 D_800A897C;          // PC: D_00C3F768 (speed)
+extern s32 D_800A8984;          // PC: D_00C476E0 (current path length)
+extern SVECTOR* D_800A8988;     // PC: D_00C3F8D0 (selected track path)
 extern s32 D_800A898C;          // PC: D_00C3F91C (current object number)
+extern s32 D_800A89D0;          // fog near
+extern s32 D_800A89D4;          // fog far
 extern Unk800A89D8* D_800A89D8; // PC: D_00C5D0E4 (model info stream)
 extern u16 D_800A89DC;          // PC: D_00C503A4 (track list head)
 extern s32 D_800A89E0;          // PC: D_00C476D8 (object stream index)
+extern s32 D_800A8958;
 extern u_long D_800A89E4;
-extern s32 D_800A8A5C;             // PC: dwLDistance
-extern u16 D_800A8A60;             // PC: D_00C5BF44 (bg triangle list head)
-extern s32 D_800A8A64;             // PC: dwRDistance
-extern s32 D_800A8A70;             // PC: D_00C5D0E0 (read triangles index)
+extern s32 D_800A8A5C;          // PC: dwLDistance
+extern u16 D_800A8A60;          // PC: D_00C5BF44 (bg triangle list head)
+extern s32 D_800A8A64;          // PC: dwRDistance
+extern s32 D_800A8A70;          // PC: D_00C5D0E0 (read triangles index)
+extern Unk800EE1D4* D_800A8A74; // PC: D_00C3F880 (score node)
+extern s16 D_800A8A88;
 extern u32 D_800A8A8C;             // PC: D_00C5D0EC (allocated models)
 extern Unk800EE1D4 D_800A8A90[10]; // PC: D_00C60320 (list heads per depth)
 extern s32* D_800A8CC0;            // PC: D_00C3F898 (track offsets, stream 5)
@@ -166,9 +173,12 @@ extern s32 D_800A8CC8;
 extern Unk800EE1D4 D_800A8CD0[0xC8]; // PC: D_00C5D590 (node pool)
 extern Unk800D1964 D_800AB898[2];    // PC: Class_coaster_D8
 extern Unk800D0554 D_800D0554[];     // PC: D_00C5BF60 (model pool)
-extern Unk800EE1D4 D_800D16E4;       // PC: D_00C60150 (top node)
-extern s32 D_800D171C;               // PC: D_00C5D320 (read quads index)
-extern s32 D_800D1724;               // PC: D_00C3F894
+extern s32 D_800D16D8;               // PC: D_00C3F76C (last shoot score)
+extern u8 D_800D16DC;                // PC: D_00C3F760 (pause mode)
+extern s32 D_800D16E0;
+extern Unk800EE1D4 D_800D16E4; // PC: D_00C60150 (top node)
+extern s32 D_800D171C;         // PC: D_00C5D320 (read quads index)
+extern s32 D_800D1724;         // PC: D_00C3F894
 extern s32 D_800D172C;
 extern s32 D_800D1730[];           // PC: D_00C5D0F0 (model pointer table)
 extern s8 D_800D1960;              // PC: D_00C3F890 (release mode)
@@ -181,9 +191,10 @@ extern u_long D_800D1BD4;
 extern Unk800A89D8* D_800D1BD8; // PC: xbin stream 1 (model info)
 extern void* D_800D1BDC;        // PC: xbin stream 2
 extern void* D_800D1BE0;        // PC: xbin stream 3
-extern s32 D_800D1BE4;          // PC: xbin stream 4 (track data)
+extern u8* D_800D1BE4;          // PC: xbin stream 4 (track data)
 extern s32* D_800D1BE8;         // PC: xbin stream 5 (track offsets)
 extern s32* D_800D1BEC;         // PC: xbin stream 6
+extern void* D_800D1BF0;        // PC: xbin stream 7
 extern void* D_800D1BF4;        // PC: xbin stream 8
 extern void* D_800D1BF8;        // PC: xbin stream 9
 extern Unk800A8CCC* D_800D1BFC; // PC: xbin stream 0xA (triangles)
@@ -202,17 +213,22 @@ extern u16 D_800D1C80;               // PC: D_00C5BF38 (track list tail)
 extern Unk800A4390 D_800D1C84;       // PC: D_00C3F930 (object being built)
 extern Unk800A4390 D_800D1DC0[0x64]; // PC: D_00C3FB68 (object pool)
 extern u16 D_800D9930;               // PC: D_00C503A8 (bg triangle list tail)
-extern u16 D_800D9940;               // PC: D_00C3FA6C (next object index)
-extern s16 D_800D9944;               // PC: D_00C60188 (next node index)
-extern Unk800E2608 D_800D9948[];     // PC: D_00C476F0 (track list nodes)
-extern s16 D_800E25EC;               // PC: D_00C3FB58 (cursor X)
-extern s16 D_800E25F0;               // PC: D_00C3FB5C (cursor Y)
+extern DR_MODE D_800D9934;
+extern u16 D_800D9940;           // PC: D_00C3FA6C (next object index)
+extern s16 D_800D9944;           // PC: D_00C60188 (next node index)
+extern Unk800E2608 D_800D9948[]; // PC: D_00C476F0 (track list nodes)
+extern s16 D_800E25EC;           // PC: D_00C3FB58 (cursor X)
+extern s16 D_800E25F0;           // PC: D_00C3FB5C (cursor Y)
+extern u8 D_800E25F4;
 extern s8 D_800E25F8;
+extern s32 D_800E25FC;
+extern u8 D_800E2600;
 extern s32* D_800E2604;        // PC: D_00C3F8C0
 extern Unk800E2608 D_800E2608; // PC: D_00C503B0 (bg triangle list nodes)
 extern void* D_800EE188;
 extern SVECTOR* D_800EE194;        // PC: D_00C3F878 (right track vectors)
 extern Unk800EE1D4 D_800EE1D4[10]; // PC: D_00C5D360 (list tails per depth)
+extern SVECTOR* D_800EE424;        // PC: D_00C3F870 (track camera)
 extern void* D_800EE428;
 extern u16 D_800EE42C; // PC: D_00C3FB54 (active object count)
 
@@ -233,8 +249,114 @@ u_long* func_800A882C(SVECTOR* arg0, u_long* arg1, u_long** arg2, SVECTOR* arg3)
 Unk800D0554* func_800A7BF4(void);
 s32* func_800A7C20(s32 count);
 s32* func_800A7C54(s32 count);
+void func_800A12EC(void);
+void func_800A13AC(void);
+void func_800A1450();
+void func_800A1A64();
+void func_800A1B64(Unk800D1964* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4);
+void func_800A1CD8(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
+void func_800A1F18(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6, s32 arg7, s32 arg8, s32 arg9);
+void func_800A2058();
+void func_800A2214();
+void func_800A2860(void);
+void func_800A2B78(void);
+void func_800A2C50(s32 arg0);
+void func_800A2E38();
+void func_800A35DC(s32 arg0);
+void func_800A372C(s32 arg0);
+void func_800A46E8(Unk800D1964* arg0);
+Unk800EE1D4* func_800A80F8(s16 arg0, s32 arg1, s32 arg2, s32 arg3, Unk800EE1D4* arg4, s32 arg5, s32 arg6, s32 arg7,
+                           u16 arg8, u16 arg9, u16 arg10);
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", MINI_Jet);
+#else
+// Off by instruction scheduling only: the load-delay slot in the prologue and
+// the address form of the D_800E25FC store.
+u16 MINI_Jet(void) {
+    volatile s32 dummy;
+    Unk800D1964** db;
+    Unk800D1964* var_a2;
+    s32* speed;
+    SVECTOR** path;
+    s32 temp_s0;
+
+    func_800A2214();
+    SetDrawMode(&D_800D9934, 0, 1, GetTPage(1, 1, 0x300, 0) & 0xFFFF, NULL);
+    db = D_800D1964;
+    speed = &D_800A897C;
+    D_800EE424 = D_800D1BF0;
+    func_800A2DE4(0, 0);
+    path = &D_800A8988;
+    D_800D1C58 = *path;
+    func_800A2DE4(1, 0);
+    D_800EE194 = *path;
+    temp_s0 = 0x20;
+    func_800A2860();
+    SetFogNearFar(D_800A89D0, D_800A89D4, 0x100);
+    D_800A8A74 = func_800A80F8(0x1E, 0, 0, 1, &D_800D16E4, 0x4B0, 0x32, 0xBB8, 0, 0x3E8, 0);
+    // A loop keyword makes gcc duplicate the exit test and hoist loop constants;
+    // the target has neither.
+loop:
+    if ((D_800D16E0 * 4) > (D_800D1724 - 0x10) || D_800E2600 == 1) {
+        goto done;
+    }
+    {
+        func_800A2E38();
+        if (D_800D16DC == 0) {
+            func_800A2C50(9);
+            func_800A35DC(*speed);
+            func_800A1450();
+            func_800A13AC();
+            func_800A12EC();
+            func_800A1B64(db[0], D_800A8A88, 5, 0x28, 0);
+            func_800A372C(*speed);
+            func_800A46E8(db[0]);
+            func_800A1CD8(D_800D16D8, 0xF4, 0xC8, 0, 0);
+            func_800A1F18(7, 0xCC, 0xC8, 0x27, 0x11, 0, 0, 0x27, 0x11, 0);
+            func_800A1F18(0xB, 0x12, 0x56, 0xC, 0x8C, 0, 0x70, 0xC, 0x8C, 0);
+            func_800A1A64();
+            if (*speed < 0x4000) {
+                D_800A8338 = 0;
+            } else {
+                D_800A8338 = 0x7F;
+            }
+        } else {
+            func_800A1F18(9, 0xCA, 0xC0, 0x60, temp_s0, 0, 0x50, 0x60, temp_s0, 0);
+            D_800A8338 = 0;
+            D_800A833C = 0;
+        }
+        func_800A2B78();
+        func_800A2058();
+        func_800A1F18(0xA, 0xC8, 0xC0, 0x6F, 0x1F, 0, 0x30, 0x70, temp_s0, 0);
+        DrawSync(0);
+        VSync(0);
+        ResetGraph(1);
+        PutDrawEnv(&db[0]->draw);
+        PutDispEnv(&db[0]->disp);
+        ClearImage(&db[0]->draw.clip, 0, 0, 0);
+        if (D_800E25F4 != 0) {
+            DrawOTag((u_long*)&db[0]->unk70[0xFFF]);
+            DrawOTag((u_long*)&db[0]->unk4098[0xB3]);
+        }
+        var_a2 = D_800AB898;
+        D_800E25FC = 0;
+        if (db[0] == var_a2) {
+            var_a2++;
+        }
+        db[0] = var_a2;
+        ClearOTagR((u_long*)var_a2->unk70, 0x1000);
+        ClearOTagR((u_long*)db[0]->unk4098, 0xB4);
+        func_800A7FAC(&db[0]->unk4368);
+        goto loop;
+    }
+done:
+    *D_8009A000 = 0xB8;
+    D_8009A004 = 0;
+    SystemAkaoExecute();
+    return D_800D16D8;
+}
+#endif
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0874);
 
@@ -378,7 +500,41 @@ void func_800A2938(void) {
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A29AC);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2AA0);
+void func_800A2AA0(s32 arg0) {
+    s32* temp;
+    s32 temp_s0;
+
+    temp = &D_800A8958;
+    if (*temp == 0) {
+        if (arg0 & 0xFF) {
+            *D_8009A000 = 0x2B;
+            D_8009A004 = 0x40;
+            D_8009A008 = 0x22B;
+            SystemAkaoExecute();
+        } else {
+            *D_8009A000 = 0x2B;
+            D_8009A004 = 0x40;
+            D_8009A008 = 0;
+            SystemAkaoExecute();
+            D_800A8958 = 0;
+            return;
+        }
+    }
+    temp_s0 = arg0 & 0xFF;
+    if (temp_s0) {
+        D_800A833C = temp_s0;
+        *D_8009A000 = 0xB3;
+        D_8009A004 = temp_s0;
+        SystemAkaoExecute();
+        *temp = temp_s0;
+    } else {
+        *D_8009A000 = 0x2B;
+        D_8009A004 = 0x40;
+        D_8009A008 = 0;
+        SystemAkaoExecute();
+        D_800A8958 = 0;
+    }
+}
 
 // PC: part of C_005E938D, set channel volumes
 void func_800A2B78(void) {
@@ -406,11 +562,11 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2C50);
 // PC: C_005EAAF3, select track data from stream 4
 void func_800A2DE4(s32 arg0, s32 arg1) {
     s32 elem;
-    s32 base;
+    u8* base;
 
     elem = D_800A8CC0[arg0 & 0xFF];
     base = D_800D1BE4;
-    D_800A8988 = base + elem;
+    D_800A8988 = (SVECTOR*)(base + elem);
     D_800D1724 = *D_800E2604;
 }
 
@@ -620,7 +776,7 @@ void func_800A3B58(u8 pathIndex, u8 mode) {
         lengths = D_800D1BEC;
         offset = offsets[pathIndex];
         D_800A8984 = lengths[pathIndex];
-        D_800A8954 = (SVECTOR*)((u8*)D_800D1BE4 + offset);
+        D_800A8954 = (SVECTOR*)(D_800D1BE4 + offset);
     }
 }
 #endif

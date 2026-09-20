@@ -1380,6 +1380,7 @@ s32 SysGetLimitCmdId(s32 charId, s32 limitIndex);
 int SYS_GetDiskNo(void);
 
 // from overlays
+u16 MINI_Jet(void);              // minigame result, stored to the savemap by the caller
 extern u8 SavedScriptIds[48][8]; // script ids of latest queued scripts
 extern u_long* D_8019D5E8;
 extern s32 D_8019DAA0;
