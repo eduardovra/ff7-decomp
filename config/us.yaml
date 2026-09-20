@@ -296,7 +296,7 @@ overlays:
     segments:
       - [0x0, rodata, jet]
       - [0x450, c, jet]
-      - [0x8310, data, jet]
+      - [0x8310, .data, jet]
       - [0x83F0, hasm, jet_gte]
   - name: barrier
     disk_path: disks/us/MAGIC/BARRIER.BIN

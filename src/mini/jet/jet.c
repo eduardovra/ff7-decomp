@@ -117,62 +117,85 @@ typedef struct {
 } Unk800A4390; // size: 0x13C
 
 extern RECT D_800A0000;
-extern s32 D_800A8310;
-extern u32 D_800A8314;
-extern s32 D_800A8318;
-extern u32 D_800A831C;
-extern s32 D_800A8320;
-extern u32 D_800A8324;
-extern s32 D_800A8328;
-extern u32 D_800A832C;
-extern s32 D_800A8338;
-extern s32 D_800A833C;
-extern s32 D_800A83C8;
-extern s32 D_800A83CC;
-extern s32 D_800A83D0;
-extern s32 D_800A892C; // PC: sLNormal.vx
-extern s32 D_800A8930; // PC: sLNormal.vy
-extern s32 D_800A8934; // PC: sLNormal.vz
-extern s32 D_800A893C; // PC: sRNormal.vx
-extern s32 D_800A8940; // PC: sRNormal.vy
-extern s32 D_800A8944; // PC: sRNormal.vz
+// .data, in ROM order. Sector and size pairs feed the four loads in func_800A2420
+s32 D_800A8310 = 0x9D8;
+u32 D_800A8314 = 0x28;
+s32 D_800A8318 = 0x9D9;
+u32 D_800A831C = 0x4DE8;
+s32 D_800A8320 = 0x9E3;
+u32 D_800A8324 = 0x44;
+s32 D_800A8328 = 0x9E4;
+u32 D_800A832C = 0xA7958;
+s32 D_800A8330 = 0x7F;
+s32 D_800A8334 = 0x7F;
+s32 D_800A8338 = 0;
+s32 D_800A833C = 0;
+MATRIX D_800A8340 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}}; // PC: __009014B0
+MATRIX D_800A8360 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}}; // PC: __009014D0
+MATRIX D_800A8380 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}}; // PC: D_00C3F8A0 (world matrix)
+SVECTOR D_800A83A0 = {0, 0, 0, 0};                                                 // world rotation
+VECTOR D_800A83A8 = {0, 0, 0, 0};                                                  // PC: D_00C3F8D8 (view position)
+VECTOR D_800A83B8 = {0, 0, 0, 0}; // PC: D_00C3F8E8 (starfield position)
+VECTOR D_800A83C8 = {0, 0, 0, 0}; // PC: D_00C3F8F8
+VECTOR D_800A83D8 = {0, 0, 0, 0}; // PC: D_00C3F908
+s32 D_800A83E8[2] = {0, 0};
+
+extern s32 D_800A892C;      // PC: sLNormal.vx
+extern s32 D_800A8930;      // PC: sLNormal.vy
+extern s32 D_800A8934;      // PC: sLNormal.vz
+extern s32 D_800A893C;      // PC: sRNormal.vx
+extern s32 D_800A8940;      // PC: sRNormal.vy
+extern s32 D_800A8944;      // PC: sRNormal.vz
+extern SVECTOR* D_800A8954; // PC: D_00C3FB60 (current path)
+extern s32 D_800A8984;      // PC: D_00C476E0 (current path length)
 extern s32 D_800A8988;
 extern s32 D_800A898C;          // PC: D_00C3F91C (current object number)
 extern Unk800A89D8* D_800A89D8; // PC: D_00C5D0E4 (model info stream)
 extern u16 D_800A89DC;          // PC: D_00C503A4 (track list head)
 extern s32 D_800A89E0;          // PC: D_00C476D8 (object stream index)
 extern u_long D_800A89E4;
-extern s32 D_800A8A5C;               // PC: dwLDistance
-extern u16 D_800A8A60;               // PC: D_00C5BF44 (bg triangle list head)
-extern s32 D_800A8A64;               // PC: dwRDistance
-extern s32 D_800A8A70;               // PC: D_00C5D0E0 (read triangles index)
-extern u32 D_800A8A8C;               // PC: D_00C5D0EC (allocated models)
-extern Unk800EE1D4 D_800A8A90[10];   // PC: D_00C60320 (list heads per depth)
-extern s32* D_800A8CC0;              // PC: D_00C3F898 (track offsets, stream 5)
-extern Unk800A8CCC* D_800A8CCC;      // PC: D_00C5D0E8 (triangles stream)
+extern s32 D_800A8A5C;             // PC: dwLDistance
+extern u16 D_800A8A60;             // PC: D_00C5BF44 (bg triangle list head)
+extern s32 D_800A8A64;             // PC: dwRDistance
+extern s32 D_800A8A70;             // PC: D_00C5D0E0 (read triangles index)
+extern u32 D_800A8A8C;             // PC: D_00C5D0EC (allocated models)
+extern Unk800EE1D4 D_800A8A90[10]; // PC: D_00C60320 (list heads per depth)
+extern s32* D_800A8CC0;            // PC: D_00C3F898 (track offsets, stream 5)
+extern Unk800A8CCC* D_800A8CCC;    // PC: D_00C5D0E8 (triangles stream)
+extern s32 D_800A8CC8;
 extern Unk800EE1D4 D_800A8CD0[0xC8]; // PC: D_00C5D590 (node pool)
 extern Unk800D1964 D_800AB898[2];    // PC: Class_coaster_D8
 extern Unk800D0554 D_800D0554[];     // PC: D_00C5BF60 (model pool)
 extern Unk800EE1D4 D_800D16E4;       // PC: D_00C60150 (top node)
 extern s32 D_800D171C;               // PC: D_00C5D320 (read quads index)
 extern s32 D_800D1724;               // PC: D_00C3F894
-extern s32 D_800D1730[];             // PC: D_00C5D0F0 (model pointer table)
-extern s8 D_800D1960;                // PC: D_00C3F890 (release mode)
-extern Unk800D1964* D_800D1964[1];   // PC: D_00C3F888 (renderer)
-extern Unk800D1968* D_800D1968;      // PC: D_00C5BF58 (quads stream)
-extern u16 D_800D1970[];             // PC: D_00C3FA80 (object index pool)
-extern s16 D_800D1A40[0xC8];         // PC: D_00C60190 (node index pool)
+extern s32 D_800D172C;
+extern s32 D_800D1730[];           // PC: D_00C5D0F0 (model pointer table)
+extern s8 D_800D1960;              // PC: D_00C3F890 (release mode)
+extern Unk800D1964* D_800D1964[1]; // PC: D_00C3F888 (renderer)
+extern void* D_800D196C;
+extern Unk800D1968* D_800D1968; // PC: D_00C5BF58 (quads stream)
+extern u16 D_800D1970[];        // PC: D_00C3FA80 (object index pool)
+extern s16 D_800D1A40[0xC8];    // PC: D_00C60190 (node index pool)
 extern u_long D_800D1BD4;
-extern Unk800A89D8* D_800D1BD8;      // PC: xbin stream 1 (model info)
-extern s32 D_800D1BE4;               // PC: xbin stream 4 (track data)
-extern s32* D_800D1BE8;              // PC: xbin stream 5 (track offsets)
-extern s32* D_800D1BEC;              // PC: xbin stream 6
-extern Unk800A8CCC* D_800D1BFC;      // PC: xbin stream 0xA (triangles)
-extern Unk800D1968* D_800D1C14;      // PC: xbin stream 0x10 (quads)
-extern s8 D_800D1C4C;                // PC: D_00C3FA70 (shoot)
-extern u16 D_800D1C50;               // PC: D_00C5BF30 (track element count)
-extern SVECTOR* D_800D1C58;          // PC: D_00C3F874 (left track vectors)
-extern s16 D_800D1C5C;               // PC: D_00C3FB50 (shoot power)
+extern Unk800A89D8* D_800D1BD8; // PC: xbin stream 1 (model info)
+extern void* D_800D1BDC;        // PC: xbin stream 2
+extern void* D_800D1BE0;        // PC: xbin stream 3
+extern s32 D_800D1BE4;          // PC: xbin stream 4 (track data)
+extern s32* D_800D1BE8;         // PC: xbin stream 5 (track offsets)
+extern s32* D_800D1BEC;         // PC: xbin stream 6
+extern void* D_800D1BF4;        // PC: xbin stream 8
+extern void* D_800D1BF8;        // PC: xbin stream 9
+extern Unk800A8CCC* D_800D1BFC; // PC: xbin stream 0xA (triangles)
+extern u8* D_800D1C00;          // PC: xbin stream 0xB (object paths)
+extern s32* D_800D1C04;         // PC: xbin stream 0xC (path offsets)
+extern s32* D_800D1C08;         // PC: xbin stream 0xD (path lengths)
+extern Unk800D1968* D_800D1C14; // PC: xbin stream 0x10 (quads)
+extern s8 D_800D1C4C;           // PC: D_00C3FA70 (shoot)
+extern u16 D_800D1C50;          // PC: D_00C5BF30 (track element count)
+extern SVECTOR* D_800D1C58;     // PC: D_00C3F874 (left track vectors)
+extern s16 D_800D1C5C;          // PC: D_00C3FB50 (shoot power)
+extern void* D_800D1C60;
 extern u16 D_800D1C78;               // PC: D_00C5039C (bg triangle count)
 extern s8 D_800D1C7C;                // PC: D_00C3FA74 (shoot repeat counter)
 extern u16 D_800D1C80;               // PC: D_00C5BF38 (track list tail)
@@ -184,11 +207,14 @@ extern s16 D_800D9944;               // PC: D_00C60188 (next node index)
 extern Unk800E2608 D_800D9948[];     // PC: D_00C476F0 (track list nodes)
 extern s16 D_800E25EC;               // PC: D_00C3FB58 (cursor X)
 extern s16 D_800E25F0;               // PC: D_00C3FB5C (cursor Y)
-extern s32* D_800E2604;              // PC: D_00C3F8C0
-extern Unk800E2608 D_800E2608;       // PC: D_00C503B0 (bg triangle list nodes)
-extern SVECTOR* D_800EE194;          // PC: D_00C3F878 (right track vectors)
-extern Unk800EE1D4 D_800EE1D4[10];   // PC: D_00C5D360 (list tails per depth)
-extern u16 D_800EE42C;               // PC: D_00C3FB54 (active object count)
+extern s8 D_800E25F8;
+extern s32* D_800E2604;        // PC: D_00C3F8C0
+extern Unk800E2608 D_800E2608; // PC: D_00C503B0 (bg triangle list nodes)
+extern void* D_800EE188;
+extern SVECTOR* D_800EE194;        // PC: D_00C3F878 (right track vectors)
+extern Unk800EE1D4 D_800EE1D4[10]; // PC: D_00C5D360 (list tails per depth)
+extern void* D_800EE428;
+extern u16 D_800EE42C; // PC: D_00C3FB54 (active object count)
 
 void func_800A7E70(Unk800A7FAC* arg0);
 void func_800A7FAC(Unk800A7FAC* arg0);
@@ -202,6 +228,7 @@ void func_800A8204(Unk800EE1D4* arg0);
 void func_800A442C(s16 arg0);
 void func_800A2DE4(s32 arg0, s32 arg1);
 s16 func_800A40F4(Unk800A4390* arg0, s16 arg1);
+u_long* func_800A8734(Unk800A8CCC* arg0, u_long* arg1, u_long** arg2, Unk800A8CCC* arg3);
 u_long* func_800A882C(SVECTOR* arg0, u_long* arg1, u_long** arg2, SVECTOR* arg3);
 Unk800D0554* func_800A7BF4(void);
 s32* func_800A7C20(s32 count);
@@ -215,9 +242,50 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0D78);
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1198);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A12EC);
+// Draw every background triangle on the draw list, front to back.
+// PC: C_005E9E7E, render every background triangle on the draw list
+void func_800A12EC(void) {
+    Unk800E2608* list;
+    Unk800A8CCC* tris;
+    u16 triId;
+    u_long* ot;
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A13AC);
+    ot = D_800D1964[0]->unk4368.unk8;
+    tris = D_800D1BFC;
+    if (D_800D1C78) {
+        triId = D_800A8A60;
+        list = &D_800E2608;
+        do {
+            ot = func_800A8734(&tris[triId], ot, D_800D1964[0]->unk70, &tris[triId]);
+            triId = list[triId].unk2;
+        } while (triId != 0xFFFF);
+    }
+    D_800D1964[0]->unk4368.unk8 = ot;
+}
+
+// Draw every track element on the draw list, front to back.
+// PC: C_005E9F33, render every track element on the draw list
+void func_800A13AC(void) {
+    Unk800E2608* list;
+    SVECTOR* left;
+    SVECTOR* right;
+    u16 trackId;
+    u_long* ot;
+
+    trackId = D_800A89DC;
+    ot = D_800D1964[0]->unk4368.unk14;
+    list = D_800D9948;
+// This needs to be refactored to get rid of the goto.
+loop:
+    left = D_800D1C58;
+    right = D_800EE194;
+    ot = func_800A882C(&left[trackId], ot, D_800D1964[0]->unk70, &right[trackId]);
+    trackId = list[trackId].unk2;
+    if (trackId != 0xFFFF) {
+        goto loop;
+    }
+    D_800D1964[0]->unk4368.unk14 = ot;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1450);
 
@@ -324,9 +392,9 @@ void func_800A2B78(void) {
 
 // PC: C_005EA8C0, camera/track module init
 void func_800A2BE0(void) {
-    D_800A83CC = -0x1B76;
-    D_800A83C8 = 0;
-    D_800A83D0 = 0xC8;
+    D_800A83C8.vy = -0x1B76;
+    D_800A83C8.vx = 0;
+    D_800A83C8.vz = 0xC8;
     D_800E2604 = D_800D1BEC;
     D_800A8CC0 = D_800D1BE8;
     func_800A2DE4(0, 3);
@@ -350,7 +418,31 @@ void func_800A2E30(void) {}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2E38);
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A334C);
+// Reset both draw lists and the object streams for a new run.
+void func_800A334C(void) {
+    Unk800E2608* list;
+    s32 i;
+
+    D_800D172C = 0xFFFE;
+    D_800A8CC8 = 0;
+    D_800D1C60 = D_800D1BF4;
+    D_800EE428 = D_800D1BF8;
+    D_800D196C = D_800D1BDC;
+    D_800EE188 = D_800D1BE0;
+    list = &D_800E2608;
+    for (i = 0; i < 0x2EE0; i++) {
+        list[i].unk0 = 0xFFFF;
+        list[i].unk2 = 0xFFFF;
+    }
+    D_800D1C78 = 0;
+    list = D_800D9948;
+    for (i = 0; i < 0x2328; i++) {
+        list[i].unk0 = 0xFFFF;
+        list[i].unk2 = 0xFFFF;
+    }
+    D_800D1C50 = 0;
+    D_800E25F8 = 1;
+}
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3414);
 
@@ -506,7 +598,32 @@ void func_800A3AAC(void) {
     D_800EE42C = 0;
 }
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3B58);
+#else
+// PC: C_005EAC30, start path (mode 0: objects, mode 1: player car).
+// Off by the operand order of the final add only.
+void func_800A3B58(u8 pathIndex, u8 mode) {
+    s32 offset;
+    s32* offsets;
+    s32* lengths;
+
+    if (mode == 0) {
+        offsets = D_800D1C04;
+        lengths = D_800D1C08;
+        offset = offsets[pathIndex];
+        D_800A8984 = lengths[pathIndex];
+        D_800A8954 = (SVECTOR*)(D_800D1C00 + offset);
+    }
+    if (mode == 1) {
+        offsets = D_800D1BE8;
+        lengths = D_800D1BEC;
+        offset = offsets[pathIndex];
+        D_800A8984 = lengths[pathIndex];
+        D_800A8954 = (SVECTOR*)((u8*)D_800D1BE4 + offset);
+    }
+}
+#endif
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3C04);
 
@@ -557,9 +674,7 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A4458);
 
 // PC: C_005EB507, create an object at a position
 void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
-    D_800D1C84.unk0.vx = arg0;
-    D_800D1C84.unk0.vy = arg1;
-    D_800D1C84.unk0.vz = arg2;
+    setVector(&D_800D1C84.unk0, arg0, arg1, arg2);
     D_800D1C84.unk28 = arg3;
     D_800D1C84.unk38 = 1;
     D_800D1C84.unk30 = arg4;
@@ -569,9 +684,7 @@ void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
 
 // PC: C_005EB566, create an object at a position, clearing f_50[0xC]
 void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
-    D_800D1C84.unk0.vx = arg0;
-    D_800D1C84.unk0.vy = arg1;
-    D_800D1C84.unk0.vz = arg2;
+    setVector(&D_800D1C84.unk0, arg0, arg1, arg2);
     D_800D1C84.unk28 = arg3;
     D_800D1C84.unk38 = 1;
     D_800D1C84.unk30 = arg4;
@@ -808,9 +921,7 @@ Unk800EE1D4* func_800A80F8(s16 arg0, s32 arg1, s32 arg2, s32 arg3, Unk800EE1D4* 
     temp_s0->unk0 = D_800D1730[arg0];
     temp_s0->unk28 = arg0;
     temp_s0->unk2A = temp_v0;
-    sp10.vx = arg8;
-    sp10.vy = arg9;
-    sp10.vz = arg10;
+    setVector(&sp10, arg8, arg9, arg10);
     RotMatrix(&sp10, &temp_s0->m);
     temp_s0->m.t[0] = arg5;
     temp_s0->m.t[1] = arg6;
