@@ -1702,6 +1702,56 @@ match it.
 
 Source: `src/battle/batini.c`, `BattleInitSetSpeed`.
 
+### `addu` operand order, which source order does not control
+
+For a commutative `+` between two plain register operands, gcc 2.6.3
+canonicalises the tree before it reaches the expander, so `addu dst, rs, rt`
+does **not** follow the order you wrote. Writing `base + offset` and
+`offset + base` compile identically.
+
+The rule that reproduces the observed output: when one operand is a fresh
+global load and the other is a local already sitting in a pseudo, the
+*local* becomes `rs`. So a target reading
+
+```
+lw      $2, 0($4)          # offset, from an earlier statement
+lw      $3, base
+nop
+addu    $2, $3, $2         # base is rs
+```
+
+cannot be written as `base + offset`. Measured against the target compiler,
+these all produce the swapped order (`addu dst, offset, base`): pointer
+arithmetic, integer arithmetic with the pointer cast to `s32`, `&base[offset]`,
+`offset` typed `s32`/`u32`/`unsigned long`, and the offset value used twice so
+it cannot be forward-propagated.
+
+Two forms do put the base in `rs`:
+
+- **A local for the base** (`b = base; ... b + offset`). But the base load is
+  then a statement of its own and the scheduler hoists it above the
+  surrounding loads, which loses the wasted load-delay slot the target has.
+  In a function with a single branch it matches; with two branches it does
+  not.
+- **A `MINUS_EXPR` that folds back to a plus** -- `base - -offset`. The C
+  front end routes `ptr - int` through `pointer_int_sum` building
+  `PLUS_EXPR(ptr, negate(int))`, which never goes through the `+`
+  canonicalisation. This reproduces the target exactly, delay slot included.
+
+The second is a perfect match and almost certainly not what was written, so
+a function whose only remaining diff is this operand order is better left
+non-matching than "solved" with `- -`. `func_800A3B58` in `src/mini/jet/jet.c`
+sits at 20 for exactly this reason, and `func_800A372C` / `func_800A35DC` in
+the same file were abandoned on the same wall.
+
+Probe these with the compiler directly rather than through the overlay --
+`mipsel-linux-gnu-cpp -undef -lang-c t.c | bin/cc1-psx-26 -quiet -mcpu=3000
+-mgas -O2 -G0` turns a ten-minute rebuild into a one-second one, and the
+operand order is visible in the raw output. Reproduce the *whole* enclosing
+function, not one branch of it: the scheduling differs between them.
+
+Source: `src/mini/jet/jet.c`, `func_800A3B58`.
+
 ## Candidates not yet written
 
 Bitfield extraction with a non-zero shift, which does not occur here;

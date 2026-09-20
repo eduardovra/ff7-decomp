@@ -193,11 +193,13 @@ extern u16 D_800A89DC;          // PC: D_00C503A4 (track list head)
 extern s32 D_800A89E0;          // PC: D_00C476D8 (object stream index)
 extern s32 D_800A8958;
 extern u_long D_800A89E4;
-extern s32 D_800A8A5C;          // PC: dwLDistance
-extern u16 D_800A8A60;          // PC: D_00C5BF44 (bg triangle list head)
-extern s32 D_800A8A64;          // PC: dwRDistance
-extern s32 D_800A8A70;          // PC: D_00C5D0E0 (read triangles index)
-extern Unk800EE1D4* D_800A8A74; // PC: D_00C3F880 (score node)
+extern s32 D_800A8A5C; // PC: dwLDistance
+extern u16 D_800A8A60; // PC: D_00C5BF44 (bg triangle list head)
+extern s32 D_800A8A64; // PC: dwRDistance
+extern s32 D_800A8A70; // PC: D_00C5D0E0 (read triangles index)
+extern s16 D_800A89CC;
+extern s16 D_800A8CC4;
+extern Unk800EE1D4* D_800A8A74[1]; // PC: D_00C3F880 (score node)
 extern s16 D_800A8A88;
 extern u32 D_800A8A8C;             // PC: D_00C5D0EC (allocated models)
 extern Unk800EE1D4 D_800A8A90[10]; // PC: D_00C60320 (list heads per depth)
@@ -245,6 +247,7 @@ extern u8* D_800D1C10;          // PC: xbin stream 0xF (spawns per segment)
 extern Unk800D1968* D_800D1C14; // PC: xbin stream 0x10 (quads)
 extern s8 D_800D1C4C;           // PC: D_00C3FA70 (shoot)
 extern u16 D_800D1C50;          // PC: D_00C5BF30 (track element count)
+extern s32 D_800D1C54;          // PC: D_00C3F764 (camera path position)
 extern SVECTOR* D_800D1C58;     // PC: D_00C3F874 (left track vectors)
 extern s16 D_800D1C5C;          // PC: D_00C3FB50 (shoot power)
 extern void* D_800D1C60;
@@ -260,6 +263,7 @@ extern s16 D_800D9944;           // PC: D_00C60188 (next node index)
 extern Unk800E2608 D_800D9948[]; // PC: D_00C476F0 (track list nodes)
 extern u16 D_800E25EC;           // PC: D_00C3FB58 (cursor X)
 extern u16 D_800E25F0;           // PC: D_00C3FB5C (cursor Y)
+extern u8 D_800E25E8;
 extern u8 D_800E25F4;
 extern s8 D_800E25F8;
 extern s32 D_800E25FC;
@@ -267,6 +271,7 @@ extern u8 D_800E2600;
 extern s32* D_800E2604;        // PC: D_00C3F8C0
 extern Unk800E2608 D_800E2608; // PC: D_00C503B0 (bg triangle list nodes)
 extern void* D_800EE188;
+extern SVECTOR D_800EE18C;
 extern u16 D_800EE198[];           // sprite clut table
 extern SVECTOR* D_800EE194;        // PC: D_00C3F878 (right track vectors)
 extern Unk800EE1D4 D_800EE1D4[10]; // PC: D_00C5D360 (list tails per depth)
@@ -298,6 +303,7 @@ void func_800A13AC(void);
 void func_800A1450();
 void func_800A1A64();
 void func_800A1B64(Unk800D1964* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4);
+void func_800A16A4(s32 arg0, s32 arg1, VECTOR* arg2, SVECTOR* arg3);
 void func_800A1CD8(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_800A1F18(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans);
 void func_800A2058();
@@ -338,7 +344,7 @@ u16 MINI_Jet(void) {
     temp_s0 = 0x20;
     func_800A2860();
     SetFogNearFar(D_800A89D0, D_800A89D4, 0x100);
-    D_800A8A74 = func_800A80F8(0x1E, 0, 0, 1, &D_800D16E4, 0x4B0, 0x32, 0xBB8, 0, 0x3E8, 0);
+    D_800A8A74[0] = func_800A80F8(0x1E, 0, 0, 1, &D_800D16E4, 0x4B0, 0x32, 0xBB8, 0, 0x3E8, 0);
     // A loop keyword makes gcc duplicate the exit test and hoist loop constants;
     // the target has neither.
 loop:
@@ -610,7 +616,43 @@ void func_800A1A64(void) {
     db[0]->unk4368.unkC = poly;
 }
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1B64);
+#else
+// Spin and draw the score model, alternating it with the title every so often.
+// Off by one instruction: the target keeps D_800A8A74's address in a register.
+void func_800A1B64(Unk800D1964* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) {
+    u8* alternate;
+    s16* counter;
+    s32 unused;
+
+    if (arg1 == 0 || arg1 == 0x5B) {
+        return;
+    }
+    alternate = &D_800E25E8;
+    D_800A8A74[0]->unk0 = D_800D1730[arg1];
+    D_800EE18C.vx += arg2;
+    D_800EE18C.vy += arg3;
+    D_800EE18C.vz += arg4;
+    if (alternate[0] == 1) {
+        RotMatrix(&D_800EE18C, &D_800A8A74[0]->m);
+        func_800A1198(arg0, D_800A8A74[0], 0, 0, unused);
+        func_800A1CD8(D_800A8CC4, 0xDC, 0xA0, 0, 0x18);
+    }
+    counter = &D_800A89CC;
+    (*counter)--;
+    if (*counter < 0x32) {
+        if (alternate[0] == 0) {
+            alternate[0] = 1;
+        } else {
+            alternate[0] = 0;
+        }
+    }
+    if (D_800A89CC == 0) {
+        D_800A8A88 = 0;
+    }
+}
+#endif
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1CD8);
 
@@ -794,7 +836,49 @@ void func_800A2BE0(void) {
     D_800D1960 = 1;
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2C50);
+// Advance the camera along its path and rebuild the view matrices.
+void func_800A2C50(s32 arg0) {
+    VECTOR pos;
+    SVECTOR rot;
+    SVECTOR camRot;
+    s32* pathPos;
+    s32* speed;
+    s32* limit;
+    s32 step;
+
+    pathPos = &D_800D1C54;
+    func_800A16A4(pathPos[0], -0x64, &pos, &rot);
+    speed = &D_800A897C;
+    pathPos[0] += speed[0];
+    D_800A83B8.vx = pos.vx;
+    D_800A83B8.vy = pos.vy;
+    D_800A83B8.vz = pos.vz;
+    if (rot.vx < 0) {
+        rot.vx += 0x1000;
+    }
+    D_800A83A0.vz = -rot.vz;
+    step = rsin(rot.vx) / 15;
+    if (step > 0) {
+        if (speed[0] > 0xA7F8) {
+            speed[0] -= step;
+        }
+    }
+    if (step < 0) {
+        limit = &D_800A897C;
+        if (limit[0] <= 0x1D4BF) {
+            limit[0] -= step;
+        }
+    }
+    D_800A83A8.vx = pos.vx;
+    D_800A83A8.vy = pos.vy;
+    D_800A83A8.vz = pos.vz;
+    camRot.vx = -rot.vx;
+    camRot.vy = -rot.vy;
+    camRot.vz = 0;
+    RotMatrix(&camRot, &D_800EE404);
+    RotMatrix(&D_800A83A0, &D_800A8380);
+    CompMatrix(&D_800A8380, &D_800EE404, &D_800EE404);
+}
 
 // PC: C_005EAAF3, select track data from stream 4
 void func_800A2DE4(s32 arg0, s32 arg1) {
@@ -997,22 +1081,22 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3B58);
 // PC: C_005EAC30, start path (mode 0: objects, mode 1: player car).
 // Off by the operand order of the final add only.
 void func_800A3B58(u8 pathIndex, u8 mode) {
-    s32 offset;
-    s32* offsets;
     s32* lengths;
+    s32* offsets;
+    s32 offset;
 
     if (mode == 0) {
-        offsets = D_800D1C04;
         lengths = D_800D1C08;
-        offset = offsets[pathIndex];
+        offsets = D_800D1C04;
         D_800A8984 = lengths[pathIndex];
+        offset = offsets[pathIndex];
         D_800A8954 = (SVECTOR*)(D_800D1C00 + offset);
     }
     if (mode == 1) {
-        offsets = D_800D1BE8;
         lengths = D_800D1BEC;
-        offset = offsets[pathIndex];
+        offsets = D_800D1BE8;
         D_800A8984 = lengths[pathIndex];
+        offset = offsets[pathIndex];
         D_800A8954 = (SVECTOR*)(D_800D1BE4 + offset);
     }
 }
@@ -1061,10 +1145,6 @@ void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
     }
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3D50);
-#else
-// Off by the scheduling of the corner arithmetic only.
 // Draw the aiming cursor sprite.
 void func_800A3D50(Unk800D1964* arg0) {
     POLY_FT4* poly;
@@ -1088,7 +1168,6 @@ void func_800A3D50(Unk800D1964* arg0) {
     poly++;
     arg0->unk4368.unk14 = poly;
 }
-#endif
 
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3E58);
 
