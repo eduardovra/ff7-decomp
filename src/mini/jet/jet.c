@@ -995,7 +995,59 @@ s32 func_800A76DC(s32 arg0, s32 arg1, s32 arg2) {
     return (a * (arg0 >> 2)) + (b * (arg1 >> 2)) + (c * (arg2 >> 2)) + D_800A8A64;
 }
 
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A7730);
+// PC: __005EEF27, is a sphere inside both frustum planes
+s32 func_800A7730(VECTOR* arg0, s16 arg1) {
+    s32 leftOk;
+    s32 hsLeft;
+    s32 rightOk;
+    s32 hsRight;
+    s32 planeDistance;
+    s32 lx;
+    s32 ly;
+    s32 lz;
+    s32 rx;
+    s32 ry;
+    s32 rz;
+    s32 len;
+
+    leftOk = 0;
+    rightOk = 0;
+    lx = D_800A892C;
+    ly = D_800A8930;
+    lz = D_800A8934;
+    hsLeft = (lx * (arg0->vx >> 2)) + (ly * (arg0->vy >> 2)) + (lz * (arg0->vz >> 2)) + D_800A8A5C;
+    if (D_800A8950 > 0 && hsLeft >= 0) {
+        leftOk = 1;
+    }
+    if (D_800A8950 < 0 && hsLeft <= 0) {
+        leftOk = 1;
+    }
+    if (leftOk == 0) {
+        len = D_800AB890;
+        planeDistance = ((hsLeft < 0) ? -hsLeft : hsLeft) / len;
+        if (planeDistance < arg1) {
+            leftOk = 1;
+        }
+    }
+    rx = D_800A893C;
+    ry = D_800A8940;
+    rz = D_800A8944;
+    hsRight = (rx * (arg0->vx >> 2)) + (ry * (arg0->vy >> 2)) + (rz * (arg0->vz >> 2)) + D_800A8A64;
+    if (D_800A8968 > 0 && hsRight >= 0) {
+        rightOk = 1;
+    }
+    if (D_800A8968 < 0 && hsRight <= 0) {
+        rightOk = 1;
+    }
+    if (rightOk == 0) {
+        len = D_800D0550;
+        planeDistance = ((hsRight < 0) ? -hsRight : hsRight) / len;
+        if (planeDistance < arg1) {
+            rightOk = 1;
+        }
+    }
+    return leftOk & rightOk;
+}
 
 // PC: __005EF071, sphere test against the left frustum plane
 s32 func_800A7928(s32 arg0, s32 arg1, s32 arg2, s16 arg3) {
