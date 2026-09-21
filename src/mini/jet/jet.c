@@ -873,26 +873,27 @@ void func_800A1A64(void) {
     db[0]->unk4368.unkC = poly;
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1B64);
-#else
 // Spin and draw the score model, alternating it with the title every so often.
 void func_800A1B64(Unk800D1964* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) {
+    Unk800EE1D4* node;
     u8* alternate;
     s16* counter;
+    s32 index;
     s32 unused;
 
     if (arg1 == 0 || arg1 == 0x5B) {
         return;
     }
     alternate = &D_800E25E8;
-    D_800A8A74[0]->unk0 = D_800D1730[arg1];
+    index = 0;
+    node = D_800A8A74[index];
+    node->unk0 = D_800D1730[arg1];
     D_800EE18C.vx += arg2;
     D_800EE18C.vy += arg3;
     D_800EE18C.vz += arg4;
     if (alternate[0] == 1) {
-        RotMatrix(&D_800EE18C, &D_800A8A74[0]->m);
-        func_800A1198(arg0, D_800A8A74[0], 0, 0, unused);
+        RotMatrix(&D_800EE18C, &D_800A8A74[index]->m);
+        func_800A1198(arg0, D_800A8A74[index], 0, 0, unused);
         func_800A1CD8(D_800A8CC4, 0xDC, 0xA0, 0, 0x18);
     }
     counter = &D_800A89CC;
@@ -908,7 +909,6 @@ void func_800A1B64(Unk800D1964* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) {
         D_800A8A88 = 0;
     }
 }
-#endif
 
 #ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1CD8);
