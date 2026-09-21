@@ -186,7 +186,7 @@ VECTOR D_800A83D8 = {0, 0, 0, 0}; // PC: D_00C3F908
 s32 D_800A83E8[2] = {0, 0};
 
 extern u8 D_800A8928;
-extern s32 D_800A8A84;
+extern volatile s32 D_800A8A84;
 extern void* D_800A891C;
 extern void* D_800A8920;
 extern s32 D_800A892C; // PC: sLNormal.vx
@@ -1004,16 +1004,13 @@ void func_800A2058(void) {
     db[0]->unk4368.unk14 = poly;
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2214);
-#else
 // Point every matrix and vector at scratchpad, then build the world.
 void func_800A2214(void) {
-    s32* state;
+    volatile s32* state;
     s32 i;
 
     state = &D_800A8A84;
-    state[0] = 0;
+    *state = 0;
     D_80110BB8 = (void*)0x1F800000;
     D_800D16D4 = (void*)0x1F800000;
     D_800D16DC = 0;
@@ -1034,7 +1031,7 @@ void func_800A2214(void) {
     D_800D1728->m[2][2] = 0x1000;
     func_800A7C88();
     func_800A2420();
-    state[0] = 0x99;
+    *state = 0x99;
     func_800A334C();
     func_800A8010();
     func_800A7AF8();
@@ -1064,7 +1061,6 @@ void func_800A2214(void) {
     D_800A833C = 0;
     D_800A89CC = 0;
 }
-#endif
 
 void func_800A2420(void) {
     RECT unused;
