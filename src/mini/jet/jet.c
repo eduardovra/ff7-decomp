@@ -3090,6 +3090,7 @@ void func_800A6B08(Unk800A4390* arg0) {
     s32 x;
     s32 y;
     s32 z;
+    u32 vx;
 
     amount = D_800D1C5C >> 5;
     if (amount == 0) {
@@ -3103,12 +3104,13 @@ void func_800A6B08(Unk800A4390* arg0) {
     x = arg0->unk0.vx;
     y = arg0->unk0.vy;
     z = arg0->unk0.vz;
+    vx = (s16)x;
     D_800D1C84.unk28.unk0 = 0xCA;
     D_800D1C84.unk28.unk10 = 1;
     D_800D1C84.unk28.unk8 = 0x3F;
     D_800D1C84.unk28.unk4 = 0;
     D_800D1C84.unk28.unk50[0xC] = 0;
-    setVector(&D_800D1C84.unk0, (s16)x, (s16)y, (s16)z);
+    setVector(&D_800D1C84.unk0, vx, (s16)y, (s16)z);
     func_800A40F4(&D_800D1C84, 0);
 }
 #endif
