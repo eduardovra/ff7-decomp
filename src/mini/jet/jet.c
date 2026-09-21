@@ -5,6 +5,7 @@
 #include "types.h"
 #include <game.h>
 #include <libetc.h>
+#include <libc.h>
 
 // Nine write cursors, each reset to the start of its own buffer below.
 typedef struct {
@@ -115,33 +116,47 @@ typedef struct {
     /* 0x2 */ u16 unk2; // PC: wNext
 } Unk800E2608;          // size: 0x4
 
+// The behaviour state an object's type handler drives. PC: f_028
+typedef struct {
+    /* 0x00 */ s32 unk0; // PC: dwType
+    /* 0x04 */ s32 unk4; // PC: dwIsHit
+    /* 0x08 */ s32 unk8; // PC: dwModelId
+    /* 0x0C */ s32 unkC;
+    /* 0x10 */ s32 unk10; // PC: dwMustInit
+    /* 0x14 */ s32 unk14;
+    /* 0x18 */ s32 unk18;
+    /* 0x1C */ s32 unk1C;
+    /* 0x20 */ char pad20[8];
+    /* 0x28 */ s32 unk28;
+    /* 0x2C */ s32 unk2C;
+    /* 0x30 */ s32 unk30;
+    /* 0x34 */ s32 unk34;
+    /* 0x38 */ char pad38[0x18];
+    /* 0x50 */ s32 unk50[0x14]; // PC: f_50
+} Unk800D1CAC;                  // size: 0xA0
+
 // PC: t_coaster_GameObject
 typedef struct {
     /* 0x00 */ VECTOR unk0; // PC: sPos
     /* 0x10 */ char pad10[8];
-    /* 0x18 */ s16 unk18; // spawn rotation
-    /* 0x1A */ s16 unk1A;
-    /* 0x1C */ s16 unk1C;
-    /* 0x1E */ char pad1E[0xA];
-    /* 0x28 */ s32 unk28; // PC: f_028.dwType
-    /* 0x2C */ s32 unk2C; // PC: f_028.dwIsHit
-    /* 0x30 */ s32 unk30; // PC: f_028.dwModelId
-    /* 0x34 */ char pad34[4];
-    /* 0x38 */ s32 unk38; // PC: f_028.dwMustInit
-    /* 0x3C */ char pad3C[4];
-    /* 0x40 */ s32 unk40;
-    /* 0x44 */ s32 unk44;
-    /* 0x48 */ char pad48[0x30];
-    /* 0x78 */ s32 unk78[0x14]; // PC: f_028.f_50
-    /* 0xC8 */ char padC8[0xC];
+    /* 0x18 */ SVECTOR unk18; // spawn rotation
+    /* 0x20 */ char pad20[8];
+    /* 0x28 */ Unk800D1CAC unk28; // PC: f_028
+    /* 0xC8 */ s32 unkC8;         // the object path's length
+    /* 0xCC */ SVECTOR* unkCC;    // the object path itself
+    /* 0xD0 */ char padD0[4];
     /* 0xD4 */ Unk800EE1D4* unkD4; // PC: pNode
     /* 0xD8 */ s16 unkD8;          // PC: wObjIndex
     /* 0xDA */ s16 unkDA;          // PC: wIsActive
     /* 0xDC */ SVECTOR unkDC[6];   // the model bounding box's six face centres
-    /* 0x10C */ char pad10C[0x30];
+    /* 0x10C */ char pad10C[0x10];
+    /* 0x11C */ u_long unk11C[6]; // the same six points projected to the screen
+    /* 0x134 */ char pad134[8];
 } Unk800A4390; // size: 0x13C
 
 extern RECT D_800A0000;
+extern u8 D_800A0008;             // the rotation order the object matrices use
+extern Unk800D0554* D_800D189C[]; // the models the animated objects switch between
 // The four view frustum corner rays at the projection distance, screen order.
 extern VECTOR D_800A0410; // bottom left
 extern VECTOR D_800A0420; // bottom right
@@ -208,7 +223,10 @@ extern u16 D_800A8A68;    // background clut
 extern s32 D_800A8A5C;    // PC: dwLDistance
 extern u16 D_800A8A60;    // PC: D_00C5BF44 (bg triangle list head)
 extern s32 D_800A8A64;    // PC: dwRDistance
+extern s32 D_800A8A6C;    // pad direction code, 1..9 keypad layout
 extern s32 D_800A8A70;    // PC: D_00C5D0E0 (read triangles index)
+extern s32 D_800A8A7C;
+extern s32 D_800A8A80; // frames R1 has been held
 extern s16 D_800A89CC;
 extern s16 D_800A8CC4;
 extern Unk800EE1D4* D_800A8A74[1]; // PC: D_00C3F880 (score node)
@@ -234,7 +252,7 @@ extern u8 D_800D1720;          // laser beam texture scroll
 extern s32 D_800D1724;         // PC: D_00C3F894
 extern u32 D_800D172C;
 extern Unk800D0554* D_800D1730[];  // PC: D_00C5D0F0 (model pointer table)
-extern s8 D_800D1960;              // PC: D_00C3F890 (release mode)
+extern u8 D_800D1960;              // PC: D_00C3F890 (release mode)
 extern Unk800D1964* D_800D1964[1]; // PC: D_00C3F888 (renderer)
 extern u16* D_800D196C;
 extern Unk800D1968* D_800D1968; // PC: D_00C5BF58 (quads stream)
@@ -269,7 +287,7 @@ extern SVECTOR* D_800D1C58;     // PC: D_00C3F874 (left track vectors)
 extern u16 D_800D1C5C;          // PC: D_00C3FB50 (shoot power)
 extern u16* D_800D1C60;
 extern u16 D_800D1C78;               // PC: D_00C5039C (bg triangle count)
-extern s8 D_800D1C7C;                // PC: D_00C3FA74 (shoot repeat counter)
+extern u8 D_800D1C7C;                // PC: D_00C3FA74 (shoot repeat counter)
 extern u16 D_800D1C80;               // PC: D_00C5BF38 (track list tail)
 extern Unk800A4390 D_800D1C84;       // PC: D_00C3F930 (object being built)
 extern Unk800A4390 D_800D1DC0[0x64]; // PC: D_00C3FB68 (object pool)
@@ -314,6 +332,8 @@ void func_800A2DE4(s32 arg0, s32 arg1);
 s16 func_800A40F4(Unk800A4390* arg0, s16 arg1);
 void* func_800A84DC(Unk800A8604* arg0);
 void func_800A84A4(s32* arg0, u_long* arg1);
+void func_800A83F0(SVECTOR* arg0, u_long* arg1);
+void func_800A0874(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex, s32 arg3, Unk800A4390* obj);
 void* func_800A8604(Unk800A8604* arg0);
 u_long* func_800A8734(Unk800A8CCC* arg0, u_long* arg1, u_long* arg2, Unk800A8CCC* arg3);
 u_long* func_800A882C(SVECTOR* arg0, u_long* arg1, u_long* arg2, SVECTOR* arg3);
@@ -321,6 +341,8 @@ Unk800D0554* func_800A7BF4(void);
 s32* func_800A7C20(s32 count);
 s32* func_800A7C54(s32 count);
 void func_800A6BD8(Unk800A4390* arg0);
+s32 func_800A7414(VECTOR* arg0);
+void func_800A6B08(Unk800A4390* arg0);
 void func_800A12EC(void);
 void func_800A13AC(void);
 void func_800A1450();
@@ -335,7 +357,7 @@ void func_800A7AF8(void);
 Unk800D0554* func_800A7B48(s32 arg0);
 void func_800A7C88(void);
 void func_800A8010(void);
-void func_800A16A4(s32 arg0, s32 arg1, VECTOR* arg2, SVECTOR* arg3);
+void func_800A16A4(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot);
 void func_800A1CD8(s32 value, u16 x, s16 y, s16 padWithZero, u16 v);
 void func_800A1F18(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans);
 void func_800A2058();
@@ -350,7 +372,9 @@ void func_800A38D4(u16 arg0);
 void func_800A3980(u16 arg0);
 void func_800A3A20(u16 arg0);
 void func_800A372C(s32 arg0);
-void func_800A46E8(Unk800D1964* arg0);
+void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4);
+void func_800A46E8(Unk800D1964* db);
+void func_800A0D78(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex, s32 arg3, Unk800A4390* obj);
 Unk800EE1D4* func_800A80F8(s16 arg0, s32 arg1, s32 arg2, s32 arg3, Unk800EE1D4* arg4, s32 arg5, s32 arg6, s32 arg7,
                            s16 arg8, s16 arg9, s16 arg10);
 
@@ -440,13 +464,108 @@ done:
 }
 #endif
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0874);
+#else
+// Draw one object's model, project its bounding box and flag a cursor hit.
+void func_800A0874(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex, s32 arg3, Unk800A4390* obj) {
+    Unk800A8604 args;
+    s16 xs[6];
+    s16 ys[6];
+    MATRIX** world;
+    MATRIX* m;
+    MATRIX* wm;
+    MATRIX* cam;
+    u_long x;
+    s16 minX;
+    s16 maxX;
+    s16 minY;
+    s16 maxY;
+    s16 i;
+
+    world = &D_800D1BD0;
+    m = world[0];
+    m->m[0][0] = node->m.m[0][0];
+    m->m[0][1] = node->m.m[0][1];
+    m->m[0][2] = node->m.m[0][2];
+    m->m[1][0] = node->m.m[1][0];
+    m->m[1][1] = node->m.m[1][1];
+    m->m[1][2] = node->m.m[1][2];
+    m->m[2][0] = node->m.m[2][0];
+    m->m[2][1] = node->m.m[2][1];
+    m->m[2][2] = node->m.m[2][2];
+    m->t[0] = node->m.t[0];
+    m->t[1] = node->m.t[1];
+    m->t[2] = node->m.t[2];
+    if (node->unk24 != &D_800D16E4) {
+        CompMatrix(&node->unk24->m, m, m);
+    }
+    wm = world[0];
+    wm->t[0] -= D_800A83A8.vx;
+    wm->t[1] -= D_800A83A8.vy;
+    wm->t[2] -= D_800A83A8.vz;
+    cam = &D_800EE404;
+    gte_SetRotMatrix2(cam);
+    gte_ldclmv2(&world[0]->m[0][0]);
+    gte_rtir();
+    gte_stclmv2(&world[0]->m[0][0]);
+    gte_ldclmv2(&world[0]->m[0][1]);
+    gte_rtir();
+    gte_stclmv2(&world[0]->m[0][1]);
+    gte_ldclmv2(&world[0]->m[0][2]);
+    gte_rtir();
+    gte_stclmv2(&world[0]->m[0][2]);
+    gte_SetTransMatrix2(cam);
+    gte_ldlv0_2(&world[0]->t[0]);
+    gte_rtv0();
+    gte_stlvnl2(&world[0]->t[0]);
+    gte_SetRotMatrix2(world[0]);
+    gte_SetTransMatrix2(world[0]);
+    args.tris = node->unk0->unkC;
+    args.prim = db->unk4368.unk8;
+    args.ot = &db->unk70[otIndex];
+    args.model = node->unk0;
+    db->unk4368.unk8 = func_800A84DC(&args);
+    func_800A83F0(obj->unkDC, obj->unk11C);
+    ys[0] = obj->unk11C[0] >> 16;
+    minY = ys[0];
+    maxY = minY;
+    x = obj->unk11C[0];
+    xs[0] = x;
+    minX = x;
+    maxX = minX;
+    for (i = 1; i < 6; i++) {
+        ys[i] = (obj->unk11C[i] & 0xFFFF0000) >> 16;
+        x = obj->unk11C[i];
+        xs[i] = x;
+        if (xs[i] < minX) {
+            minX = x;
+        }
+        if (maxX < xs[i]) {
+            maxX = x;
+        }
+        if (ys[i] < minY) {
+            minY = ys[i];
+        }
+        if (maxY < ys[i]) {
+            maxY = ys[i];
+        }
+    }
+    if (func_800A7414((VECTOR*)&D_800D1BD0->t[0])) {
+        obj->unk28.unk4 = 0;
+        if ((s16)D_800E25EC < maxX && minX < (s16)D_800E25EC && (s16)D_800E25F0 < maxY && minY < (s16)D_800E25F0 &&
+            D_800D1C4C == 1) {
+            obj->unk28.unk4 = D_800D1C4C;
+        }
+    }
+}
+#endif
 
 #ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0D78);
 #else
 // The two locals before screen exist only to reproduce the target stack frame.
-void func_800A0D78(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex) {
+void func_800A0D78(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex, s32 arg3, Unk800A4390* obj) {
     Unk800A8604 args;
     MATRIX unused;
     u_long screen[12];
@@ -623,7 +742,114 @@ void func_800A1450(void) {
     gte_SetTransMatrix2(world[0]);
 }
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A16A4);
+#else
+// Sample the track at a fractional segment index, giving a point lifted along
+// the surface normal and the interpolated banking rotation.
+void func_800A16A4(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot) {
+    VECTOR left;
+    VECTOR right;
+    VECTOR mid;
+    VECTOR nextMid;
+    VECTOR curMid;
+    VECTOR across;
+    VECTOR along;
+    VECTOR normal;
+    VECTOR unit;
+    VECTOR dLeft;
+    VECTOR dRight;
+    SVECTOR* rotCur;
+    SVECTOR* rotNext;
+    SVECTOR* leftCur;
+    SVECTOR* leftNext;
+    SVECTOR* rightCur;
+    SVECTOR* rightNext;
+    s32 seg;
+    s32 frac;
+    s32 dx;
+    s32 dy;
+    s32 dz;
+
+    seg = at >> 16;
+    frac = at & 0xFFFF;
+    rotCur = &D_800EE424[seg];
+    rotNext = &D_800EE424[seg + 1];
+    dx = rotNext->vx - rotCur->vx;
+    dy = rotCur->vy - rotNext->vy;
+    dz = rotNext->vz - rotCur->vz;
+    if (dx > 0x800) {
+        dx -= 0x1000;
+    }
+    if (dy > 0x800) {
+        dy -= 0x1000;
+    }
+    if (dz > 0x800) {
+        dz -= 0x1000;
+    }
+    if (dx < -0x800) {
+        dx += 0x1000;
+    }
+    if (dy < -0x800) {
+        dy += 0x1000;
+    }
+    if (dz < -0x800) {
+        dz += 0x1000;
+    }
+    dx *= frac;
+    dy *= frac;
+    dz *= frac;
+
+    leftCur = &D_800D1C58[seg];
+    leftNext = &D_800D1C58[seg + 1];
+    dLeft.vx = (leftNext->vx - leftCur->vx) * frac;
+    dLeft.vy = (leftNext->vy - leftCur->vy) * frac;
+    dLeft.vz = (leftNext->vz - leftCur->vz) * frac;
+
+    rightCur = &D_800EE194[seg];
+    rightNext = &D_800EE194[seg + 1];
+    left.vx = leftCur->vx + (dLeft.vx >> 16);
+    left.vy = leftCur->vy + (dLeft.vy >> 16);
+    left.vz = leftCur->vz + (dLeft.vz >> 16);
+
+    dRight.vx = (rightNext->vx - rightCur->vx) * frac;
+    dRight.vy = (rightNext->vy - rightCur->vy) * frac;
+    dRight.vz = (rightNext->vz - rightCur->vz) * frac;
+
+    right.vx = rightCur->vx + (dRight.vx >> 16);
+    right.vy = rightCur->vy + (dRight.vy >> 16);
+    right.vz = rightCur->vz + (dRight.vz >> 16);
+    mid.vx = (right.vx + left.vx) >> 1;
+    mid.vy = (right.vy + left.vy) >> 1;
+    mid.vz = (right.vz + left.vz) >> 1;
+
+    curMid.vx = (rightCur->vx + leftCur->vx) >> 1;
+    curMid.vy = (rightCur->vy + leftCur->vy) >> 1;
+    curMid.vz = (rightCur->vz + leftCur->vz) >> 1;
+
+    nextMid.vx = (rightNext->vx + leftNext->vx) >> 1;
+    along.vx = nextMid.vx - curMid.vx;
+    nextMid.vy = (rightNext->vy + leftNext->vy) >> 1;
+    along.vy = nextMid.vy - curMid.vy;
+    nextMid.vz = (rightNext->vz + leftNext->vz) >> 1;
+    along.vz = nextMid.vz - curMid.vz;
+
+    across.vx = right.vx - left.vx;
+    across.vy = right.vy - left.vy;
+    across.vz = right.vz - left.vz;
+
+    OuterProduct0(&along, &across, &normal);
+    VectorNormal(&normal, &unit);
+
+    pos->vx = (s16)mid.vx + ((unit.vx * lift) >> 12);
+    pos->vy = (s16)mid.vy + ((unit.vy * lift) >> 12);
+    pos->vz = (s16)mid.vz + ((unit.vz * lift) >> 12);
+
+    rot->vx = rotCur->vx + (dx >> 16);
+    rot->vy = (dy >> 16) - rotCur->vy;
+    rot->vz = rotCur->vz + (dz >> 16);
+}
+#endif
 
 // PC: C_005F15C7, draw the shoot power gauge
 void func_800A1A64(void) {
@@ -1097,7 +1323,182 @@ void func_800A2DE4(s32 arg0, s32 arg1) {
 
 void func_800A2E30(void) {}
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2E38);
+#else
+// Read the pad and drive the cursor, the camera tweaks and the pause toggle.
+void func_800A2E38(void) {
+    u32 pad;
+    s32* dir;
+    u16* cursorX;
+    u16* cursorY;
+    u8* shoot;
+    u16* power;
+    u8* repeat;
+    u8* scroll;
+    s32* fogFar;
+    s32* fogNear;
+    s32* speed;
+    s32* held;
+    u8* paused;
+    u8 next;
+    s32 count;
+
+    pad = InputReadPadsRaw();
+    if (D_800D16DC == 0) {
+        dir = &D_800A8A6C;
+        *dir = 0;
+        D_800A8A7C = 0;
+        if (pad & 0x8000) {
+            *dir = 4;
+        }
+        if (pad & 0x2000) {
+            *dir = 6;
+        }
+        if (pad & 0x1000) {
+            *dir = 8;
+            if (pad & 0x8000) {
+                *dir = 7;
+            }
+            if (pad & 0x2000) {
+                *dir = 9;
+            }
+        }
+        if (pad & 0x4000) {
+            dir = &D_800A8A6C;
+            *dir = 2;
+            if (pad & 0x8000) {
+                *dir = 1;
+            }
+            if (pad & 0x2000) {
+                *dir = 3;
+            }
+        }
+        if (D_800D1960 == 1) {
+            if (pad & 0x4000) {
+                cursorY = &D_800E25F0;
+                *cursorY += 5;
+            }
+            if (pad & 0x1000) {
+                cursorY = &D_800E25F0;
+                *cursorY -= 5;
+            }
+            if (pad & 0x8000) {
+                cursorX = &D_800E25EC;
+                *cursorX -= 5;
+            }
+            if (pad & 0x2000) {
+                cursorX = &D_800E25EC;
+                *cursorX += 5;
+            }
+            shoot = &D_800D1C4C;
+            *shoot = 0;
+            if (pad & 0x20) {
+                power = &D_800D1C5C;
+                func_800A2AA0(*power & 0xFF);
+                if ((s16)*power >= 9) {
+                    (*power)--;
+                }
+                repeat = &D_800D1C7C;
+                count = *repeat;
+                if (count == 0) {
+                    scroll = &D_800D1720;
+                    next = *scroll + 3;
+                    *repeat = 1;
+                    *shoot = 1;
+                    *scroll = next % 15;
+                } else {
+                    *repeat = count - 1;
+                }
+            } else {
+                func_800A2AA0(0);
+                power = &D_800D1C5C;
+                if ((s16)*power < 0x80) {
+                    (*power)++;
+                }
+            }
+            cursorX = &D_800E25EC;
+            if ((s16)*cursorX > 0x140) {
+                *cursorX = 0x140;
+            }
+            if ((s16)*cursorX < 0) {
+                *cursorX = 0;
+            }
+            cursorY = &D_800E25F0;
+            if ((s16)*cursorY > 0xF0) {
+                *cursorY = 0xF0;
+            }
+            if ((s16)*cursorY < 0) {
+                *cursorY = 0;
+            }
+        }
+        if (D_800D1960 == 0) {
+            if (pad & 0x4000) {
+                fogFar = &D_800A89D4;
+                *fogFar -= 10;
+            }
+            if (pad & 0x1000) {
+                fogFar = &D_800A89D4;
+                *fogFar += 10;
+            }
+            if (pad & 0x8000) {
+                fogNear = &D_800A89D0;
+                *fogNear -= 10;
+            }
+            if (pad & 0x2000) {
+                fogNear = &D_800A89D0;
+                *fogNear += 10;
+            }
+            if (pad & 0x40) {
+                D_800A83D8.vz = D_800A83D8.vz - 100;
+            }
+            if (pad & 0x10) {
+                D_800A83D8.vz = D_800A83D8.vz + 100;
+            }
+            if (pad & 0x80) {
+                D_800A83D8.vx -= 100;
+            }
+            if (pad & 0x20) {
+                D_800A83D8.vx += 100;
+            }
+            if (pad & 0x8) {
+                D_800A83D8.vy = D_800A83D8.vy - 100;
+            }
+            if (pad & 0x2) {
+                D_800A83D8.vy = D_800A83D8.vy + 100;
+            }
+            if (pad & 0x4) {
+                speed = &D_800A897C;
+                *speed += 0x400;
+            }
+            if (pad & 0x1) {
+                speed = &D_800A897C;
+                if (*speed >= 0x400) {
+                    *speed -= 0x400;
+                }
+            }
+            if (pad & 0x800) {
+                D_800A897C = 0;
+            }
+        }
+    }
+    if (pad & 0x800) {
+        held = &D_800A8A80;
+        *held = *held + 1;
+    } else {
+        D_800A8A80 = 0;
+    }
+    if (D_800A8A80 == 1) {
+        paused = &D_800D16DC;
+        if (*paused == 1) {
+            *paused = 0;
+        } else {
+            *paused = 1;
+        }
+        func_800A29AC(0x3B);
+    }
+}
+#endif
 
 // Reset both draw lists and the object streams for a new run.
 void func_800A334C(void) {
@@ -1591,7 +1992,7 @@ s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
         index = func_800A4400();
         D_800D1DC0[index] = *src;
         obj = &D_800D1DC0[index];
-        modelId = src->unk30;
+        modelId = src->unk28.unk8;
         obj->unkDA = 1;
         obj->unkD8 = index;
         if (parentIndex == 0) {
@@ -1599,8 +2000,8 @@ s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
         } else {
             parent = D_800D1DC0[parentIndex].unkD4;
         }
-        obj->unkD4 = func_800A80F8(
-            modelId, 0, 0, 1, parent, src->unk0.vx, src->unk0.vy, src->unk0.vz, src->unk18, src->unk1A, src->unk1C);
+        obj->unkD4 = func_800A80F8(modelId, 0, 0, 1, parent, src->unk0.vx, src->unk0.vy, src->unk0.vz, src->unk18.vx,
+                                   src->unk18.vy, src->unk18.vz);
         info = &D_800A89D8[(s16)modelId];
         obj = &D_800D1DC0[index];
         maxX = info->unkC.vx;
@@ -1693,11 +2094,11 @@ void func_800A4458(void) {
         for (i = 0; i < *count; i++) {
             spawns = D_800D1C0C;
             for (j = 0; j < 0x14; j++) {
-                D_800D1C84.unk78[j] = spawns[*streamIndex].unk10[j];
+                D_800D1C84.unk28.unk50[j] = spawns[*streamIndex].unk10[j];
             }
             spawn = &spawns[*streamIndex];
-            D_800D1C84.unk40 = spawn->unk8;
-            D_800D1C84.unk44 = spawn->unkC;
+            D_800D1C84.unk28.unk18 = spawn->unk8;
+            D_800D1C84.unk28.unk1C = spawn->unkC;
             func_800A45C0(0, 0, 0, spawn->unk0, spawn->unk4);
             *streamIndex = *streamIndex + 1;
         }
@@ -1709,25 +2110,980 @@ void func_800A4458(void) {
 // PC: C_005EB507, create an object at a position
 void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
     setVector(&D_800D1C84.unk0, arg0, arg1, arg2);
-    D_800D1C84.unk28 = arg3;
-    D_800D1C84.unk38 = 1;
-    D_800D1C84.unk30 = arg4;
-    D_800D1C84.unk2C = 0;
+    D_800D1C84.unk28.unk0 = arg3;
+    D_800D1C84.unk28.unk10 = 1;
+    D_800D1C84.unk28.unk8 = arg4;
+    D_800D1C84.unk28.unk4 = 0;
     func_800A40F4(&D_800D1C84, 0);
 }
 
 // PC: C_005EB566, create an object at a position, clearing f_50[0xC]
 void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
     setVector(&D_800D1C84.unk0, arg0, arg1, arg2);
-    D_800D1C84.unk28 = arg3;
-    D_800D1C84.unk38 = 1;
-    D_800D1C84.unk30 = arg4;
-    D_800D1C84.unk2C = 0;
-    D_800D1C84.unk78[0xC] = 0;
+    D_800D1C84.unk28.unk0 = arg3;
+    D_800D1C84.unk28.unk10 = 1;
+    D_800D1C84.unk28.unk8 = arg4;
+    D_800D1C84.unk28.unk4 = 0;
+    D_800D1C84.unk28.unk50[0xC] = 0;
     func_800A40F4(&D_800D1C84, 0);
 }
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A46E8);
+#else
+// Step every live object through its behaviour, then queue its model.
+void func_800A46E8(Unk800D1964* db) {
+    VECTOR next;
+    VECTOR unusedA; // the two unused vectors reproduce the target stack frame
+    VECTOR unusedB;
+    VECTOR pos;
+    SVECTOR rot;
+    Unk800A4390* obj;
+    Unk800D1CAC* st;
+    POLY_G4* fade;
+    POLY_FT4* flash;
+    s32 modelId;
+    s32 shade;
+    s32 count;
+    s32 i;
+    s32 j;
+    s32 dx;
+    s32 dy;
+    s32 dz;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 step;
+    s32* score;
+    s32* frame;
+    SVECTOR* path;
+    s32 pathLen;
+    s32 sound;
+    s32 release;
+    u8 order;
+    u8 drawMode;
+    u16 otIndex;
+
+    func_800A4458();
+    func_800A3D50(db);
+    func_800A3E58();
+    for (i = 0; i < 100; i++) {
+        otIndex = 0;
+        obj = &D_800D1DC0[i];
+        st = &obj->unk28;
+        if (obj->unkDA == 0) {
+            continue;
+        }
+        drawMode = 0;
+        release = 0;
+        switch (obj->unk28.unk0) {
+        case 100:
+            if (st->unk10 == 1) {
+                modelId = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[modelId];
+                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk14 = 0;
+                st->unk4 = 0;
+                st->unk50[10] = 1;
+                st->unk28 = 0;
+                st->unk2C = obj->unk0.vx;
+                st->unk30 = obj->unk0.vy;
+                D_800A8984 = pathLen;
+                D_800A8954 = path;
+                st->unk50[0] = 0;
+                st->unk34 = obj->unk0.vz;
+            } else {
+                st->unk14++;
+                st->unk28++;
+            }
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            step = st->unk28;
+            func_800A16A4(D_800D1C54 + 0x2FFFD, -100, &pos, &rot);
+            obj->unk0.vx = st->unk2C + ((step * (pos.vx - st->unk2C)) >> 7);
+            obj->unk0.vy = st->unk30 + ((step * (pos.vy - st->unk30)) >> 7);
+            obj->unk0.vz = st->unk34 + ((step * (pos.vz - st->unk34)) >> 7);
+            func_800A16A4(D_800D1C54 + 0x3FFFC, -100, &pos, &rot);
+            dx = obj->unk0.vx - pos.vx;
+            dy = obj->unk0.vy - pos.vy;
+            dz = obj->unk0.vz - pos.vz;
+            SquareRoot0(dx * dx + dy * dy + dz * dz);
+            if (st->unk14 >= 0x81) {
+                score = &D_800D16D8;
+                if (*score < 6) {
+                    *score = 0;
+                } else {
+                    *score -= 5;
+                }
+                st->unkC = 0;
+            }
+            if (st->unk4 != 0) {
+                func_800A6B08(obj);
+            }
+            break;
+        case 17:
+            if (st->unk10 == 1) {
+                sound = st->unk50[17];
+                if (sound != 0) {
+                    func_800A29AC(sound);
+                }
+                modelId = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[modelId];
+                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk14 = 0;
+                st->unk4 = 0;
+                st->unk28 = 0;
+                D_800A8984 = pathLen;
+                D_800A8954 = path;
+                st->unk2C = (obj->unkC8 - 2) << 16;
+            } else {
+                st->unk14++;
+            }
+            frame = &D_800D16E0;
+            if (st->unk50[3] < *frame) {
+                st->unk28 += st->unk1C;
+            }
+            if (st->unk50[2] < *frame) {
+                st->unkC = 0;
+            }
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            if (st->unk4 != 0) {
+                func_800A6B08(obj);
+            }
+            if (st->unk28 < st->unk2C) {
+                func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
+                obj->unk18.vx = 0;
+                obj->unk18.vy = 0;
+                obj->unk18.vz = 0;
+            }
+            break;
+        case 0:
+            if (st->unk10 == 1) {
+                sound = st->unk50[17];
+                if (sound != 0) {
+                    func_800A29AC(sound);
+                }
+                modelId = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[modelId];
+                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk14 = 0;
+                st->unk4 = 0;
+                st->unk28 = 0;
+                D_800A8984 = pathLen;
+                D_800A8954 = path;
+                st->unk2C = (obj->unkC8 - 1) << 16;
+            } else {
+                st->unk14++;
+            }
+            st->unk28 += st->unk1C;
+            if (st->unk50[1] == 1) {
+                st->unk28 %= st->unk2C;
+            }
+            if (st->unk28 > st->unk2C) {
+                st->unkC = 0;
+            }
+            if (st->unk50[2] < D_800D16E0) {
+                st->unkC = 0;
+            }
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
+            obj->unk18.vx += st->unk50[3];
+            obj->unk18.vy += st->unk50[4];
+            obj->unk18.vz += st->unk50[5];
+            if (st->unk4 != 0) {
+                func_800A6B08(obj);
+            }
+            break;
+        case 1:
+            if (st->unk10 == 1) {
+                sound = st->unk50[17];
+                if (sound != 0) {
+                    func_800A29AC(sound);
+                }
+                modelId = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[modelId];
+                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk14 = 0;
+                st->unk4 = 0;
+                st->unk28 = 0;
+                D_800A8984 = pathLen;
+                D_800A8954 = path;
+                st->unk2C = (obj->unkC8 - 1) << 16;
+            } else {
+                st->unk14++;
+            }
+            st->unk28 += st->unk1C;
+            if (st->unk50[1] == 1) {
+                st->unk28 %= st->unk2C;
+            }
+            if (st->unk28 > st->unk2C) {
+                st->unkC = 0;
+            }
+            if (st->unk50[2] < D_800D16E0) {
+                st->unkC = 0;
+            }
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
+            func_800A3C04((st->unk28 + 0x10000) % ((obj->unkC8 - 1) << 16), obj->unkCC, &next, 0);
+            dx = next.vx - obj->unk0.vx;
+            dy = next.vy - obj->unk0.vy;
+            dz = next.vz - obj->unk0.vz;
+            obj->unk18.vx = ratan2(dy, SquareRoot0(dx * dx + dz * dz));
+            obj->unk18.vy = -ratan2(dz, dx) - 0x400;
+            obj->unk18.vz = 0;
+            if (st->unk4 != 0) {
+                func_800A6B08(obj);
+            }
+            break;
+        case 10:
+            if (st->unk10 == 1) {
+                sound = st->unk50[17];
+                if (sound != 0) {
+                    func_800A29AC(sound);
+                }
+                path = (SVECTOR*)(D_800D1BE4 + D_800D1BE8[0]);
+                pathLen = D_800D1BEC[0];
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk14 = 0;
+                st->unk4 = 0;
+                st->unk28 = 0;
+                D_800A8984 = pathLen;
+                D_800A8954 = path;
+                st->unk2C = (obj->unkC8 - 1) << 16;
+            } else {
+                st->unk14++;
+            }
+            st->unk28 += st->unk1C;
+            if (st->unk50[1] == 1) {
+                st->unk28 %= st->unk2C;
+            }
+            if (st->unk28 > st->unk2C) {
+                st->unkC = 0;
+            }
+            if (st->unk50[2] < D_800D16E0) {
+                st->unkC = 0;
+            }
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            func_800A16A4(D_800D1C54 + 0x3FFFC, 10, &obj->unk0, &obj->unk18);
+            drawMode = 1;
+            if (st->unk4 != 0) {
+                func_800A6B08(obj);
+            }
+            break;
+        case 4:
+            if (st->unk10 == 1) {
+                sound = st->unk50[17];
+                if (sound != 0) {
+                    func_800A29AC(sound);
+                }
+                modelId = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[modelId];
+                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk4 = 0;
+                D_800A8984 = pathLen;
+                D_800A8954 = path;
+                func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
+            }
+            frame = &D_800D16E0;
+            if (st->unk50[2] < *frame) {
+                st->unkC = 0;
+            }
+            if (st->unk50[3] < *frame) {
+                st->unk2C += 4;
+            }
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            obj->unk0.vy += st->unk2C;
+            if (obj->unk0.vy > 0) {
+                st->unkC = 0;
+            }
+            if (st->unk4 != 0) {
+                func_800A6B08(obj);
+            }
+            break;
+        case 5:
+            if (st->unk10 == 1) {
+                sound = st->unk50[17];
+                if (sound != 0) {
+                    func_800A29AC(sound);
+                }
+                modelId = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[modelId];
+                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk4 = 0;
+                st->unk28 = 0;
+                st->unk2C = (obj->unkC8 - 1) << 16;
+                obj->unk18.vx = st->unk50[3];
+                obj->unk18.vy = st->unk50[4];
+                D_800A8984 = pathLen;
+                D_800A8954 = path;
+                obj->unk18.vz = st->unk50[5];
+            }
+            st->unk28 += st->unk1C;
+            if (st->unk50[1] == 1) {
+                st->unk28 %= st->unk2C;
+            }
+            if (st->unk28 > st->unk2C) {
+                st->unkC = 0;
+            }
+            if (st->unk50[2] < D_800D16E0) {
+                st->unkC = 0;
+            }
+            obj->unk18.vx += st->unk50[6];
+            obj->unk18.vy += st->unk50[7];
+            obj->unk18.vz += st->unk50[8];
+            if (st->unk50[10] == 5) {
+                obj->unkD4->unk0 = D_800D189C[st->unk50[14]];
+            }
+            if (st->unk50[14] == 1) {
+                st->unk50[14] = 0;
+            }
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
+            if (st->unk4 == 0) {
+                break;
+            }
+            if (st->unk50[10] != 5 || D_800A897C < 0x4015) {
+                func_800A6B08(obj);
+            }
+            if (st->unk50[10] == 5) {
+                st->unk50[14] = 1;
+            }
+            break;
+        case 2:
+            if (st->unk10 == 1) {
+                sound = st->unk50[17];
+                if (sound != 0) {
+                    func_800A29AC(sound);
+                }
+                modelId = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[modelId];
+                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
+                D_800A8984 = pathLen;
+                D_800A8954 = path;
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk4 = 0;
+                step = st->unk50[3];
+                st->unk2C = 0;
+                st->unk30 = 0;
+                st->unk28 = (rand() % step) * 2 - step - 1;
+                st->unk34 = (obj->unkC8 - 1) << 16;
+                obj->unk18.vx = 0;
+                obj->unk18.vy = 0;
+                obj->unk18.vz = 0;
+                func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
+            }
+            st->unk30 += st->unk1C;
+            if (st->unk34 < st->unk30) {
+                st->unkC = 0;
+            }
+            if (st->unk50[2] < D_800D16E0) {
+                st->unkC = 0;
+            }
+            if (st->unk28 < st->unk2C) {
+                st->unk2C -= 5;
+            }
+            if (st->unk28 > st->unk2C) {
+                st->unk2C += 5;
+            }
+            obj->unk18.vx = st->unk2C;
+            obj->unk18.vy += st->unk50[4];
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            func_800A3C04(st->unk30, obj->unkCC, &obj->unk0, 0);
+            if (st->unk4 != 0) {
+                func_800A6B08(obj);
+            }
+            break;
+        case 230:
+            if (st->unk10 == 1) {
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk4 = 0;
+            }
+            if (st->unk50[2] < D_800D16E0) {
+                st->unkC = 0;
+            }
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            if (st->unk4 != 0) {
+                func_800A6B08(obj);
+            }
+            break;
+        case 7:
+        case 13:
+            if (st->unk10 == 1) {
+                modelId = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[modelId];
+                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk4 = 0;
+                obj->unk18.vx = st->unk50[3];
+                D_800A8984 = pathLen;
+                D_800A8954 = path;
+                obj->unk18.vz = 0;
+                obj->unk18.vy = st->unk50[4];
+                func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
+                st->unk28 = 0;
+            }
+            frame = &D_800D16E0;
+            if (st->unk50[2] < *frame) {
+                st->unkC = 0;
+            }
+            if (st->unk50[5] < *frame) {
+                count = st->unk28;
+                st->unk28 = count + 1;
+                if (count < st->unk50[7]) {
+                    obj->unk18.vx += st->unk50[6];
+                }
+            }
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            if (st->unk4 != 0) {
+                func_800A6B08(obj);
+            }
+            break;
+        case 11:
+            func_800A29AC(0x8E);
+            for (j = 0; j < st->unk50[3]; j++) {
+                D_800D1C84.unk0.vy = -0x2710;
+                D_800D1C84.unk0.vz = 0x20CB;
+                D_800D1C84.unk28.unk0 = 0xC;
+                D_800D1C84.unk0.vx = 0x3446;
+                D_800D1C84.unk28.unk10 = 1;
+                D_800D1C84.unk28.unk8 = 0x2A;
+                D_800D1C84.unk28.unk4 = 0;
+                D_800D1C84.unk28.unk50[12] = 0;
+                func_800A40F4(&D_800D1C84, 0);
+            }
+            if (obj->unkD8 != -1) {
+                D_800EE42C--;
+                func_800A8204(obj->unkD4);
+                func_800A442C(obj->unkD8);
+                obj->unkD8 = -1;
+                obj->unkDA = 0;
+            }
+            // falls through into the debris behaviour below
+        case 12:
+            if (st->unk10 == 1) {
+                st->unk4 = 0;
+                st->unkC = 100;
+                st->unk10 = 0;
+                st->unk14 = 0;
+                st->unk28 = rand() % 60 - 30;
+                st->unk2C = -rand() % 200;
+                st->unk30 = rand() % 60 - 30;
+            } else {
+                st->unk14++;
+            }
+            st->unk2C++;
+            obj->unk0.vx += st->unk28;
+            obj->unk0.vy += st->unk2C;
+            obj->unk18.vx += 0xA;
+            obj->unk18.vy += 0x190;
+            obj->unk18.vz += 0xC8;
+            obj->unk0.vz += st->unk30;
+            st->unkC--;
+            if (st->unkC == 0) {
+                release = 1;
+            }
+            break;
+        case 8:
+            if (st->unk10 == 1) {
+                modelId = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[modelId];
+                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk4 = 0;
+                st->unk28 = 0;
+                D_800A8984 = pathLen;
+                D_800A8954 = path;
+                func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
+            }
+            if (st->unk50[2] < D_800D16E0) {
+                st->unkC = 0;
+            }
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            obj->unk0.vy -= st->unk50[3];
+            st->unk50[3] -= st->unk50[4];
+            if (st->unk50[3] < 0) {
+                func_800A29AC(0x98);
+                for (j = 0; j < 20; j++) {
+                    x = obj->unk0.vx;
+                    y = obj->unk0.vy;
+                    z = obj->unk0.vz;
+                    modelId = rand() % 3 + 0x44;
+                    D_800D1C84.unk28.unk0 = 9;
+                    D_800D1C84.unk28.unk10 = 1;
+                    D_800D1C84.unk28.unk4 = 0;
+                    D_800D1C84.unk28.unk50[12] = 0;
+                    D_800D1C84.unk0.vx = (s16)x;
+                    D_800D1C84.unk0.vy = (s16)y;
+                    D_800D1C84.unk0.vz = (s16)z;
+                    D_800D1C84.unk28.unk8 = (s16)modelId;
+                    func_800A40F4(&D_800D1C84, 0);
+                }
+                st->unkC = 0;
+            }
+            break;
+        case 9:
+            if (st->unk10 == 1) {
+                st->unk4 = 0;
+                st->unkC = 100;
+                st->unk10 = 0;
+                st->unk14 = 0;
+                st->unk28 = rand() % 60 - 30;
+                st->unk2C = rand() % 60 - 30;
+                st->unk30 = rand() % 60 - 30;
+            } else {
+                st->unk14++;
+            }
+            obj->unk0.vx += st->unk28;
+            obj->unk0.vy += st->unk2C;
+            obj->unk18.vx += 0xA;
+            obj->unk18.vy += 0x190;
+            obj->unk18.vz += 0xC8;
+            obj->unk0.vz += st->unk30;
+            st->unkC--;
+            if (st->unkC == 0) {
+                release = 1;
+            }
+            break;
+        case 14:
+            if (st->unk10 == 1) {
+                func_800A29AC(0xA);
+                modelId = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[modelId];
+                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
+                st->unk10 = 0;
+                st->unkC = 1;
+                st->unk4 = 0;
+                st->unk14 = 0;
+                st->unk28 = -0x46;
+                D_800A8984 = pathLen;
+                D_800A8954 = path;
+                func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
+            }
+            st->unk28++;
+            st->unk14++;
+            if (st->unk14 == 5) {
+                for (j = 0; j < st->unk50[3]; j++) {
+                    y = obj->unk0.vy + 0x1F4;
+                    x = obj->unk0.vx + rand() % 100 - 0x32;
+                    z = obj->unk0.vz + rand() % 100 - 0x32;
+                    D_800D1C84.unk0.vx = (s16)x;
+                    D_800D1C84.unk0.vy = (s16)y;
+                    D_800D1C84.unk28.unk0 = 0xF;
+                    D_800D1C84.unk28.unk8 = 0x2A;
+                    D_800D1C84.unk28.unk10 = 1;
+                    D_800D1C84.unk28.unk4 = 0;
+                    D_800D1C84.unk28.unk50[12] = 0;
+                    D_800D1C84.unk0.vz = (s16)z;
+                    func_800A40F4(&D_800D1C84, 0);
+                }
+                D_800D1C84.unk28.unk0 = 0x10;
+                D_800D1C84.unk28.unk10 = 1;
+                D_800D1C84.unk28.unk8 = 0x29;
+                D_800D1C84.unk28.unk4 = 0;
+                D_800D1C84.unk28.unk50[12] = 0;
+                D_800D1C84.unk0.vx = (s16)obj->unk0.vx;
+                D_800D1C84.unk0.vy = (s16)obj->unk0.vy;
+                D_800D1C84.unk0.vz = (s16)obj->unk0.vz;
+                func_800A40F4(&D_800D1C84, 0);
+            }
+            if (st->unk28 < 0) {
+                obj->unk18.vy += 0x14;
+            }
+            if (st->unk28 == 0x50) {
+                st->unkC = 0;
+            }
+            obj->unk0.vy += st->unk28;
+            if (st->unk50[2] < D_800D16E0) {
+                st->unkC = 0;
+            }
+            if (st->unkC == 0) {
+                release = 1;
+                break;
+            }
+            if (st->unk4 != 0) {
+                func_800A6B08(obj);
+            }
+            break;
+        case 15:
+            if (st->unk10 == 1) {
+                st->unk4 = 0;
+                st->unkC = 200;
+                st->unk10 = 0;
+                st->unk14 = 0;
+                st->unk28 = rand() % 80 - 40;
+                st->unk2C = rand() % 80 - 40;
+                st->unk30 = -(rand() % 40 + 40);
+            } else {
+                st->unk14++;
+            }
+            st->unk30++;
+            obj->unk18.vx += 0x1E0;
+            obj->unk18.vz += 0x262;
+            obj->unk18.vy += 0x28;
+            obj->unk0.vx += st->unk28;
+            obj->unk0.vy += st->unk30;
+            obj->unk0.vz += st->unk2C;
+            st->unkC--;
+            if (st->unkC == 0) {
+                release = 1;
+            }
+            break;
+        case 16:
+            if (st->unk10 == 1) {
+                st->unkC = 200;
+                st->unk4 = 0;
+                st->unk10 = 0;
+                st->unk14 = 0;
+                st->unk28 = -0x3C;
+            } else {
+                st->unk14++;
+            }
+            if (st->unk14 >= 0x15) {
+                obj->unk0.vy += st->unk28;
+                st->unk28++;
+            }
+            st->unkC--;
+            if (st->unkC == 0) {
+                release = 1;
+            }
+            break;
+        case 3:
+            obj->unk0.vx = D_800A83B8.vx;
+            obj->unk0.vy = D_800A83B8.vy - 0x9C4;
+            otIndex = 0x3E8;
+            obj->unk18.vx = 0;
+            obj->unk18.vy = 0;
+            obj->unk18.vz = 0;
+            obj->unk0.vz = D_800A83B8.vz;
+            break;
+        case 201:
+            if (st->unk10 == 1) {
+                st->unkC = 0x14;
+                st->unk10 = 0;
+                st->unk14 = 0;
+                st->unk4 = 0;
+            } else {
+                st->unk14++;
+            }
+            D_800D1C84.unk28.unk0 = 0xCA;
+            D_800D1C84.unk28.unk10 = 1;
+            D_800D1C84.unk28.unk8 = 0x2A;
+            D_800D1C84.unk28.unk4 = 0;
+            D_800D1C84.unk28.unk50[12] = 0;
+            D_800D1C84.unk0.vx = (s16)obj->unk0.vx;
+            D_800D1C84.unk0.vy = (s16)obj->unk0.vy;
+            D_800D1C84.unk0.vz = (s16)obj->unk0.vz;
+            func_800A40F4(&D_800D1C84, 0);
+            st->unkC--;
+            if (st->unkC == 0) {
+                release = 1;
+            }
+            break;
+        case 202:
+            if (st->unk10 == 1) {
+                st->unk4 = 0;
+                st->unkC = 0x32;
+                st->unk10 = 0;
+                st->unk14 = 0;
+                st->unk28 = rand() % 20 - 10;
+                st->unk2C = rand() % 40 - 20;
+                st->unk30 = rand() % 20 - 10;
+            } else {
+                st->unk14++;
+            }
+            obj->unk0.vx += st->unk28;
+            obj->unk0.vy += st->unk2C;
+            obj->unk18.vx += 0xA;
+            obj->unk18.vy += 0x64;
+            obj->unk18.vz += 0x14;
+            obj->unk0.vz += st->unk30;
+            st->unkC--;
+            if (st->unkC == 0) {
+                release = 1;
+            }
+            break;
+        case 203:
+            if (st->unk10 == 1) {
+                st->unk4 = 0;
+                st->unkC = 0x32;
+                st->unk10 = 0;
+                st->unk14 = 0;
+                st->unk28 = rand() % 200 - 100;
+                st->unk2C = rand() % 200 - 100;
+                st->unk30 = rand() % 200 - 100;
+            } else {
+                st->unk14++;
+            }
+            obj->unk0.vx += st->unk28;
+            obj->unk0.vy += st->unk2C;
+            obj->unk0.vz += st->unk30;
+            obj->unk18.vy += 0x12C;
+            st->unkC--;
+            if (st->unkC == 0) {
+                release = 1;
+            }
+            break;
+        case 255:
+            if (st->unk10 == 1) {
+                st->unk10 = 0;
+                st->unk14 = 0;
+            } else {
+                st->unk14++;
+            }
+            if (st->unk50[2] < D_800A897C) {
+                D_800A897C -= st->unk50[0];
+            }
+            if (D_800A897C < 0) {
+                D_800A897C = 0;
+                D_800D1C84.unk0.vx = 0;
+                D_800D1C84.unk0.vy = 0;
+                D_800D1C84.unk0.vz = 0;
+                D_800D1C84.unk28.unk0 = 0xFD;
+                D_800D1C84.unk28.unk10 = 1;
+                D_800D1C84.unk28.unk8 = 0x1D;
+                D_800D1C84.unk28.unk4 = 0;
+                D_800D1C84.unk28.unk50[12] = 0;
+                func_800A40F4(&D_800D1C84, 0);
+            }
+            if (st->unk50[1] < st->unk14) {
+                release = 1;
+            }
+            break;
+        case 254:
+            if (st->unk10 == 1) {
+                st->unk10 = 0;
+                st->unk14 = 0;
+                st->unk28 = 0;
+                st->unk2C = VSync(-1);
+                st->unk30 = 0;
+            } else {
+                st->unk14++;
+            }
+            if (st->unk28 == 0) {
+                D_800A897C = 0;
+            }
+            if (st->unk28 == 1) {
+                D_800A897C += st->unk50[1];
+                st->unk30++;
+            }
+            if (st->unk50[0] < VSync(-1) - st->unk2C) {
+                st->unk28 = 1;
+            }
+            if (st->unk50[2] < st->unk30) {
+                release = 1;
+            }
+            break;
+        case 252:
+            if (st->unk10 == 1) {
+                st->unk10 = 0;
+                st->unk14 = 0;
+                D_800D1C84.unk0.vx = 0;
+                D_800D1C84.unk0.vy = 0;
+                D_800D1C84.unk0.vz = 0;
+                D_800D1C84.unk28.unk0 = 3;
+                D_800A897C = 0;
+                D_800E25F4 = 1;
+                D_800D1C84.unk28.unk10 = 1;
+                D_800D1C84.unk28.unk8 = 0x3B;
+                D_800D1C84.unk28.unk4 = 0;
+                D_800D1C84.unk28.unk50[12] = 0;
+                func_800A40F4(&D_800D1C84, 0);
+            } else {
+                st->unk14++;
+            }
+            shade = ~(st->unk14 * 2);
+            fade = db->unk4368.unkC;
+            setXY4(fade, 0, 0, 0x140, 0, 0, 0xF0, 0x140, 0xF0);
+            setRGB0(fade, shade, shade, shade);
+            setRGB1(fade, shade, shade, shade);
+            setRGB2(fade, shade, shade, shade);
+            setRGB3(fade, shade, shade, shade);
+            SetSemiTrans(fade, 1);
+            addPrim(&db->unk4098[0], fade);
+            fade++;
+            db->unk4368.unkC = fade;
+            flash = db->unk4368.unk14;
+            setRGB0(flash, 0, 0, 0);
+            setXY4(flash, 0, 0, 0, 0, 0, 0, 0, 0);
+            flash->tpage = D_800AB894;
+            flash->clut = D_800A8A68;
+            SetSemiTrans(flash, 0);
+            addPrim(&db->unk4098[1], flash);
+            flash++;
+            db->unk4368.unk14 = flash;
+            if (st->unk14 >= 0x7E) {
+                if (obj->unkD8 != -1) {
+                    D_800EE42C--;
+                    func_800A8204(obj->unkD4);
+                    func_800A442C(obj->unkD8);
+                    obj->unkD8 = -1;
+                    obj->unkDA = 0;
+                }
+                D_800A897C = 0x4000;
+            }
+            break;
+        case 253:
+            if (st->unk10 == 1) {
+                st->unk10 = 0;
+                st->unk14 = 0;
+                D_800A897C = 0;
+                func_800A2938();
+            } else {
+                st->unk14++;
+            }
+            shade = st->unk14 * 2;
+            fade = db->unk4368.unkC;
+            setXY4(fade, 0, 0, 0x140, 0, 0, 0xF0, 0x140, 0xF0);
+            setRGB0(fade, shade, shade, shade);
+            setRGB1(fade, shade, shade, shade);
+            setRGB2(fade, shade, shade, shade);
+            setRGB3(fade, shade, shade, shade);
+            SetSemiTrans(fade, 1);
+            addPrim(&db->unk4098[0], fade);
+            fade++;
+            db->unk4368.unkC = fade;
+            flash = db->unk4368.unk14;
+            setRGB0(flash, 0, 0, 0);
+            setXY4(flash, 0, 0, 0, 0, 0, 0, 0, 0);
+            flash->tpage = D_800AB894;
+            flash->clut = D_800A8A68;
+            SetSemiTrans(flash, 0);
+            addPrim(&db->unk4098[1], flash);
+            flash++;
+            db->unk4368.unk14 = flash;
+            if (st->unk14 >= 0x80) {
+                if (obj->unkD8 != -1) {
+                    D_800EE42C--;
+                    func_800A8204(obj->unkD4);
+                    func_800A442C(obj->unkD8);
+                    obj->unkD8 = -1;
+                    obj->unkDA = 0;
+                }
+                D_800A897C = 0x4000;
+                D_800E25F4 = 0;
+                D_800E2600 = 1;
+            }
+            break;
+        case 250:
+            if (D_800D16D8 < st->unk50[0]) {
+                D_800D1C84.unk28.unk50[0] = 0x12C;
+                D_800D1C84.unk28.unk50[1] = 0x190;
+                D_800D1C84.unk28.unk50[2] = 0;
+                D_800D1C84.unk28.unk0 = 0xFF;
+                D_800D1C84.unk28.unk10 = 1;
+                D_800D1C84.unk28.unk8 = 0x1E;
+                D_800D1C84.unk28.unk4 = 0;
+                D_800D1C84.unk28.unk50[12] = 0;
+                D_800D1C84.unk0.vx = (s16)obj->unk0.vx;
+                D_800D1C84.unk0.vy = (s16)obj->unk0.vy;
+                D_800D1C84.unk0.vz = (s16)obj->unk0.vz;
+                func_800A40F4(&D_800D1C84, 0);
+            }
+            release = 1;
+            break;
+        default:
+            break;
+        }
+        if (release && obj->unkD8 != -1) {
+            D_800EE42C--;
+            func_800A8204(obj->unkD4);
+            func_800A442C(obj->unkD8);
+            obj->unkD8 = -1;
+            obj->unkDA = 0;
+        }
+        obj->unkD4->m.t[0] = obj->unk0.vx;
+        obj->unkD4->m.t[1] = obj->unk0.vy;
+        obj->unkD4->m.t[2] = obj->unk0.vz;
+        order = D_800A0008;
+        if (order == 0) {
+            RotMatrixYXZ(&obj->unk18, &obj->unkD4->m);
+        }
+        if (order == 1) {
+            RotMatrixZYX(&obj->unk18, &obj->unkD4->m);
+        }
+        if (order == 2) {
+            RotMatrix(&obj->unk18, &obj->unkD4->m);
+        }
+        if (drawMode == 0) {
+            func_800A0874(db, obj->unkD4, otIndex, 0, obj);
+        }
+        if (drawMode == 1) {
+            func_800A0D78(db, obj->unkD4, otIndex, 0, obj);
+        }
+    }
+}
+#endif
 
 #ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A6B08);
@@ -1743,25 +3099,148 @@ void func_800A6B08(Unk800A4390* arg0) {
     if (amount == 0) {
         amount = 1;
     }
-    arg0->unk78[0xD] -= amount;
-    if (arg0->unk78[0xD] < 0) {
+    arg0->unk28.unk50[0xD] -= amount;
+    if (arg0->unk28.unk50[0xD] < 0) {
         func_800A6BD8(arg0);
         return;
     }
     x = arg0->unk0.vx;
     y = arg0->unk0.vy;
     z = arg0->unk0.vz;
-    D_800D1C84.unk28 = 0xCA;
-    D_800D1C84.unk38 = 1;
-    D_800D1C84.unk30 = 0x3F;
-    D_800D1C84.unk2C = 0;
-    D_800D1C84.unk78[0xC] = 0;
+    D_800D1C84.unk28.unk0 = 0xCA;
+    D_800D1C84.unk28.unk10 = 1;
+    D_800D1C84.unk28.unk8 = 0x3F;
+    D_800D1C84.unk28.unk4 = 0;
+    D_800D1C84.unk28.unk50[0xC] = 0;
     setVector(&D_800D1C84.unk0, (s16)x, (s16)y, (s16)z);
     func_800A40F4(&D_800D1C84, 0);
 }
 #endif
 
+#ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A6BD8);
+#else
+// Award the score for a hit object and scatter its debris.
+void func_800A6BD8(Unk800A4390* obj) {
+    s32* score;
+    s32* frame;
+    SVECTOR* path;
+    s32 pathLen;
+    s32 sound;
+    s32 i;
+    s32 x;
+    s32 y;
+    s32 z;
+    s16 modelId;
+
+    if (obj->unk28.unk50[10] == 1) {
+        score = &D_800D16D8;
+        *score += obj->unk28.unk50[0];
+        func_800A29AC(obj->unk28.unk50[18]);
+        obj->unk28.unkC = 0;
+        for (i = 0; i < 3; i++) {
+            x = obj->unk0.vx;
+            y = obj->unk0.vy;
+            z = obj->unk0.vz;
+            modelId = rand() % 3 + 0x3F;
+            D_800D1C84.unk28.unk0 = 0xCA;
+            D_800D1C84.unk28.unk10 = 1;
+            D_800D1C84.unk28.unk4 = 0;
+            D_800D1C84.unk28.unk50[12] = 0;
+            D_800D1C84.unk0.vx = (s16)x;
+            D_800D1C84.unk0.vy = (s16)y;
+            D_800D1C84.unk0.vz = (s16)z;
+            D_800D1C84.unk28.unk8 = modelId;
+            func_800A40F4(&D_800D1C84, 0);
+        }
+        D_800A89CC = 100;
+        D_800E25E8 = 1;
+        D_800EE18C.vx = 0;
+        D_800EE18C.vy = 0;
+        D_800EE18C.vz = 0;
+        D_800A8CC4 = obj->unk28.unk50[0];
+        D_800A8A88 = obj->unkD4->unk28;
+    }
+    if (obj->unk28.unk50[10] == 2) {
+        score = &D_800D16D8;
+        *score += obj->unk28.unk50[0];
+        func_800A29AC(obj->unk28.unk50[18]);
+        obj->unk28.unkC = 0;
+        for (i = 0; i < 3; i++) {
+            x = obj->unk0.vx;
+            y = obj->unk0.vy;
+            z = obj->unk0.vz;
+            modelId = rand() % 3 + 0x3C;
+            D_800D1C84.unk28.unk0 = 0xCB;
+            D_800D1C84.unk28.unk10 = 1;
+            D_800D1C84.unk28.unk4 = 0;
+            D_800D1C84.unk28.unk50[12] = 0;
+            D_800D1C84.unk0.vx = (s16)x;
+            D_800D1C84.unk0.vy = (s16)y;
+            D_800D1C84.unk0.vz = (s16)z;
+            D_800D1C84.unk28.unk8 = modelId;
+            func_800A40F4(&D_800D1C84, 0);
+        }
+        D_800A89CC = 100;
+        D_800E25E8 = 1;
+        D_800EE18C.vx = 0;
+        D_800EE18C.vy = 0;
+        D_800EE18C.vz = 0;
+        D_800A8CC4 = obj->unk28.unk50[0];
+        D_800A8A88 = obj->unkD4->unk28;
+    }
+    if (obj->unk28.unk50[10] == 3) {
+        score = &D_800D16D8;
+        *score += obj->unk28.unk50[0];
+        obj->unk18.vx += obj->unk28.unk50[11];
+    }
+    if (obj->unk28.unk50[10] == 4) {
+        score = &D_800D16D8;
+        *score += obj->unk28.unk50[0];
+        func_800A29AC(obj->unk28.unk50[18]);
+        obj->unk28.unkC = 0;
+        D_800A89CC = 100;
+        D_800E25E8 = 1;
+        D_800EE18C.vx = 0;
+        D_800EE18C.vy = 0;
+        D_800EE18C.vz = 0;
+        D_800A8CC4 = obj->unk28.unk50[0];
+        D_800A8A88 = obj->unkD4->unk28;
+    }
+    if (obj->unk28.unk50[10] == 5) {
+        score = &D_800D16D8;
+        *score += obj->unk28.unk50[0];
+        func_800A29AC(obj->unk28.unk50[18]);
+        obj->unk28.unkC = 0;
+        for (i = 0; i < 100; i++) {
+            x = obj->unk0.vx;
+            y = obj->unk0.vy;
+            z = obj->unk0.vz;
+            modelId = rand() % 3 + 0x3F;
+            D_800D1C84.unk28.unk0 = 0xCB;
+            D_800D1C84.unk28.unk10 = 1;
+            D_800D1C84.unk28.unk4 = 0;
+            D_800D1C84.unk28.unk50[12] = 0;
+            D_800D1C84.unk0.vx = (s16)x;
+            D_800D1C84.unk0.vy = (s16)y;
+            D_800D1C84.unk0.vz = (s16)z;
+            D_800D1C84.unk28.unk8 = modelId;
+            func_800A40F4(&D_800D1C84, 0);
+        }
+        D_800A89CC = 100;
+        D_800E25E8 = 1;
+        D_800EE18C.vx = 0;
+        D_800EE18C.vy = 0;
+        D_800EE18C.vz = 0;
+        D_800A8CC4 = obj->unk28.unk50[0];
+        D_800A8A88 = obj->unkD4->unk28;
+    }
+    score = &D_800D16D8;
+    if (*score > 0x270F) {
+        *score = 0x270F;
+    }
+}
+#endif
 
 #ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A70D4);

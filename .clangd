@@ -1,0 +1,4 @@
+# The tree is MIPS; without this clangd assumes the host target and rejects
+# the GTE macros' register clobbers.
+CompileFlags:
+  Add: [--target=mipsel-linux-gnu, -DSKIP_ASM=1]
