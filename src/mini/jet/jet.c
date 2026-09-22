@@ -448,7 +448,7 @@ loop:
 done:
     *D_8009A000 = 0xB8;
     D_8009A004 = 0;
-    SystemAkaoExecute();
+    AkaoExec();
     return D_800D16D8;
 }
 #endif
@@ -1123,34 +1123,34 @@ void func_800A27F0(u_long* addr) {
 void func_800A2860(void) {
     D_8009A000[0] = 0x10;
     D_8009A004 = D_800D1BD4;
-    SystemAkaoExecute();
+    AkaoExec();
     D_8009A000[0] = 0xC0;
     D_8009A004 = 0x7F;
-    SystemAkaoExecute();
+    AkaoExec();
     D_8009A000[0] = 0xB8;
     D_8009A004 = 0x7F;
-    SystemAkaoExecute();
+    AkaoExec();
     D_8009A000[0] = 0xBC;
     D_8009A004 = 0;
-    SystemAkaoExecute();
+    AkaoExec();
     D_8009A000[0] = 0xA2;
     D_8009A004 = 0;
-    SystemAkaoExecute();
+    AkaoExec();
     D_8009A000[0] = 0x2A;
     D_8009A004 = 0x40;
     D_8009A008 = 0x177;
-    SystemAkaoExecute();
+    AkaoExec();
 }
 
 void func_800A2938(void) {
     D_8009A000[0] = 0xC1;
     D_8009A004 = 0xF0;
     D_8009A008 = 0;
-    SystemAkaoExecute();
+    AkaoExec();
     D_8009A000[0] = 0xB9;
     D_8009A004 = 0xF0;
     D_8009A008 = 0;
-    SystemAkaoExecute();
+    AkaoExec();
 }
 
 // Alternate the two laser channels on each shot.
@@ -1164,20 +1164,20 @@ void func_800A29AC(s16 arg0) {
     if (channel == 0) {
         D_8009A000[0] = 0xB0;
         D_8009A004 = 0;
-        SystemAkaoExecute();
+        AkaoExec();
         D_8009A000[0] = 0x28;
         D_8009A004 = 0x40;
         D_8009A008 = arg0;
-        SystemAkaoExecute();
+        AkaoExec();
     }
     if (*pChannel == 1) {
         D_8009A000[0] = 0xB1;
         D_8009A004 = 0;
-        SystemAkaoExecute();
+        AkaoExec();
         D_8009A000[0] = 0x29;
         D_8009A004 = 0x40;
         D_8009A008 = arg0;
-        SystemAkaoExecute();
+        AkaoExec();
     }
 }
 
@@ -1191,12 +1191,12 @@ void func_800A2AA0(s32 arg0) {
             *D_8009A000 = 0x2B;
             D_8009A004 = 0x40;
             D_8009A008 = 0x22B;
-            SystemAkaoExecute();
+            AkaoExec();
         } else {
             *D_8009A000 = 0x2B;
             D_8009A004 = 0x40;
             D_8009A008 = 0;
-            SystemAkaoExecute();
+            AkaoExec();
             D_800A8958 = 0;
             return;
         }
@@ -1206,13 +1206,13 @@ void func_800A2AA0(s32 arg0) {
         D_800A833C = temp_s0;
         *D_8009A000 = 0xB3;
         D_8009A004 = temp_s0;
-        SystemAkaoExecute();
+        AkaoExec();
         *temp = temp_s0;
     } else {
         *D_8009A000 = 0x2B;
         D_8009A004 = 0x40;
         D_8009A008 = 0;
-        SystemAkaoExecute();
+        AkaoExec();
         D_800A8958 = 0;
     }
 }
@@ -1220,10 +1220,10 @@ void func_800A2AA0(s32 arg0) {
 void func_800A2B78(void) {
     D_8009A000[0] = 0xA2;
     D_8009A004 = D_800A8338;
-    SystemAkaoExecute();
+    AkaoExec();
     D_8009A000[0] = 0xA3;
     D_8009A004 = D_800A833C;
-    SystemAkaoExecute();
+    AkaoExec();
 }
 
 void func_800A2BE0(void) {
