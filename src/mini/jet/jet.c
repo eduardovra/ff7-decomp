@@ -1522,71 +1522,64 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3414);
 #else
 // Step the track streams forward, spawning whatever each segment lists.
 void func_800A3414(s32 advance) {
-    u16** tri;
-    u16** quad;
     u32* pos;
     s32* segment;
     u32 prev;
     u32 next;
     u32 steps;
     u32 i;
-    u16 id;
-    s32 unused[4];
+    u16** tri;
+    u16** quad;
+    u32 id;
+    u8* first;
 
     pos = &D_800D172C;
-    prev = pos[0];
-    next = prev + advance;
-    D_800A8CC8 = prev;
-    pos[0] = next;
-    steps = (next >> 18) - (prev >> 18);
+    D_800A8CC8 = pos[0];
+    pos[0] = D_800A8CC8 + advance;
+    prev = D_800A8CC8 >> 18;
+    next = pos[0] >> 18;
+    steps = next - prev;
     segment = &D_800D16E0;
     segment[0] = segment[0] + steps;
-    i = 0;
-    if (steps + D_800E25F8 != 0) {
+    for (i = 0; i < steps + D_800E25F8; i++) {
         tri = &D_800D1C60;
         quad = &D_800EE428;
-        do {
-            for (;;) {
-                id = *tri[0]++;
-                if (id == 0xFFFF) {
-                    break;
-                }
-                func_800A385C(id);
+        while (1) {
+            id = *tri[0]++;
+            if (id == 0xFFFF) {
+                break;
             }
-            for (;;) {
-                id = *quad[0]++;
-                if (id == 0xFFFF) {
-                    break;
-                }
-                func_800A38D4(id);
+            func_800A385C(id);
+        }
+        while (1) {
+            id = *quad[0]++;
+            if (id == 0xFFFF) {
+                break;
             }
-            i++;
-        } while (i < steps + D_800E25F8);
+            func_800A38D4(id);
+        }
     }
-    i = 0;
-    if (steps != 0) {
+    for (i = 0; i < steps; i++) {
         tri = &D_800D196C;
         quad = &D_800EE188;
-        do {
-            for (;;) {
-                id = *tri[0]++;
-                if (id == 0xFFFF) {
-                    break;
-                }
-                func_800A3980(id);
+        while (1) {
+            id = *tri[0]++;
+            if (id == 0xFFFF) {
+                break;
             }
-            for (;;) {
-                id = *quad[0]++;
-                if (id == 0xFFFF) {
-                    break;
-                }
-                func_800A3A20(id);
+            func_800A3980(id);
+        }
+        while (1) {
+            id = *quad[0]++;
+            if (id == 0xFFFF) {
+                break;
             }
-            i++;
-        } while (i < steps);
+            func_800A3A20(id);
+        }
     }
-    if (D_800E25F8 == 1) {
-        D_800E25F8 = 0;
+    first = &D_800E25F8;
+    if (*first == 1) {
+        *first = 0;
     }
 }
 #endif
@@ -1601,6 +1594,7 @@ void func_800A35DC(s32 advance) {
     u16** tri;
     u16** track;
     u32 id;
+    u8* first;
 
     pos = &D_800D172C;
     D_800A8CC8 = pos[0];
@@ -1612,6 +1606,7 @@ void func_800A35DC(s32 advance) {
     segment[0] = segment[0] + D_800A894C;
     for (i = 0; i < D_800A894C + D_800E25F8; i++) {
         tri = &D_800D1C60;
+        quad = &D_800EE428;
         while (1) {
             id = *tri[0]++;
             if (id == 0xFFFF) {
