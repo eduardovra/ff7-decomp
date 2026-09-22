@@ -2105,7 +2105,9 @@ void func_800A4458(void) {
 
 // PC: C_005EB507, create an object at a position
 void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
-    setVector(&D_800D1C84.unk0, arg0, arg1, arg2);
+    D_800D1C84.unk0.vx = arg0;
+    D_800D1C84.unk0.vy = arg1;
+    D_800D1C84.unk0.vz = arg2;
     D_800D1C84.unk28.unk0 = arg3;
     D_800D1C84.unk28.unk10 = 1;
     D_800D1C84.unk28.unk8 = arg4;
@@ -2114,8 +2116,10 @@ void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
 }
 
 // PC: C_005EB566, create an object at a position, clearing f_50[0xC]
-void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
-    setVector(&D_800D1C84.unk0, arg0, arg1, arg2);
+inline void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
+    D_800D1C84.unk0.vx = arg0;
+    D_800D1C84.unk0.vy = arg1;
+    D_800D1C84.unk0.vz = arg2;
     D_800D1C84.unk28.unk0 = arg3;
     D_800D1C84.unk28.unk10 = 1;
     D_800D1C84.unk28.unk8 = arg4;
@@ -2146,9 +2150,6 @@ void func_800A46E8(Unk800D1964* db) {
     s32 dx;
     s32 dy;
     s32 dz;
-    s32 x;
-    s32 y;
-    s32 z;
     s32 step;
     s32* score;
     s32* frame;
@@ -2600,15 +2601,7 @@ void func_800A46E8(Unk800D1964* db) {
         case 11:
             func_800A29AC(0x8E);
             for (j = 0; j < st->unk50[3]; j++) {
-                D_800D1C84.unk0.vy = -0x2710;
-                D_800D1C84.unk0.vz = 0x20CB;
-                D_800D1C84.unk28.unk0 = 0xC;
-                D_800D1C84.unk0.vx = 0x3446;
-                D_800D1C84.unk28.unk10 = 1;
-                D_800D1C84.unk28.unk8 = 0x2A;
-                D_800D1C84.unk28.unk4 = 0;
-                D_800D1C84.unk28.unk50[12] = 0;
-                func_800A40F4(&D_800D1C84, 0);
+                func_800A4650(0x3446, -0x2710, 0x20CB, 0xC, 0x2A);
             }
             if (obj->unkD8 != -1) {
                 D_800EE42C--;
@@ -2669,19 +2662,14 @@ void func_800A46E8(Unk800D1964* db) {
             if (st->unk50[3] < 0) {
                 func_800A29AC(0x98);
                 for (j = 0; j < 20; j++) {
+                    s32 x;
+                    s32 y;
+                    s32 z;
+
                     x = obj->unk0.vx;
                     y = obj->unk0.vy;
                     z = obj->unk0.vz;
-                    modelId = rand() % 3 + 0x44;
-                    D_800D1C84.unk28.unk0 = 9;
-                    D_800D1C84.unk28.unk10 = 1;
-                    D_800D1C84.unk28.unk4 = 0;
-                    D_800D1C84.unk28.unk50[12] = 0;
-                    D_800D1C84.unk0.vx = (s16)x;
-                    D_800D1C84.unk0.vy = (s16)y;
-                    D_800D1C84.unk0.vz = (s16)z;
-                    D_800D1C84.unk28.unk8 = (s16)modelId;
-                    func_800A40F4(&D_800D1C84, 0);
+                    func_800A4650(x, y, z, 9, rand() % 3 + 0x44);
                 }
                 st->unkC = 0;
             }
@@ -2730,28 +2718,25 @@ void func_800A46E8(Unk800D1964* db) {
             st->unk14++;
             if (st->unk14 == 5) {
                 for (j = 0; j < st->unk50[3]; j++) {
+                    s32 x;
+                    s32 y;
+                    s32 z;
+
                     y = obj->unk0.vy + 0x1F4;
                     x = obj->unk0.vx + rand() % 100 - 0x32;
                     z = obj->unk0.vz + rand() % 100 - 0x32;
-                    D_800D1C84.unk0.vx = (s16)x;
-                    D_800D1C84.unk0.vy = (s16)y;
-                    D_800D1C84.unk28.unk0 = 0xF;
-                    D_800D1C84.unk28.unk8 = 0x2A;
-                    D_800D1C84.unk28.unk10 = 1;
-                    D_800D1C84.unk28.unk4 = 0;
-                    D_800D1C84.unk28.unk50[12] = 0;
-                    D_800D1C84.unk0.vz = (s16)z;
-                    func_800A40F4(&D_800D1C84, 0);
+                    func_800A4650(x, y, z, 0xF, 0x2A);
                 }
-                D_800D1C84.unk28.unk0 = 0x10;
-                D_800D1C84.unk28.unk10 = 1;
-                D_800D1C84.unk28.unk8 = 0x29;
-                D_800D1C84.unk28.unk4 = 0;
-                D_800D1C84.unk28.unk50[12] = 0;
-                D_800D1C84.unk0.vx = (s16)obj->unk0.vx;
-                D_800D1C84.unk0.vy = (s16)obj->unk0.vy;
-                D_800D1C84.unk0.vz = (s16)obj->unk0.vz;
-                func_800A40F4(&D_800D1C84, 0);
+                {
+                    s32 x;
+                    s32 y;
+                    s32 z;
+
+                    x = obj->unk0.vx;
+                    y = obj->unk0.vy;
+                    z = obj->unk0.vz;
+                    func_800A4650(x, y, z, 0x10, 0x29);
+                }
             }
             if (st->unk28 < 0) {
                 obj->unk18.vy += 0x14;
@@ -2832,15 +2817,16 @@ void func_800A46E8(Unk800D1964* db) {
             } else {
                 st->unk14++;
             }
-            D_800D1C84.unk28.unk0 = 0xCA;
-            D_800D1C84.unk28.unk10 = 1;
-            D_800D1C84.unk28.unk8 = 0x2A;
-            D_800D1C84.unk28.unk4 = 0;
-            D_800D1C84.unk28.unk50[12] = 0;
-            D_800D1C84.unk0.vx = (s16)obj->unk0.vx;
-            D_800D1C84.unk0.vy = (s16)obj->unk0.vy;
-            D_800D1C84.unk0.vz = (s16)obj->unk0.vz;
-            func_800A40F4(&D_800D1C84, 0);
+            {
+                s32 x;
+                s32 y;
+                s32 z;
+
+                x = obj->unk0.vx;
+                y = obj->unk0.vy;
+                z = obj->unk0.vz;
+                func_800A4650(x, y, z, 0xCA, 0x2A);
+            }
             st->unkC--;
             if (st->unkC == 0) {
                 release = 1;
@@ -2902,15 +2888,7 @@ void func_800A46E8(Unk800D1964* db) {
             }
             if (D_800A897C < 0) {
                 D_800A897C = 0;
-                D_800D1C84.unk0.vx = 0;
-                D_800D1C84.unk0.vy = 0;
-                D_800D1C84.unk0.vz = 0;
-                D_800D1C84.unk28.unk0 = 0xFD;
-                D_800D1C84.unk28.unk10 = 1;
-                D_800D1C84.unk28.unk8 = 0x1D;
-                D_800D1C84.unk28.unk4 = 0;
-                D_800D1C84.unk28.unk50[12] = 0;
-                func_800A40F4(&D_800D1C84, 0);
+                func_800A4650(0, 0, 0, 0xFD, 0x1D);
             }
             if (st->unk50[1] < st->unk14) {
                 release = 1;
@@ -2944,17 +2922,9 @@ void func_800A46E8(Unk800D1964* db) {
             if (st->unk10 == 1) {
                 st->unk10 = 0;
                 st->unk14 = 0;
-                D_800D1C84.unk0.vx = 0;
-                D_800D1C84.unk0.vy = 0;
-                D_800D1C84.unk0.vz = 0;
-                D_800D1C84.unk28.unk0 = 3;
                 D_800A897C = 0;
                 D_800E25F4 = 1;
-                D_800D1C84.unk28.unk10 = 1;
-                D_800D1C84.unk28.unk8 = 0x3B;
-                D_800D1C84.unk28.unk4 = 0;
-                D_800D1C84.unk28.unk50[12] = 0;
-                func_800A40F4(&D_800D1C84, 0);
+                func_800A4650(0, 0, 0, 3, 0x3B);
             } else {
                 st->unk14++;
             }
@@ -3036,15 +3006,16 @@ void func_800A46E8(Unk800D1964* db) {
                 D_800D1C84.unk28.unk50[0] = 0x12C;
                 D_800D1C84.unk28.unk50[1] = 0x190;
                 D_800D1C84.unk28.unk50[2] = 0;
-                D_800D1C84.unk28.unk0 = 0xFF;
-                D_800D1C84.unk28.unk10 = 1;
-                D_800D1C84.unk28.unk8 = 0x1E;
-                D_800D1C84.unk28.unk4 = 0;
-                D_800D1C84.unk28.unk50[12] = 0;
-                D_800D1C84.unk0.vx = (s16)obj->unk0.vx;
-                D_800D1C84.unk0.vy = (s16)obj->unk0.vy;
-                D_800D1C84.unk0.vz = (s16)obj->unk0.vz;
-                func_800A40F4(&D_800D1C84, 0);
+                {
+                    s32 x;
+                    s32 y;
+                    s32 z;
+
+                    x = obj->unk0.vx;
+                    y = obj->unk0.vy;
+                    z = obj->unk0.vz;
+                    func_800A4650(x, y, z, 0xFF, 0x1E);
+                }
             }
             release = 1;
             break;
@@ -3081,164 +3052,140 @@ void func_800A46E8(Unk800D1964* db) {
 }
 #endif
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A6B08);
-#else
-// Spawn an object at this one's position once its timer runs out.
+// PC: C_005ED528, the object was hit: spawn impact stars, or destroy it once its HP runs out
 void func_800A6B08(Unk800A4390* arg0) {
+    Unk800D1CAC* state = &arg0->unk28;
     u8 amount;
     s32 x;
     s32 y;
     s32 z;
-    u32 vx;
 
     amount = D_800D1C5C >> 5;
     if (amount == 0) {
         amount = 1;
     }
-    arg0->unk28.unk50[0xD] -= amount;
-    if (arg0->unk28.unk50[0xD] < 0) {
+    state->unk50[0xD] -= amount;
+    if (state->unk50[0xD] < 0) {
         func_800A6BD8(arg0);
-        return;
+    } else {
+        x = arg0->unk0.vx;
+        y = arg0->unk0.vy;
+        z = arg0->unk0.vz;
+        func_800A4650(x, y, z, 0xCA, 0x3F);
     }
-    x = arg0->unk0.vx;
-    y = arg0->unk0.vy;
-    z = arg0->unk0.vz;
-    vx = (s16)x;
-    D_800D1C84.unk28.unk0 = 0xCA;
-    D_800D1C84.unk28.unk10 = 1;
-    D_800D1C84.unk28.unk8 = 0x3F;
-    D_800D1C84.unk28.unk4 = 0;
-    D_800D1C84.unk28.unk50[0xC] = 0;
-    setVector(&D_800D1C84.unk0, vx, (s16)y, (s16)z);
-    func_800A40F4(&D_800D1C84, 0);
 }
-#endif
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A6BD8);
-#else
 // Award the score for a hit object and scatter its debris.
 void func_800A6BD8(Unk800A4390* obj) {
+    Unk800D1CAC* st = &obj->unk28;
     s32* score;
     s32* frame;
     SVECTOR* path;
     s32 pathLen;
     s32 sound;
     s32 i;
-    s32 x;
-    s32 y;
-    s32 z;
     s16 modelId;
 
-    if (obj->unk28.unk50[10] == 1) {
+    if (st->unk50[10] == 1) {
+        s32* score;
+        s32 points;
+        s32 x;
+        s32 y;
+        s32 z;
+
         score = &D_800D16D8;
-        *score += obj->unk28.unk50[0];
-        func_800A29AC(obj->unk28.unk50[18]);
-        obj->unk28.unkC = 0;
+        *score += st->unk50[0];
+        func_800A29AC(st->unk50[18]);
+        st->unkC = 0;
         for (i = 0; i < 3; i++) {
             x = obj->unk0.vx;
             y = obj->unk0.vy;
             z = obj->unk0.vz;
-            modelId = rand() % 3 + 0x3F;
-            D_800D1C84.unk28.unk0 = 0xCA;
-            D_800D1C84.unk28.unk10 = 1;
-            D_800D1C84.unk28.unk4 = 0;
-            D_800D1C84.unk28.unk50[12] = 0;
-            D_800D1C84.unk0.vx = (s16)x;
-            D_800D1C84.unk0.vy = (s16)y;
-            D_800D1C84.unk0.vz = (s16)z;
-            D_800D1C84.unk28.unk8 = modelId;
-            func_800A40F4(&D_800D1C84, 0);
+            func_800A4650(x, y, z, 0xCA, rand() % 3 + 0x3F);
         }
+        D_800A8A88 = obj->unkD4->unk28;
+        points = st->unk50[0];
+        D_800A8CC4 = points;
         D_800A89CC = 100;
         D_800E25E8 = 1;
-        D_800EE18C.vx = 0;
-        D_800EE18C.vy = 0;
-        D_800EE18C.vz = 0;
-        D_800A8CC4 = obj->unk28.unk50[0];
-        D_800A8A88 = obj->unkD4->unk28;
+        setVector(&D_800EE18C, 0, 0, 0);
     }
-    if (obj->unk28.unk50[10] == 2) {
+    if (st->unk50[10] == 2) {
+        s32* score;
+        s32 points;
+        s32 x;
+        s32 y;
+        s32 z;
+
         score = &D_800D16D8;
-        *score += obj->unk28.unk50[0];
-        func_800A29AC(obj->unk28.unk50[18]);
-        obj->unk28.unkC = 0;
+        *score += st->unk50[0];
+        func_800A29AC(st->unk50[18]);
+        st->unkC = 0;
         for (i = 0; i < 3; i++) {
             x = obj->unk0.vx;
             y = obj->unk0.vy;
             z = obj->unk0.vz;
-            modelId = rand() % 3 + 0x3C;
-            D_800D1C84.unk28.unk0 = 0xCB;
-            D_800D1C84.unk28.unk10 = 1;
-            D_800D1C84.unk28.unk4 = 0;
-            D_800D1C84.unk28.unk50[12] = 0;
-            D_800D1C84.unk0.vx = (s16)x;
-            D_800D1C84.unk0.vy = (s16)y;
-            D_800D1C84.unk0.vz = (s16)z;
-            D_800D1C84.unk28.unk8 = modelId;
-            func_800A40F4(&D_800D1C84, 0);
+            func_800A4650(x, y, z, 0xCB, rand() % 3 + 0x3C);
         }
+        D_800A8A88 = obj->unkD4->unk28;
+        points = st->unk50[0];
+        D_800A8CC4 = points;
         D_800A89CC = 100;
         D_800E25E8 = 1;
-        D_800EE18C.vx = 0;
-        D_800EE18C.vy = 0;
-        D_800EE18C.vz = 0;
-        D_800A8CC4 = obj->unk28.unk50[0];
+        setVector(&D_800EE18C, 0, 0, 0);
+    }
+    if (st->unk50[10] == 3) {
+        s32* score;
+        s32 points;
+
+        score = &D_800D16D8;
+        *score += st->unk50[0];
+        points = st->unk50[11];
+        obj->unk18.vx += points;
+    }
+    if (st->unk50[10] == 4) {
+        s32* score;
+        s32 points;
+        score = &D_800D16D8;
+        *score += st->unk50[0];
+        func_800A29AC(st->unk50[18]);
+        st->unkC = 0;
         D_800A8A88 = obj->unkD4->unk28;
-    }
-    if (obj->unk28.unk50[10] == 3) {
-        score = &D_800D16D8;
-        *score += obj->unk28.unk50[0];
-        obj->unk18.vx += obj->unk28.unk50[11];
-    }
-    if (obj->unk28.unk50[10] == 4) {
-        score = &D_800D16D8;
-        *score += obj->unk28.unk50[0];
-        func_800A29AC(obj->unk28.unk50[18]);
-        obj->unk28.unkC = 0;
+        points = st->unk50[0];
+        D_800A8CC4 = points;
         D_800A89CC = 100;
         D_800E25E8 = 1;
-        D_800EE18C.vx = 0;
-        D_800EE18C.vy = 0;
-        D_800EE18C.vz = 0;
-        D_800A8CC4 = obj->unk28.unk50[0];
-        D_800A8A88 = obj->unkD4->unk28;
+        setVector(&D_800EE18C, 0, 0, 0);
     }
-    if (obj->unk28.unk50[10] == 5) {
+    if (st->unk50[10] == 5) {
+        s32* score;
+        s32 points;
+        s32 x;
+        s32 y;
+        s32 z;
+
         score = &D_800D16D8;
-        *score += obj->unk28.unk50[0];
-        func_800A29AC(obj->unk28.unk50[18]);
-        obj->unk28.unkC = 0;
+        *score += st->unk50[0];
+        func_800A29AC(st->unk50[18]);
+        st->unkC = 0;
         for (i = 0; i < 100; i++) {
             x = obj->unk0.vx;
             y = obj->unk0.vy;
             z = obj->unk0.vz;
-            modelId = rand() % 3 + 0x3F;
-            D_800D1C84.unk28.unk0 = 0xCB;
-            D_800D1C84.unk28.unk10 = 1;
-            D_800D1C84.unk28.unk4 = 0;
-            D_800D1C84.unk28.unk50[12] = 0;
-            D_800D1C84.unk0.vx = (s16)x;
-            D_800D1C84.unk0.vy = (s16)y;
-            D_800D1C84.unk0.vz = (s16)z;
-            D_800D1C84.unk28.unk8 = modelId;
-            func_800A40F4(&D_800D1C84, 0);
+            func_800A4650(x, y, z, 0xCB, rand() % 3 + 0x3F);
         }
+        D_800A8A88 = obj->unkD4->unk28;
+        points = st->unk50[0];
+        D_800A8CC4 = points;
         D_800A89CC = 100;
         D_800E25E8 = 1;
-        D_800EE18C.vx = 0;
-        D_800EE18C.vy = 0;
-        D_800EE18C.vz = 0;
-        D_800A8CC4 = obj->unk28.unk50[0];
-        D_800A8A88 = obj->unkD4->unk28;
+        setVector(&D_800EE18C, 0, 0, 0);
     }
     score = &D_800D16D8;
     if (*score > 0x270F) {
         *score = 0x270F;
     }
 }
-#endif
 
 #ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A70D4);

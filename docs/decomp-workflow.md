@@ -220,6 +220,21 @@ symbol differs -- which asm-differ cannot see through. `func_800A2518` in
 `jet.c` sits at 220 for 24 such stores and the overlay still passes its sha1.
 Let `make build` settle it rather than inventing per-element externs.
 
+**A small helper that is "almost" matched everywhere it is pasted was
+inlined.** gcc 2.6.3 inlines an `inline` function into every later caller in
+the file and still emits the standalone copy, so the ROM has both.
+Hand-expanding the body at each call site never matches: the inlined copy
+sign-extends its `s16` parameters late, after the callee's other stores, and
+the extension and the store addressing differ from what direct assignments
+produce. Mark the helper `inline`, write the call, and shape the arguments: a
+struct field passed directly is narrowed to `lhu` at the call, so load it into
+an `s32` local first (`lw` + late `sll/sra`); make those locals block-scoped,
+since gcc only ties a dying input to the output register (`sll s0,s0`) for
+pseudos that live in one basic block; and write the helper's own stores as
+plain member assignments, not `setVector`, or a loop that hoists the struct
+address keeps `lui at` forms for the vector fields. `func_800A4650` in `jet.c`,
+matched into `func_800A6B08` and `func_800A6BD8`, is the worked example.
+
 ## Data layout failures look like nothing is wrong
 
 If every function scores 0 but the overlay still fails its sha1, the problem
