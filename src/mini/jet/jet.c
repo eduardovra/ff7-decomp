@@ -358,7 +358,7 @@ Unk800D0554* func_800A7B48(s32 arg0);
 void func_800A7C88(void);
 void func_800A8010(void);
 void func_800A16A4(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot);
-void func_800A1CD8(s32 value, u16 x, s16 y, s16 padWithZero, u16 v);
+void func_800A1CD8(s32 value, s32 x, s16 y, s16 padWithZero, u16 v);
 void func_800A1F18(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans);
 void func_800A2058();
 void func_800A2214();
@@ -905,21 +905,22 @@ void func_800A1B64(Unk800D1964* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) {
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1CD8);
 #else
 // PC: C_005F2119, draw a number as four digits from the HUD digit sprite.
-void func_800A1CD8(s32 value, u16 x, s16 y, s16 padWithZero, u16 v) {
+void func_800A1CD8(s32 value, s32 x, s16 y, s16 padWithZero, u16 v) {
     POLY_FT4* poly;
+    Unk800D1964* db;
     s32 digit;
     s32 power;
     s32 remain;
     s32 i;
-    s16 left;
+    u16 startX;
     s32 w;
     u8 leading;
 
+    startX = x;
     power = 1000;
     leading = 1;
     remain = value + 1;
     w = 0x10;
-    left = x;
     poly = D_800D1964[0]->unk4368.unk14;
     for (i = 0; i < 4; i++) {
         digit = 0;
@@ -934,18 +935,19 @@ void func_800A1CD8(s32 value, u16 x, s16 y, s16 padWithZero, u16 v) {
             leading = 0;
         }
         if (padWithZero == 1 || digit || leading == 0) {
-            setXY4(poly, left, y, x + w, y, left, y + 0x10, x + w, y + 0x10);
+            setXY4(poly, x, y, startX + w, y, x, y + 0x10, startX + w, y + 0x10);
             setRGB0(poly, 0x80, 0x80, 0x80);
             setUVWH(poly, digit * 0x10 + 0x30, v, 0x10, 0x12);
             poly->tpage = D_800A8990[8];
             poly->clut = D_800EE198[8];
             SetSemiTrans(poly, 1);
-            addPrim(&D_800D1964[0]->unk4098[1], poly);
+            db = D_800D1964[0];
+            addPrim(&db->unk4098[1], poly);
             poly++;
         }
         power /= 10;
         w += 0xE;
-        left += 0xE;
+        x += 0xE;
     }
     D_800D1964[0]->unk4368.unk14 = poly;
 }
