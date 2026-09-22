@@ -733,9 +733,6 @@ void func_800A1450(void) {
     gte_SetTransMatrix2(world[0]);
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A16A4);
-#else
 // Sample the track at a fractional segment index, giving a point lifted along
 // the surface normal and the interpolated banking rotation.
 void func_800A16A4(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot) {
@@ -790,6 +787,9 @@ void func_800A16A4(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot) {
     dx *= frac;
     dy *= frac;
     dz *= frac;
+    dx >>= 16;
+    dy >>= 16;
+    dz >>= 16;
 
     leftCur = &D_800D1C58[seg];
     leftNext = &D_800D1C58[seg + 1];
@@ -819,10 +819,10 @@ void func_800A16A4(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot) {
     curMid.vz = (rightCur->vz + leftCur->vz) >> 1;
 
     nextMid.vx = (rightNext->vx + leftNext->vx) >> 1;
-    along.vx = nextMid.vx - curMid.vx;
     nextMid.vy = (rightNext->vy + leftNext->vy) >> 1;
-    along.vy = nextMid.vy - curMid.vy;
     nextMid.vz = (rightNext->vz + leftNext->vz) >> 1;
+    along.vx = nextMid.vx - curMid.vx;
+    along.vy = nextMid.vy - curMid.vy;
     along.vz = nextMid.vz - curMid.vz;
 
     across.vx = right.vx - left.vx;
@@ -836,11 +836,10 @@ void func_800A16A4(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot) {
     pos->vy = (s16)mid.vy + ((unit.vy * lift) >> 12);
     pos->vz = (s16)mid.vz + ((unit.vz * lift) >> 12);
 
-    rot->vx = rotCur->vx + (dx >> 16);
-    rot->vy = (dy >> 16) - rotCur->vy;
-    rot->vz = rotCur->vz + (dz >> 16);
+    rot->vx = rotCur->vx + dx;
+    rot->vy = dy - rotCur->vy;
+    rot->vz = rotCur->vz + dz;
 }
-#endif
 
 // PC: C_005F15C7, draw the shoot power gauge
 void func_800A1A64(void) {
