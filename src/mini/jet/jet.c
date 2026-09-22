@@ -464,9 +464,6 @@ done:
 }
 #endif
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0874);
-#else
 // Draw one object's model, project its bounding box and flag a cursor hit.
 void func_800A0874(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex, s32 arg3, Unk800A4390* obj) {
     Unk800A8604 args;
@@ -476,7 +473,6 @@ void func_800A0874(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex, s32 arg3, Un
     MATRIX* m;
     MATRIX* wm;
     MATRIX* cam;
-    u_long x;
     s16 minX;
     s16 maxX;
     s16 minY;
@@ -530,21 +526,19 @@ void func_800A0874(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex, s32 arg3, Un
     ys[0] = obj->unk11C[0] >> 16;
     minY = ys[0];
     maxY = minY;
-    x = obj->unk11C[0];
-    xs[0] = x;
-    minX = x;
+    xs[0] = obj->unk11C[0];
+    minX = xs[0];
     maxX = minX;
     for (i = 1; i < 6; i++) {
         ys[i] = (obj->unk11C[i] & 0xFFFF0000) >> 16;
-        x = obj->unk11C[i];
-        xs[i] = x;
-        if (xs[i] < minX) {
-            minX = x;
+        xs[i] = obj->unk11C[i];
+        if (minX > xs[i]) {
+            minX = xs[i];
         }
         if (maxX < xs[i]) {
-            maxX = x;
+            maxX = xs[i];
         }
-        if (ys[i] < minY) {
+        if (minY > ys[i]) {
             minY = ys[i];
         }
         if (maxY < ys[i]) {
@@ -559,7 +553,6 @@ void func_800A0874(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex, s32 arg3, Un
         }
     }
 }
-#endif
 
 #ifndef NON_MATCHINGS
 INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0D78);
@@ -622,12 +615,10 @@ void func_800A0D78(Unk800D1964* db, Unk800EE1D4* node, s16 otIndex, s32 arg3, Un
     db->unk4368.unk8 = func_800A84DC(&args);
     shadow = &D_800D186C;
     func_800A84A4(shadow[0]->unkC, screen);
-    xy1 = screen[1];
-    D_800A8964 = xy1 >> 16;
-    D_800A895C = xy1;
-    xy1 = screen[2];
-    D_800A896C = xy1 >> 16;
-    D_800A8960 = xy1;
+    D_800A8964 = screen[1] >> 16;
+    D_800A895C = screen[1];
+    D_800A896C = screen[2] >> 16;
+    D_800A8960 = screen[2];
     func_800A84A4(shadow[0]->unkC + 9, screen);
     xy1 = screen[1];
     xy2 = screen[2];
