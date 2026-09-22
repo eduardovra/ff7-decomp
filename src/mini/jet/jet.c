@@ -1310,9 +1310,6 @@ void func_800A2DE4(s32 arg0, s32 arg1) {
 
 void func_800A2E30(void) {}
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A2E38);
-#else
 // Read the pad and drive the cursor, the camera tweaks and the pause toggle.
 void func_800A2E38(void) {
     u32 pad;
@@ -1321,17 +1318,20 @@ void func_800A2E38(void) {
     u16* cursorY;
     u8* shoot;
     u16* power;
+    u16* powerRegen; // a second pointer keeps this branch's address out of a saved register
     u8* repeat;
     u8* scroll;
     s32* fogFar;
     s32* fogNear;
     s32* speed;
+    s32* brake;
     s32* held;
     u8* paused;
     u8 next;
+    VECTOR* cam;
     s32 count;
 
-    pad = InputReadPadsRaw();
+    pad = InputReadPadsRaw(1);
     if (D_800D16DC == 0) {
         dir = &D_800A8A6C;
         *dir = 0;
@@ -1399,9 +1399,9 @@ void func_800A2E38(void) {
                 }
             } else {
                 func_800A2AA0(0);
-                power = &D_800D1C5C;
-                if ((s16)*power < 0x80) {
-                    (*power)++;
+                powerRegen = &D_800D1C5C;
+                if ((s16)*powerRegen < 0x80) {
+                    (*powerRegen)++;
                 }
             }
             cursorX = &D_800E25EC;
@@ -1437,10 +1437,12 @@ void func_800A2E38(void) {
                 *fogNear += 10;
             }
             if (pad & 0x40) {
-                D_800A83D8.vz = D_800A83D8.vz - 100;
+                cam = &D_800A83D8;
+                cam->vz -= 100;
             }
             if (pad & 0x10) {
-                D_800A83D8.vz = D_800A83D8.vz + 100;
+                cam = &D_800A83D8;
+                cam->vz += 100;
             }
             if (pad & 0x80) {
                 D_800A83D8.vx -= 100;
@@ -1449,19 +1451,21 @@ void func_800A2E38(void) {
                 D_800A83D8.vx += 100;
             }
             if (pad & 0x8) {
-                D_800A83D8.vy = D_800A83D8.vy - 100;
+                cam = &D_800A83D8;
+                cam->vy -= 100;
             }
             if (pad & 0x2) {
-                D_800A83D8.vy = D_800A83D8.vy + 100;
+                cam = &D_800A83D8;
+                cam->vy += 100;
             }
             if (pad & 0x4) {
                 speed = &D_800A897C;
                 *speed += 0x400;
             }
             if (pad & 0x1) {
-                speed = &D_800A897C;
-                if (*speed >= 0x400) {
-                    *speed -= 0x400;
+                brake = &D_800A897C;
+                if (*brake >= 0x400) {
+                    *brake -= 0x400;
                 }
             }
             if (pad & 0x800) {
@@ -1485,7 +1489,6 @@ void func_800A2E38(void) {
         func_800A29AC(0x3B);
     }
 }
-#endif
 
 // Reset both draw lists and the object streams for a new run.
 void func_800A334C(void) {

@@ -1334,7 +1334,7 @@ const char* SysKernGetString(s32 arg0, s32 arg1, s32 arg2);
 void SysSetEngineErrorCode(s32, ...);
 void func_8001726C(s16, u16);
 void func_8001C3C4(void);
-u32 InputReadPadsRaw(void);
+u32 InputReadPadsRaw(); // jet passes a pad id the main exe ignores
 u32 InputReadPads(void);
 void SysMenuCreateDrawenvDispenv(DRAWENV* draw_env, DISPENV* disp_env);
 s32 SysMenuGetMenuListState(void);
@@ -1364,7 +1364,6 @@ void* SysCdromGetPackPointer(void* ptr, s32);
 void SysCdromSetLzsExtract(void* src, void* dst);
 s32 func_80034D5C(void);
 s32 func_800484A8(void);
-u32 InputReadPadsRaw(void);
 void func_80036244(void* anim, u16 frame);
 void func_800354CC(void);
 
