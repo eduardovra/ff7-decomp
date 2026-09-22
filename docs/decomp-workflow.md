@@ -197,15 +197,16 @@ expansion time.** `global + local` puts the local first (`addu v0,local,base`):
 gcc swaps a memory first operand behind a register second one before it loads
 the memory into a register. Two memory operands, or two registers, keep the
 source order. When the target has the loaded global first and the local
-second, the source did not hold that local in a register at that point, and
-no rewrite of the expression alone will move it. `-fforce-mem` (the load
-happens before the swap test) reproduces that order and scores
-`func_800A372C` and `func_800A3B58` in `jet.c` at 0, but it is not the
-shipped configuration: inside the same file it breaks `func_800A7B48`, which
-matches without it, 0 to 70, and a tree-wide `make build` with it fails six
-other overlays. The cc1 default is right, so a diff of this shape is a
-dead end rather than something to rewrite around. Tested 2026-09-20 by
-adding the flag to `default_compiler_params` in `tools/ninja/gen.py`.
+second, the file was built with `-fforce-mem`, which loads memory operands
+before that swap test: `jet.c` carries `FORCE_MEM=true` for exactly this
+reason, and the flag took `func_800A372C`, `func_800A3B58` and
+`func_800A35DC` from 20 to 60 down to 0 while every matched function stayed
+at 0. The one casualty, `func_800A7B48`, was a pointer local
+`info = &D_800A89D8[arg0]`: under the flag the base is a register before the
+add, so the pointer sum keeps base-first order, where the target's index-first
+order is the memory-address path. Indexing the global directly at each use
+restored it. Applying the flag tree-wide breaks six other overlays, so it is
+per file, not a default.
 
 **Declarations must start a block.** gcc 2.6.3 is C89: a declaration after a
 statement is a `parse error`. Any nested `{ }` opens a new block, which is a
@@ -269,6 +270,10 @@ compiler, parsed by `tools/ninja/gen.py`.
 | PSYQ=4.0 | cc1-psx-272 | 2.56 |
 
 No annotation defaults to cc1-psx-272 / 2.34.
+
+`FORCE_MEM=true` adds `-fforce-mem` to cc1 for that file (see the operand
+order gotcha above). `G=`, `O=`, `COMM=`, `g=` and `gcoff=` are the other
+keys `parse_compiler_params` accepts.
 
 `CC1=2.6.3` / `CC1=2.7.2` overrides the cc1 the `PSYQ=` row selected and
 leaves the aspsx version alone, so `PSYQ=3.3 CC1=2.7.2` means cc1-psx-272

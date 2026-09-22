@@ -1,4 +1,4 @@
-//! PSYQ=3.3
+//! PSYQ=3.3 FORCE_MEM=true
 
 // "PC:" comments source https://github.com/ergonomy-joe/ff7-coaster
 
@@ -1596,9 +1596,6 @@ void func_800A3414(s32 advance) {
 }
 #endif
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A35DC);
-#else
 // PC: C_005EDC59, step the track position and append what the new segments list.
 void func_800A35DC(s32 advance) {
     u32* pos;
@@ -1639,11 +1636,7 @@ void func_800A35DC(s32 advance) {
         }
     }
 }
-#endif
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A372C);
-#else
 // PC: C_005EDD82, unlink the track and background elements just passed.
 void func_800A372C(s32 advance) {
     u32 i;
@@ -1677,7 +1670,6 @@ void func_800A372C(s32 advance) {
         *first = 0;
     }
 }
-#endif
 
 // PC: C_005EDE71, append a background triangle to the draw list
 void func_800A385C(u16 arg0) {
@@ -1827,9 +1819,6 @@ void func_800A3AAC(void) {
     D_800EE42C = 0;
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3B58);
-#else
 // PC: C_005EAC30, start path (mode 0: objects, mode 1: player car).
 void func_800A3B58(u8 pathIndex, u8 mode) {
     s32* lengths;
@@ -1851,7 +1840,6 @@ void func_800A3B58(u8 pathIndex, u8 mode) {
         D_800A8954 = (SVECTOR*)(D_800D1BE4 + offset);
     }
 }
-#endif
 
 // Sample a path at a 16.16 position, mirroring y and z when flag is zero.
 void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
@@ -3474,18 +3462,16 @@ void func_800A7AF8(void) {
 // PC: C_005EE8CF, build a model from its info entry
 Unk800D0554* func_800A7B48(s32 arg0) {
     Unk800D0554* model;
-    Unk800A89D8* info;
     s32 numTri;
     s32 numQua;
 
     model = func_800A7BF4();
-    info = &D_800A89D8[arg0];
-    numTri = info->unk0;
-    numQua = info->unk2;
-    model->unk16 = info->unk4.vx;
-    model->unk14 = info->unkC.vx;
-    model->unk1A = info->unk4.vz;
-    model->unk18 = info->unkC.vz;
+    numTri = D_800A89D8[arg0].unk0;
+    numQua = D_800A89D8[arg0].unk2;
+    model->unk16 = D_800A89D8[arg0].unk4.vx;
+    model->unk14 = D_800A89D8[arg0].unkC.vx;
+    model->unk1A = D_800A89D8[arg0].unk4.vz;
+    model->unk18 = D_800A89D8[arg0].unkC.vz;
     model->unk2 = 0;
     model->unk4 = numTri;
     model->unk6 = numQua;
