@@ -1793,6 +1793,7 @@ void func_800A3A20(u16 arg0) {
 // PC: C_005EAB70, init the game object pool
 void func_800A3AAC(void) {
     Unk800A4390* obj;
+    Unk800A4390* pool;
     s32 i;
 
     obj = D_800D1DC0;
@@ -1951,13 +1952,13 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A40F4);
 s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
     s16* count;
     Unk800A4390* obj;
+    Unk800A4390* pool;
+    Unk800A4390* parentObj;
+    Unk800A4390* box;
     Unk800A89D8* info;
-    Unk800EE1D4* parent;
     s16 index;
-    s32 modelId;
-    s32 midX;
-    s32 midY;
-    s32 midZ;
+    s32 rawId;
+    s16 modelId;
     s16 maxX;
     s16 minX;
     s16 minY;
@@ -1970,46 +1971,35 @@ s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
         *count = *count + 1;
         index = func_800A4400();
         D_800D1DC0[index] = *src;
-        obj = &D_800D1DC0[index];
-        modelId = src->unk28.unk8;
+        pool = D_800D1DC0;
+        obj = &pool[index];
+        rawId = src->unk28.unk8;
+        modelId = rawId;
         obj->unkDA = 1;
         obj->unkD8 = index;
         if (parentIndex == 0) {
-            parent = &D_800D16E4;
+            obj->unkD4 = func_800A80F8(rawId, 0, 0, 1, &D_800D16E4, src->unk0.vx, src->unk0.vy, src->unk0.vz,
+                                       src->unk18.vx, src->unk18.vy, src->unk18.vz);
         } else {
-            parent = D_800D1DC0[parentIndex].unkD4;
+            parentObj = &pool[parentIndex];
+            obj->unkD4 = func_800A80F8(rawId, 0, 0, 1, parentObj->unkD4, src->unk0.vx, src->unk0.vy, src->unk0.vz,
+                                       src->unk18.vx, src->unk18.vy, src->unk18.vz);
         }
-        obj->unkD4 = func_800A80F8(modelId, 0, 0, 1, parent, src->unk0.vx, src->unk0.vy, src->unk0.vz, src->unk18.vx,
-                                   src->unk18.vy, src->unk18.vz);
-        info = &D_800A89D8[(s16)modelId];
-        obj = &D_800D1DC0[index];
-        maxX = info->unkC.vx;
+        info = &D_800A89D8[modelId];
+        pool = D_800D1DC0; // reloading the base keeps it out of a saved register
+        box = &pool[index];
         minX = info->unk4.vx;
+        maxX = info->unkC.vx;
         minY = info->unk4.vy;
         maxY = info->unkC.vy;
         minZ = info->unk4.vz;
         maxZ = info->unkC.vz;
-        midX = (maxX + minX) >> 1;
-        midY = (maxY + minY) >> 1;
-        obj->unkDC[0].vz = maxZ;
-        obj->unkDC[1].vz = minZ;
-        midZ = (maxZ + minZ) >> 1;
-        obj->unkDC[0].vx = midX;
-        obj->unkDC[0].vy = midY;
-        obj->unkDC[1].vx = midX;
-        obj->unkDC[1].vy = midY;
-        obj->unkDC[2].vx = midX;
-        obj->unkDC[2].vy = maxY;
-        obj->unkDC[2].vz = midZ;
-        obj->unkDC[3].vx = midX;
-        obj->unkDC[3].vy = minY;
-        obj->unkDC[3].vz = midZ;
-        obj->unkDC[4].vx = maxX;
-        obj->unkDC[4].vy = midY;
-        obj->unkDC[4].vz = midZ;
-        obj->unkDC[5].vx = minX;
-        obj->unkDC[5].vy = midY;
-        obj->unkDC[5].vz = midZ;
+        setVector(&box->unkDC[0], (maxX + minX) >> 1, (maxY + minY) >> 1, maxZ);
+        setVector(&box->unkDC[1], (maxX + minX) >> 1, (maxY + minY) >> 1, minZ);
+        setVector(&box->unkDC[2], (maxX + minX) >> 1, maxY, (maxZ + minZ) >> 1);
+        setVector(&box->unkDC[3], (maxX + minX) >> 1, minY, (maxZ + minZ) >> 1);
+        setVector(&box->unkDC[4], maxX, (maxY + minY) >> 1, (maxZ + minZ) >> 1);
+        setVector(&box->unkDC[5], minX, (maxY + minY) >> 1, (maxZ + minZ) >> 1);
     }
     return index;
 }
@@ -2122,10 +2112,12 @@ void func_800A46E8(Unk800D1964* db) {
     VECTOR pos;
     SVECTOR rot;
     Unk800A4390* obj;
+    Unk800A4390* pool;
     Unk800D1CAC* st;
     POLY_G4* fade;
     POLY_FT4* flash;
-    s32 modelId;
+    s32 rawId;
+    s16 modelId;
     s32 shade;
     s32 count;
     s32 i;
