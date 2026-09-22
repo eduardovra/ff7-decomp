@@ -392,10 +392,10 @@ u16 MINI_Jet(void) {
 
     func_800A2214();
     SetDrawMode(&D_800D9934, 0, 1, GetTPage(1, 1, 0x300, 0) & 0xFFFF, NULL);
-    db = D_800D1964;
-    speed = &D_800A897C;
     D_800EE424 = D_800D1BF0;
     func_800A2DE4(0, 0);
+    db = D_800D1964;
+    speed = &D_800A897C;
     path = &D_800A8988;
     D_800D1C58 = *path;
     func_800A2DE4(1, 0);
