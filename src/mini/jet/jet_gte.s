@@ -9,9 +9,9 @@
 .set noat
 .align 2
 
-.globl func_800A83F0
-.type func_800A83F0, @function
-func_800A83F0:
+.globl JetProject6Points
+.type JetProject6Points, @function
+JetProject6Points:
     lwc2 $0, 0x0($a0)
     lwc2 $1, 0x4($a0)
     lwc2 $2, 0x8($a0)
@@ -57,7 +57,7 @@ func_800A83F0:
     swc2 $13, 0x4($a1)
     jr $ra
     nop
-.size func_800A83F0, . - func_800A83F0
+.size JetProject6Points, . - JetProject6Points
 
 .globl func_800A84A4
 .type func_800A84A4, @function
@@ -78,9 +78,9 @@ func_800A84A4:
     nop
 .size func_800A84A4, . - func_800A84A4
 
-.globl func_800A84DC
-.type func_800A84DC, @function
-func_800A84DC:
+.globl JetDrawModelTris
+.type JetDrawModelTris, @function
+JetDrawModelTris:
     lw $a3, 0xC($a0)
     lw $a2, 0x8($a0)
     lw $a1, 0x4($a0)
@@ -157,11 +157,11 @@ func_800A84DC:
     addu $v0, $a1, $zero
     jr $ra
     nop
-.size func_800A84DC, . - func_800A84DC
+.size JetDrawModelTris, . - JetDrawModelTris
 
-.globl func_800A8604
-.type func_800A8604, @function
-func_800A8604:
+.globl JetDrawModelTrisUI
+.type JetDrawModelTrisUI, @function
+JetDrawModelTrisUI:
     lw $a3, 0xC($a0)
     lw $a2, 0x8($a0)
     lw $a1, 0x4($a0)
@@ -240,11 +240,11 @@ func_800A8604:
     addu $v0, $a1, $zero
     jr $ra
     nop
-.size func_800A8604, . - func_800A8604
+.size JetDrawModelTrisUI, . - JetDrawModelTrisUI
 
-.globl func_800A8734
-.type func_800A8734, @function
-func_800A8734:
+.globl JetDrawTriangle
+.type JetDrawTriangle, @function
+JetDrawTriangle:
     lwc2 $0, 0x0($a0)
     lwc2 $1, 0x4($a0)
     rtps
@@ -308,11 +308,11 @@ func_800A8734:
     addu $v0, $a1, $zero
     jr $ra
     nop
-.size func_800A8734, . - func_800A8734
+.size JetDrawTriangle, . - JetDrawTriangle
 
-.globl func_800A882C
-.type func_800A882C, @function
-func_800A882C:
+.globl JetDrawTrackQuad
+.type JetDrawTrackQuad, @function
+JetDrawTrackQuad:
     lwc2 $0, 0x0($a0)
     lwc2 $1, 0x4($a0)
     lwc2 $2, 0x8($a3)
@@ -373,6 +373,6 @@ func_800A882C:
 .L800A8910:
     addu $v0, $a1, $zero
     jr $ra
-.size func_800A882C, . - func_800A882C
+.size JetDrawTrackQuad, . - JetDrawTrackQuad
 
 .set pop

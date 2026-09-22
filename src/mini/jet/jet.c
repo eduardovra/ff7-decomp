@@ -221,7 +221,7 @@ extern s32 g_JetTriangleCursor;
 extern s32 D_800A8A7C;
 extern s32 D_800A8A80; // frames R1 has been held
 extern s16 D_800A89CC;
-extern s16 D_800A8CC4;
+extern s16 g_JetPopupPoints;
 extern JetNode* D_800A8A74[1];
 extern s16 D_800A8A88;
 extern u32 g_JetModelCount;
@@ -235,7 +235,7 @@ extern s32 g_JetLeftNormalLength;
 extern JetBuffer g_JetBuffers[2];
 extern s32 g_JetRightNormalLength;
 extern JetModel g_JetModelPool[];
-extern s32 D_800D16D8;
+extern s32 g_JetScore;
 extern u8 D_800D16DC;
 extern void* D_800D16D4;
 extern s32 D_800D16E0;
@@ -277,7 +277,7 @@ extern u8 D_800D1C4C;
 extern u16 D_800D1C50;
 extern s32 D_800D1C54;
 extern SVECTOR* D_800D1C58;
-extern u16 D_800D1C5C;
+extern u16 g_JetShotPower;
 extern u16* D_800D1C60;
 extern u16 D_800D1C78;
 extern u8 D_800D1C7C;
@@ -323,13 +323,13 @@ void func_800A442C(s16 arg0);
 s16 func_800A4400(void);
 void func_800A2DE4(s32 arg0, s32 arg1);
 s16 func_800A40F4(Unk800A4390* arg0, s16 arg1);
-void* func_800A84DC(Unk800A8604* arg0);
+void* JetDrawModelTris(Unk800A8604* arg0);
 void func_800A84A4(s32* arg0, u_long* arg1);
-void func_800A83F0(SVECTOR* arg0, u_long* arg1);
+void JetProject6Points(SVECTOR* arg0, u_long* arg1);
 void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4390* obj);
-void* func_800A8604(Unk800A8604* arg0);
-POLY_G3* func_800A8734(JetTriangle* arg0, POLY_G3* arg1, OT_TYPE* arg2, JetTriangle* arg3);
-POLY_FT4* func_800A882C(SVECTOR* arg0, POLY_FT4* arg1, OT_TYPE* arg2, SVECTOR* arg3);
+void* JetDrawModelTrisUI(Unk800A8604* arg0);
+POLY_G3* JetDrawTriangle(JetTriangle* arg0, POLY_G3* arg1, OT_TYPE* arg2, JetTriangle* arg3);
+POLY_FT4* JetDrawTrackQuad(SVECTOR* arg0, POLY_FT4* arg1, OT_TYPE* arg2, SVECTOR* arg3);
 JetModel* JetModelAlloc(void);
 JetTriangle* JetTrianglesAlloc(s32 count);
 JetQuad* JetQuadsAlloc(s32 count);
@@ -337,10 +337,10 @@ void func_800A6BD8(Unk800A4390* arg0);
 s32 JetVectorInsidePlanes(VECTOR* arg0);
 void func_800A6B08(Unk800A4390* arg0);
 void func_800A12EC(void);
-void func_800A13AC(void);
-void func_800A1450();
-void func_800A1A64();
-void func_800A1B64(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4);
+void JetDrawTrack(void);
+void JetSetWorldMatrix();
+void JetDrawEnergyGauge();
+void JetDrawScorePopup(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4);
 void func_800A2420(void);
 void func_800A2BE0(void);
 void func_800A334C(void);
@@ -350,9 +350,9 @@ void JetModelsReset(void);
 JetModel* JetModelBuild(s32 arg0);
 void JetBuffersInit(void);
 void JetNodesInit(void);
-void func_800A16A4(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot);
+void JetTrackSample(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot);
 void func_800A1CD8(s32 value, s32 x, s16 y, s16 padWithZero, u16 v);
-void func_800A1F18(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans);
+void JetDrawSprite(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans);
 void func_800A2058();
 void func_800A2214();
 void func_800A2860(void);
@@ -406,29 +406,29 @@ loop:
     if (D_800D16DC == 0) {
         func_800A2C50(9);
         func_800A35DC(*speed);
-        func_800A1450();
-        func_800A13AC();
+        JetSetWorldMatrix();
+        JetDrawTrack();
         func_800A12EC();
-        func_800A1B64(db[0], D_800A8A88, 5, 0x28, 0);
+        JetDrawScorePopup(db[0], D_800A8A88, 5, 0x28, 0);
         func_800A372C(*speed);
         func_800A46E8(db[0]);
-        func_800A1CD8(D_800D16D8, 0xF4, 0xC8, 0, 0);
-        func_800A1F18(7, 0xCC, 0xC8, 0x27, 0x11, 0, 0, 0x27, 0x11, 0);
-        func_800A1F18(0xB, 0x12, 0x56, 0xC, 0x8C, 0, 0x70, 0xC, 0x8C, 0);
-        func_800A1A64();
+        func_800A1CD8(g_JetScore, 0xF4, 0xC8, 0, 0);
+        JetDrawSprite(7, 0xCC, 0xC8, 0x27, 0x11, 0, 0, 0x27, 0x11, 0);
+        JetDrawSprite(0xB, 0x12, 0x56, 0xC, 0x8C, 0, 0x70, 0xC, 0x8C, 0);
+        JetDrawEnergyGauge();
         if (*speed < 0x4000) {
             D_800A8338 = 0;
         } else {
             D_800A8338 = 0x7F;
         }
     } else {
-        func_800A1F18(9, 0xCA, 0xC0, 0x60, temp_s0, 0, 0x50, 0x60, temp_s0, 0);
+        JetDrawSprite(9, 0xCA, 0xC0, 0x60, temp_s0, 0, 0x50, 0x60, temp_s0, 0);
         D_800A8338 = 0;
         D_800A833C = 0;
     }
     func_800A2B78();
     func_800A2058();
-    func_800A1F18(0xA, 0xC8, 0xC0, 0x6F, 0x1F, 0, 0x30, 0x70, temp_s0, 0);
+    JetDrawSprite(0xA, 0xC8, 0xC0, 0x6F, 0x1F, 0, 0x30, 0x70, temp_s0, 0);
     DrawSync(0);
     VSync(0);
     ResetGraph(1);
@@ -453,7 +453,7 @@ done:
     *D_8009A000 = 0xB8;
     D_8009A004 = 0;
     AkaoExec();
-    return D_800D16D8;
+    return g_JetScore;
 }
 #endif
 
@@ -514,8 +514,8 @@ void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     args.prim = db->prims.g3Cursor;
     args.ot = &db->ot[otIndex];
     args.model = node->model;
-    db->prims.g3Cursor = func_800A84DC(&args);
-    func_800A83F0(obj->unkDC, obj->unk11C);
+    db->prims.g3Cursor = JetDrawModelTris(&args);
+    JetProject6Points(obj->unkDC, obj->unk11C);
     ys[0] = obj->unk11C[0] >> 16;
     minY = ys[0];
     maxY = minY;
@@ -605,7 +605,7 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     args.prim = db->prims.g3Cursor;
     args.ot = &db->ot2[otIndex];
     args.model = node->model;
-    db->prims.g3Cursor = func_800A84DC(&args);
+    db->prims.g3Cursor = JetDrawModelTris(&args);
     shadow = &D_800D186C;
     func_800A84A4(shadow[0]->tris, screen);
     D_800A8964 = screen[1] >> 16;
@@ -623,7 +623,7 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
 #endif
 
 // Load a node's matrix into the GTE and draw its model's triangles.
-void func_800A1198(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, s32 arg4) {
+void JetDrawNodeUI(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, s32 arg4) {
     Unk800A8604 args;
     MATRIX** world;
     MATRIX* m;
@@ -648,7 +648,7 @@ void func_800A1198(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, s32 arg4
     args.prim = db->prims.g3Cursor;
     args.ot = &db->ot2[otIndex];
     args.model = node->model;
-    db->prims.g3Cursor = func_800A8604(&args);
+    db->prims.g3Cursor = JetDrawModelTrisUI(&args);
 }
 
 // Draw every background triangle on the draw list, front to back.
@@ -664,7 +664,7 @@ void func_800A12EC(void) {
         triId = D_800A8A60;
         list = &D_800E2608;
         do {
-            prim = func_800A8734(&tris[triId], prim, g_JetBufferPtr[0]->ot, &tris[triId]);
+            prim = JetDrawTriangle(&tris[triId], prim, g_JetBufferPtr[0]->ot, &tris[triId]);
             triId = list[triId].unk2;
         } while (triId != 0xFFFF);
     }
@@ -672,7 +672,7 @@ void func_800A12EC(void) {
 }
 
 // Draw every track element on the draw list, front to back.
-void func_800A13AC(void) {
+void JetDrawTrack(void) {
     Unk800E2608* list;
     SVECTOR* left;
     SVECTOR* right;
@@ -686,7 +686,7 @@ void func_800A13AC(void) {
 loop:
     left = D_800D1C58;
     right = D_800EE194;
-    prim = func_800A882C(&left[trackId], prim, g_JetBufferPtr[0]->ot, &right[trackId]);
+    prim = JetDrawTrackQuad(&left[trackId], prim, g_JetBufferPtr[0]->ot, &right[trackId]);
     trackId = list[trackId].unk2;
     if (trackId != 0xFFFF) {
         goto loop;
@@ -695,7 +695,7 @@ loop:
 }
 
 // Build the world matrix from the camera rotation and the view position.
-void func_800A1450(void) {
+void JetSetWorldMatrix(void) {
     MATRIX** view;
     MATRIX** world;
     MATRIX* cam;
@@ -726,7 +726,7 @@ void func_800A1450(void) {
 
 // Sample the track at a fractional segment index, giving a point lifted along
 // the surface normal and the interpolated banking rotation.
-void func_800A16A4(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot) {
+void JetTrackSample(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot) {
     VECTOR left;
     VECTOR right;
     VECTOR mid;
@@ -832,7 +832,7 @@ void func_800A16A4(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot) {
     rot->vz = rotCur->vz + dz;
 }
 
-void func_800A1A64(void) {
+void JetDrawEnergyGauge(void) {
     JetBuffer** db;
     POLY_G4* poly;
     s16 power;
@@ -840,7 +840,7 @@ void func_800A1A64(void) {
 
     db = g_JetBufferPtr;
     poly = db[0]->prims.g4Cursor;
-    power = D_800D1C5C;
+    power = g_JetShotPower;
     top = 220 - power;
     setXY4(poly, 20, top, 28, top, 20, 220, 28, 220);
     setRGB0(poly, -0x80 - power, power, 0);
@@ -854,7 +854,7 @@ void func_800A1A64(void) {
 }
 
 // Spin and draw the score model, alternating it with the title every so often.
-void func_800A1B64(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) {
+void JetDrawScorePopup(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) {
     JetNode* node;
     u8* alternate;
     s16* counter;
@@ -873,8 +873,8 @@ void func_800A1B64(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) {
     D_800EE18C.vz += arg4;
     if (alternate[0] == 1) {
         RotMatrix(&D_800EE18C, &D_800A8A74[index]->m);
-        func_800A1198(arg0, D_800A8A74[index], 0, 0, unused);
-        func_800A1CD8(D_800A8CC4, 0xDC, 0xA0, 0, 0x18);
+        JetDrawNodeUI(arg0, D_800A8A74[index], 0, 0, unused);
+        func_800A1CD8(g_JetPopupPoints, 0xDC, 0xA0, 0, 0x18);
     }
     counter = &D_800A89CC;
     (*counter)--;
@@ -942,7 +942,7 @@ void func_800A1CD8(s32 value, s32 x, s16 y, s16 padWithZero, u16 v) {
 #endif
 
 // Draw one sprite from the HUD sprite table.
-void func_800A1F18(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans) {
+void JetDrawSprite(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans) {
     JetBuffer** db;
     POLY_FT4* poly;
 
@@ -1027,7 +1027,7 @@ void func_800A2214(void) {
     D_800A89D4 = 0x37DC;
     D_800D16E0 = 0;
     D_800D1C54 = 0;
-    D_800D16D8 = 0;
+    g_JetScore = 0;
     D_800E25F4 = 0;
     D_800E2600 = 0;
     D_800A8A88 = 0;
@@ -1251,7 +1251,7 @@ void func_800A2C50(s32 arg0) {
     s32 step;
 
     pathPos = &D_800D1C54;
-    func_800A16A4(pathPos[0], -0x64, &pos, &rot);
+    JetTrackSample(pathPos[0], -0x64, &pos, &rot);
     speed = &D_800A897C;
     pathPos[0] += speed[0];
     D_800A83B8.vx = pos.vx;
@@ -1367,7 +1367,7 @@ void func_800A2E38(void) {
             shoot = &D_800D1C4C;
             *shoot = 0;
             if (pad & 0x20) {
-                power = &D_800D1C5C;
+                power = &g_JetShotPower;
                 func_800A2AA0(*power & 0xFF);
                 if ((s16)*power >= 9) {
                     (*power)--;
@@ -1385,7 +1385,7 @@ void func_800A2E38(void) {
                 }
             } else {
                 func_800A2AA0(0);
-                powerRegen = &D_800D1C5C;
+                powerRegen = &g_JetShotPower;
                 if ((s16)*powerRegen < 0x80) {
                     (*powerRegen)++;
                 }
@@ -1777,7 +1777,7 @@ void func_800A3AAC(void) {
     for (i = 0; i < 0x64; i++) {
         D_800D1970[i] = i + 1;
     }
-    D_800D1C5C = 0x80;
+    g_JetShotPower = 0x80;
     D_800D1C4C = 0;
     D_800D1C7C = 0;
     D_800E25EC = 0xA0;
@@ -1889,7 +1889,7 @@ void func_800A3E58(void) {
     if (D_800D1C4C == 1) {
         db = g_JetBufferPtr;
         scroll = &D_800D1720;
-        power = D_800D1C5C;
+        power = g_JetShotPower;
         spread = power >> 3;
         poly = db[0]->prims.ft4Cursor;
         setXY4(poly, D_800A895C + spread, D_800A8964, D_800E25EC, D_800E25F0, D_800A895C - spread, D_800A8964,
@@ -2142,17 +2142,17 @@ void func_800A46E8(JetBuffer* db) {
                 break;
             }
             step = st->unk28;
-            func_800A16A4(D_800D1C54 + 0x2FFFD, -100, &pos, &rot);
+            JetTrackSample(D_800D1C54 + 0x2FFFD, -100, &pos, &rot);
             obj->unk0.vx = st->unk2C + ((step * (pos.vx - st->unk2C)) >> 7);
             obj->unk0.vy = st->unk30 + ((step * (pos.vy - st->unk30)) >> 7);
             obj->unk0.vz = st->unk34 + ((step * (pos.vz - st->unk34)) >> 7);
-            func_800A16A4(D_800D1C54 + 0x3FFFC, -100, &pos, &rot);
+            JetTrackSample(D_800D1C54 + 0x3FFFC, -100, &pos, &rot);
             dx = obj->unk0.vx - pos.vx;
             dy = obj->unk0.vy - pos.vy;
             dz = obj->unk0.vz - pos.vz;
             SquareRoot0(dx * dx + dy * dy + dz * dz);
             if (st->unk14 >= 0x81) {
-                score = &D_800D16D8;
+                score = &g_JetScore;
                 if (*score < 6) {
                     *score = 0;
                 } else {
@@ -2334,7 +2334,7 @@ void func_800A46E8(JetBuffer* db) {
                 release = 1;
                 break;
             }
-            func_800A16A4(D_800D1C54 + 0x3FFFC, 10, &obj->unk0, &obj->unk18);
+            JetTrackSample(D_800D1C54 + 0x3FFFC, 10, &obj->unk0, &obj->unk18);
             drawMode = 1;
             if (st->unk4 != 0) {
                 func_800A6B08(obj);
@@ -2942,7 +2942,7 @@ void func_800A46E8(JetBuffer* db) {
             }
             break;
         case 250:
-            if (D_800D16D8 < st->unk50[0]) {
+            if (g_JetScore < st->unk50[0]) {
                 D_800D1C84.unk28.unk50[0] = 0x12C;
                 D_800D1C84.unk28.unk50[1] = 0x190;
                 D_800D1C84.unk28.unk50[2] = 0;
@@ -2999,7 +2999,7 @@ void func_800A6B08(Unk800A4390* arg0) {
     s32 y;
     s32 z;
 
-    amount = D_800D1C5C >> 5;
+    amount = g_JetShotPower >> 5;
     if (amount == 0) {
         amount = 1;
     }
@@ -3032,7 +3032,7 @@ void func_800A6BD8(Unk800A4390* obj) {
         s32 y;
         s32 z;
 
-        score = &D_800D16D8;
+        score = &g_JetScore;
         *score += st->unk50[0];
         func_800A29AC(st->unk50[18]);
         st->unkC = 0;
@@ -3044,7 +3044,7 @@ void func_800A6BD8(Unk800A4390* obj) {
         }
         D_800A8A88 = obj->unkD4->modelId;
         points = st->unk50[0];
-        D_800A8CC4 = points;
+        g_JetPopupPoints = points;
         D_800A89CC = 100;
         D_800E25E8 = 1;
         setVector(&D_800EE18C, 0, 0, 0);
@@ -3056,7 +3056,7 @@ void func_800A6BD8(Unk800A4390* obj) {
         s32 y;
         s32 z;
 
-        score = &D_800D16D8;
+        score = &g_JetScore;
         *score += st->unk50[0];
         func_800A29AC(st->unk50[18]);
         st->unkC = 0;
@@ -3068,7 +3068,7 @@ void func_800A6BD8(Unk800A4390* obj) {
         }
         D_800A8A88 = obj->unkD4->modelId;
         points = st->unk50[0];
-        D_800A8CC4 = points;
+        g_JetPopupPoints = points;
         D_800A89CC = 100;
         D_800E25E8 = 1;
         setVector(&D_800EE18C, 0, 0, 0);
@@ -3077,7 +3077,7 @@ void func_800A6BD8(Unk800A4390* obj) {
         s32* score;
         s32 points;
 
-        score = &D_800D16D8;
+        score = &g_JetScore;
         *score += st->unk50[0];
         points = st->unk50[11];
         obj->unk18.vx += points;
@@ -3085,13 +3085,13 @@ void func_800A6BD8(Unk800A4390* obj) {
     if (st->unk50[10] == 4) {
         s32* score;
         s32 points;
-        score = &D_800D16D8;
+        score = &g_JetScore;
         *score += st->unk50[0];
         func_800A29AC(st->unk50[18]);
         st->unkC = 0;
         D_800A8A88 = obj->unkD4->modelId;
         points = st->unk50[0];
-        D_800A8CC4 = points;
+        g_JetPopupPoints = points;
         D_800A89CC = 100;
         D_800E25E8 = 1;
         setVector(&D_800EE18C, 0, 0, 0);
@@ -3103,7 +3103,7 @@ void func_800A6BD8(Unk800A4390* obj) {
         s32 y;
         s32 z;
 
-        score = &D_800D16D8;
+        score = &g_JetScore;
         *score += st->unk50[0];
         func_800A29AC(st->unk50[18]);
         st->unkC = 0;
@@ -3115,12 +3115,12 @@ void func_800A6BD8(Unk800A4390* obj) {
         }
         D_800A8A88 = obj->unkD4->modelId;
         points = st->unk50[0];
-        D_800A8CC4 = points;
+        g_JetPopupPoints = points;
         D_800A89CC = 100;
         D_800E25E8 = 1;
         setVector(&D_800EE18C, 0, 0, 0);
     }
-    score = &D_800D16D8;
+    score = &g_JetScore;
     if (*score > 0x270F) {
         *score = 0x270F;
     }
