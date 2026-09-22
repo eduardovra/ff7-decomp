@@ -7,15 +7,15 @@
 
 // Nine write cursors, each reset to the start of its own buffer below.
 typedef struct {
-    /* 0x0000 */ void* f3Cursor;
-    /* 0x0004 */ void* f4Cursor;
-    /* 0x0008 */ void* g3Cursor;
-    /* 0x000C */ void* g4Cursor;
-    /* 0x0010 */ void* ft3Cursor;
-    /* 0x0014 */ void* ft4Cursor;
-    /* 0x0018 */ void* gt3Cursor;
-    /* 0x001C */ void* gt4Cursor;
-    /* 0x0020 */ void* lineCursor;
+    /* 0x0000 */ POLY_F3* f3Cursor;
+    /* 0x0004 */ POLY_F4* f4Cursor;
+    /* 0x0008 */ POLY_G3* g3Cursor;
+    /* 0x000C */ POLY_G4* g4Cursor;
+    /* 0x0010 */ POLY_FT3* ft3Cursor;
+    /* 0x0014 */ POLY_FT4* ft4Cursor;
+    /* 0x0018 */ POLY_GT3* gt3Cursor;
+    /* 0x001C */ POLY_GT4* gt4Cursor;
+    /* 0x0020 */ LINE_F2* lineCursor;
     /* 0x0024 */ POLY_F3 f3[1];
     /* 0x0038 */ POLY_F4 f4[1];
     /* 0x0050 */ POLY_G3 g3[0x640];
@@ -30,9 +30,9 @@ typedef struct {
 typedef struct {
     /* 0x0000 */ DRAWENV draw;
     /* 0x005C */ DISPENV disp;
-    /* 0x0070 */ u_long ot[0x1000];
+    /* 0x0070 */ OT_TYPE ot[0x1000];
     /* 0x4070 */ u_long unk4070[10];
-    /* 0x4098 */ u_long ot2[0xB4];
+    /* 0x4098 */ OT_TYPE ot2[0xB4];
     /* 0x4368 */ JetPrimBuffer prims;
 } JetBuffer; // size: 0x1265C
 
@@ -44,19 +44,32 @@ typedef struct {
 } JetModelInfo; // size: 0x14
 
 typedef struct {
+    /* 0x00 */ SVECTOR v0;
+    /* 0x08 */ SVECTOR v1;
+    /* 0x10 */ SVECTOR v2;
+    /* 0x18 */ CVECTOR c0;
+    /* 0x1C */ CVECTOR c1;
+    /* 0x20 */ CVECTOR c2;
+} JetTriangle; // size: 0x24
+
+typedef struct {
+    /* 0x00 */ s32 unk0[10];
+} JetQuad; // size: 0x28
+
+typedef struct {
     /* 0x00 */ s16 polyCount;
     /* 0x02 */ s16 unk2;
     /* 0x04 */ s16 triCount;
     /* 0x06 */ s16 quadCount;
     /* 0x08 */ s16 unk8;
-    /* 0x0A */ char padA[2];
-    /* 0x0C */ s32* tris;
-    /* 0x10 */ s32* quads;
+    /* 0x0A */ s16 : 16;
+    /* 0x0C */ JetTriangle* tris;
+    /* 0x10 */ JetQuad* quads;
     /* 0x14 */ s16 unk14;
     /* 0x16 */ s16 unk16;
     /* 0x18 */ s16 unk18;
     /* 0x1A */ s16 unk1A;
-    /* 0x1C */ char pad1C[4];
+    /* 0x1C */ s32 : 32;
 } JetModel; // size: 0x20
 
 // Doubly linked list node, chained by JetNodesInit with a 0x38 stride.
@@ -72,22 +85,12 @@ typedef struct JetNode {
     /* 0x34 */ struct JetNode* next;
 } JetNode; // size: 0x38
 
-typedef struct {
-    /* 0x00 */ s32 unk0;
-    /* 0x04 */ char pad4[0x24];
-} JetQuad; // size: 0x28
-
-typedef struct {
-    /* 0x00 */ s32 unk0;
-    /* 0x04 */ char pad4[0x20];
-} JetTriangle; // size: 0x24
-
 // One scheduled object spawn, read from xbin stream 0xE.
 typedef struct {
     /* 0x00 */ s16 unk0;
-    /* 0x02 */ char pad2[2];
+    /* 0x02 */ s16 : 16;
     /* 0x04 */ s16 unk4;
-    /* 0x06 */ char pad6[2];
+    /* 0x06 */ s16 : 16;
     /* 0x08 */ s32 unk8;
     /* 0x0C */ s32 unkC;
     /* 0x10 */ s32 unk10[0x14];
@@ -95,9 +98,9 @@ typedef struct {
 
 // Argument block for the GTE renderers in jet_gte.s.
 typedef struct {
-    /* 0x0 */ s32* tris;
-    /* 0x4 */ u_long* prim;
-    /* 0x8 */ u_long* ot;
+    /* 0x0 */ JetTriangle* tris;
+    /* 0x4 */ POLY_G3* prim;
+    /* 0x8 */ OT_TYPE* ot;
     /* 0xC */ JetModel* model;
 } Unk800A8604; // size: 0x10
 
@@ -133,7 +136,7 @@ typedef struct {
     /* 0x28 */ Unk800D1CAC unk28;
     /* 0xC8 */ s32 unkC8;      // the object path's length
     /* 0xCC */ SVECTOR* unkCC; // the object path itself
-    /* 0xD0 */ char padD0[4];
+    /* 0xD0 */ s32 : 32;
     /* 0xD4 */ JetNode* unkD4;
     /* 0xD8 */ s16 unkD8;
     /* 0xDA */ s16 unkDA;
@@ -324,11 +327,11 @@ void func_800A84A4(s32* arg0, u_long* arg1);
 void func_800A83F0(SVECTOR* arg0, u_long* arg1);
 void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4390* obj);
 void* func_800A8604(Unk800A8604* arg0);
-u_long* func_800A8734(JetTriangle* arg0, u_long* arg1, u_long* arg2, JetTriangle* arg3);
-u_long* func_800A882C(SVECTOR* arg0, u_long* arg1, u_long* arg2, SVECTOR* arg3);
+POLY_G3* func_800A8734(JetTriangle* arg0, POLY_G3* arg1, OT_TYPE* arg2, JetTriangle* arg3);
+POLY_FT4* func_800A882C(SVECTOR* arg0, POLY_FT4* arg1, OT_TYPE* arg2, SVECTOR* arg3);
 JetModel* JetModelAlloc(void);
-s32* JetTrianglesAlloc(s32 count);
-s32* JetQuadsAlloc(s32 count);
+JetTriangle* JetTrianglesAlloc(s32 count);
+JetQuad* JetQuadsAlloc(s32 count);
 void func_800A6BD8(Unk800A4390* arg0);
 s32 JetVectorInsidePlanes(VECTOR* arg0);
 void func_800A6B08(Unk800A4390* arg0);
@@ -652,19 +655,19 @@ void func_800A12EC(void) {
     Unk800E2608* list;
     JetTriangle* tris;
     u16 triId;
-    u_long* ot;
+    POLY_G3* prim;
 
-    ot = g_JetBufferPtr[0]->prims.g3Cursor;
+    prim = g_JetBufferPtr[0]->prims.g3Cursor;
     tris = g_JetTrianglesBase;
     if (D_800D1C78) {
         triId = D_800A8A60;
         list = &D_800E2608;
         do {
-            ot = func_800A8734(&tris[triId], ot, g_JetBufferPtr[0]->ot, &tris[triId]);
+            prim = func_800A8734(&tris[triId], prim, g_JetBufferPtr[0]->ot, &tris[triId]);
             triId = list[triId].unk2;
         } while (triId != 0xFFFF);
     }
-    g_JetBufferPtr[0]->prims.g3Cursor = ot;
+    g_JetBufferPtr[0]->prims.g3Cursor = prim;
 }
 
 // Draw every track element on the draw list, front to back.
@@ -673,21 +676,21 @@ void func_800A13AC(void) {
     SVECTOR* left;
     SVECTOR* right;
     u16 trackId;
-    u_long* ot;
+    POLY_FT4* prim;
 
     trackId = D_800A89DC;
-    ot = g_JetBufferPtr[0]->prims.ft4Cursor;
+    prim = g_JetBufferPtr[0]->prims.ft4Cursor;
     list = D_800D9948;
 // A loop keyword makes gcc duplicate the exit test, so the goto is load-bearing.
 loop:
     left = D_800D1C58;
     right = D_800EE194;
-    ot = func_800A882C(&left[trackId], ot, g_JetBufferPtr[0]->ot, &right[trackId]);
+    prim = func_800A882C(&left[trackId], prim, g_JetBufferPtr[0]->ot, &right[trackId]);
     trackId = list[trackId].unk2;
     if (trackId != 0xFFFF) {
         goto loop;
     }
-    g_JetBufferPtr[0]->prims.ft4Cursor = ot;
+    g_JetBufferPtr[0]->prims.ft4Cursor = prim;
 }
 
 // Build the world matrix from the camera rotation and the view position.
@@ -837,8 +840,8 @@ void func_800A1A64(void) {
     db = g_JetBufferPtr;
     poly = db[0]->prims.g4Cursor;
     power = D_800D1C5C;
-    top = 0xDC - power;
-    setXY4(poly, 0x14, top, 0x1C, top, 0x14, 0xDC, 0x1C, 0xDC);
+    top = 220 - power;
+    setXY4(poly, 20, top, 28, top, 20, 220, 28, 220);
     setRGB0(poly, -0x80 - power, power, 0);
     setRGB1(poly, -0x80 - power, power, 0);
     setRGB2(poly, 0x80, 0, 0);
@@ -1387,15 +1390,15 @@ void func_800A2E38(void) {
                 }
             }
             cursorX = &D_800E25EC;
-            if ((s16)*cursorX > 0x140) {
-                *cursorX = 0x140;
+            if ((s16)*cursorX > 320) {
+                *cursorX = 320;
             }
             if ((s16)*cursorX < 0) {
                 *cursorX = 0;
             }
             cursorY = &D_800E25F0;
-            if ((s16)*cursorY > 0xF0) {
-                *cursorY = 0xF0;
+            if ((s16)*cursorY > 240) {
+                *cursorY = 240;
             }
             if ((s16)*cursorY < 0) {
                 *cursorY = 0;
@@ -2866,7 +2869,7 @@ void func_800A46E8(JetBuffer* db) {
             }
             shade = ~(st->unk14 * 2);
             fade = db->prims.g4Cursor;
-            setXY4(fade, 0, 0, 0x140, 0, 0, 0xF0, 0x140, 0xF0);
+            setXY4(fade, 0, 0, 320, 0, 0, 240, 320, 240);
             setRGB0(fade, shade, shade, shade);
             setRGB1(fade, shade, shade, shade);
             setRGB2(fade, shade, shade, shade);
@@ -2906,7 +2909,7 @@ void func_800A46E8(JetBuffer* db) {
             }
             shade = st->unk14 * 2;
             fade = db->prims.g4Cursor;
-            setXY4(fade, 0, 0, 0x140, 0, 0, 0xF0, 0x140, 0xF0);
+            setXY4(fade, 0, 0, 320, 0, 0, 240, 320, 240);
             setRGB0(fade, shade, shade, shade);
             setRGB1(fade, shade, shade, shade);
             setRGB2(fade, shade, shade, shade);
@@ -3253,27 +3256,28 @@ s32 JetSVectorInsidePlanes(SVECTOR* arg0) {
     return leftOk & rightOk;
 }
 
-s32 JetLeftPlaneHalfSpace(s32 arg0, s32 arg1, s32 arg2) {
-    s32 a;
-    s32 b;
-    s32 c;
+s32 JetLeftPlaneHalfSpace(s32 x, s32 y, s32 z) {
+    s32 nx;
+    s32 ny;
+    s32 nz;
 
-    a = g_JetLeftPlaneNormalX;
-    b = g_JetLeftPlaneNormalY;
-    c = g_JetLeftPlaneNormalZ;
+    nx = g_JetLeftPlaneNormalX;
+    ny = g_JetLeftPlaneNormalY;
+    nz = g_JetLeftPlaneNormalZ;
 
-    return (a * (arg0 >> 2)) + (b * (arg1 >> 2)) + (c * (arg2 >> 2)) + g_JetLeftPlaneDistance;
+    return (nx * (x >> 2)) + (ny * (y >> 2)) + (nz * (z >> 2)) + g_JetLeftPlaneDistance;
 }
 
-s32 JetRightPlaneHalfSpace(s32 arg0, s32 arg1, s32 arg2) {
-    s32 a;
-    s32 b;
-    s32 c;
-    a = g_JetRightPlaneNormalX;
-    b = g_JetRightPlaneNormalY;
-    c = g_JetRightPlaneNormalZ;
+s32 JetRightPlaneHalfSpace(s32 x, s32 y, s32 z) {
+    s32 nx;
+    s32 ny;
+    s32 nz;
 
-    return (a * (arg0 >> 2)) + (b * (arg1 >> 2)) + (c * (arg2 >> 2)) + g_JetRightPlaneDistance;
+    nx = g_JetRightPlaneNormalX;
+    ny = g_JetRightPlaneNormalY;
+    nz = g_JetRightPlaneNormalZ;
+
+    return (nx * (x >> 2)) + (ny * (y >> 2)) + (nz * (z >> 2)) + g_JetRightPlaneDistance;
 }
 
 s32 JetSphereInsidePlanes(VECTOR* arg0, s16 arg1) {
@@ -3434,7 +3438,7 @@ JetModel* JetModelAlloc(void) {
     return &base[index];
 }
 
-s32* JetTrianglesAlloc(s32 count) {
+JetTriangle* JetTrianglesAlloc(s32 count) {
     s32* cursor;
     JetTriangle* base;
     s32 index;
@@ -3443,10 +3447,10 @@ s32* JetTrianglesAlloc(s32 count) {
     index = *cursor;
     *cursor = index + count;
     base = g_JetTriangles;
-    return &base[index].unk0;
+    return &base[index];
 }
 
-s32* JetQuadsAlloc(s32 count) {
+JetQuad* JetQuadsAlloc(s32 count) {
     s32* cursor;
     JetQuad* base;
     s32 index;
@@ -3455,7 +3459,7 @@ s32* JetQuadsAlloc(s32 count) {
     index = *cursor;
     *cursor = index + count;
     base = g_JetQuads;
-    return &base[index].unk0;
+    return &base[index];
 }
 
 // No PC counterpart; the port replaced the PSX double buffer with the DirectX driver
@@ -3464,10 +3468,10 @@ void JetBuffersInit(void) {
     JetBuffer* db;
     u_char* isbg;
 
-    SetDefDrawEnv(&g_JetBuffers[0].draw, 0, 0, 0x140, 0xF0);
-    SetDefDispEnv(&g_JetBuffers[0].disp, 0, 0xF0, 0x140, 0xF0);
-    SetDefDrawEnv(&g_JetBuffers[1].draw, 0, 0xF0, 0x140, 0xF0);
-    SetDefDispEnv(&g_JetBuffers[1].disp, 0, 0, 0x140, 0xF0);
+    SetDefDrawEnv(&g_JetBuffers[0].draw, 0, 0, 320, 240);
+    SetDefDispEnv(&g_JetBuffers[0].disp, 0, 240, 320, 240);
+    SetDefDrawEnv(&g_JetBuffers[1].draw, 0, 240, 320, 240);
+    SetDefDispEnv(&g_JetBuffers[1].disp, 0, 0, 320, 240);
     db = g_JetBuffers;
     g_JetBuffers[0].draw.isbg = 0;
     // Stored off the buffer base register; a direct field store folds to an absolute address.
@@ -3475,7 +3479,7 @@ void JetBuffersInit(void) {
     *isbg = 0;
     setRGB0(&g_JetBuffers[0].draw, 0, 0, 8);
     setRGB0(&g_JetBuffers[1].draw, 0, 0, 8);
-    SetGeomOffset(0xA0, 0xA0);
+    SetGeomOffset(160, 160);
     SetGeomScreen(0x100);
     SetDispMask(1);
     SetBackColor(0x80, 0x80, 0x80);
