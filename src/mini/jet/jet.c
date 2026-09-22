@@ -3166,9 +3166,6 @@ void func_800A6BD8(Unk800A4390* obj) {
     }
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A70D4);
-#else
 // Build the left and right frustum planes from the four corner rays.
 void func_800A70D4(void) {
     VECTOR tl;
@@ -3179,6 +3176,8 @@ void func_800A70D4(void) {
     VECTOR brCorner;
     VECTOR tlCorner;
     VECTOR trCorner;
+    VECTOR* ln;
+    VECTOR* rn;
     s32 lx;
     s32 ly;
     s32 lz;
@@ -3186,6 +3185,8 @@ void func_800A70D4(void) {
     s32 ry;
     s32 rz;
 
+    ln = (VECTOR*)&D_800A892C;
+    rn = (VECTOR*)&D_800A893C;
     blCorner = D_800A0410;
     brCorner = D_800A0420;
     tlCorner = D_800A0430;
@@ -3203,23 +3204,22 @@ void func_800A70D4(void) {
     br.vx = brCorner.vx >> 2;
     br.vy = brCorner.vy >> 2;
     br.vz = brCorner.vz >> 2;
-    OuterProduct0(&tl, &bl, (VECTOR*)&D_800A892C);
-    OuterProduct0(&tr, &br, (VECTOR*)&D_800A893C);
+    OuterProduct0(&tl, &bl, ln);
+    OuterProduct0(&tr, &br, rn);
 
-    lx = D_800A892C;
-    ly = D_800A8930;
-    lz = D_800A8934;
-    rx = D_800A893C;
-    ry = D_800A8940;
-    rz = D_800A8944;
+    lx = ln->vx;
+    ly = ln->vy;
+    lz = ln->vz;
+    rx = rn->vx;
+    ry = rn->vy;
+    rz = rn->vz;
     D_800A8A5C = -(lx * (tlCorner.vx >> 2)) - (ly * (tlCorner.vy >> 2)) - (lz * (tlCorner.vz >> 2));
     D_800A8A64 = -(rx * (trCorner.vx >> 2)) - (ry * (trCorner.vy >> 2)) - (rz * (trCorner.vz >> 2));
     D_800A8950 = (lx * (trCorner.vx >> 2)) + (ly * (trCorner.vy >> 2)) + (lz * (trCorner.vz >> 2)) + D_800A8A5C;
     D_800A8968 = (rx * (tlCorner.vx >> 2)) + (ry * (tlCorner.vy >> 2)) + (rz * (tlCorner.vz >> 2)) + D_800A8A64;
     D_800AB890 = SquareRoot0((lx * lx) + (ly * ly) + (lz * lz));
-    D_800D0550 = SquareRoot0((D_800A893C * D_800A893C) + (D_800A8940 * D_800A8940) + (D_800A8944 * D_800A8944));
+    D_800D0550 = SquareRoot0((rn->vx * rn->vx) + (rn->vy * rn->vy) + (rn->vz * rn->vz));
 }
-#endif
 
 // PC: C_005EECB5, is a point inside both frustum planes
 s32 func_800A7414(VECTOR* arg0) {
