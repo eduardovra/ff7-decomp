@@ -1606,7 +1606,6 @@ void func_800A35DC(s32 advance) {
     segment[0] = segment[0] + D_800A894C;
     for (i = 0; i < D_800A894C + D_800E25F8; i++) {
         tri = &D_800D1C60;
-        quad = &D_800EE428;
         while (1) {
             id = *tri[0]++;
             if (id == 0xFFFF) {
