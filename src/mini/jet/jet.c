@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include <game.h>
+#include <inline_c.h>
 #include <libetc.h>
 #include <libc.h>
 
@@ -505,7 +506,7 @@ void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     gte_stclmv2(&world[0]->m[0][2]);
     gte_SetTransMatrix2(cam);
     gte_ldlv0_2(&world[0]->t[0]);
-    gte_rtv0();
+    gte_rt2();
     gte_stlvnl2(&world[0]->t[0]);
     gte_SetRotMatrix2(world[0]);
     gte_SetTransMatrix2(world[0]);
@@ -596,7 +597,7 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     gte_stclmv2(&world[0]->m[0][2]);
     gte_SetTransMatrix2(cam);
     gte_ldlv0_2(&world[0]->t[0]);
-    gte_rtv0();
+    gte_rt2();
     gte_stlvnl2(&world[0]->t[0]);
     gte_SetRotMatrix2(world[0]);
     gte_SetTransMatrix2(world[0]);
@@ -717,7 +718,7 @@ void func_800A1450(void) {
     gte_stclmv2(&world[0]->m[0][2]);
     gte_SetTransMatrix2(cam);
     gte_ldlv0_2(&view[0]->t[0]);
-    gte_rtv0();
+    gte_rt2();
     gte_stlvnl2(&world[0]->t[0]);
     gte_SetRotMatrix2(world[0]);
     gte_SetTransMatrix2(world[0]);
