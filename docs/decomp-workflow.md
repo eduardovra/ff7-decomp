@@ -208,6 +208,25 @@ order is the memory-address path. Indexing the global directly at each use
 restored it. Applying the flag tree-wide breaks six other overlays, so it is
 per file, not a default.
 
+**A value stored to an array and reused was read back from the array, not kept
+in a local.** cse forwards the store, so `xs[i] = word; if (minX > xs[i]) minX
+= xs[i];` and a version holding `word` in a local produce the same
+instructions, but the local is a user variable whose pseudo exists from the top
+of the function, while the forwarded value is a temporary created at the load.
+The two get different registers, and with the scheduler that moved a load past
+a sign extension in `func_800A0874`. When the register order is the only fault
+and a local is only read once after its store, drop the local. Likewise `minX >
+xs[i]` and `xs[i] < minX` compile to the same compare but extend their operands
+in source order, which decides what fills the load delay slot.
+
+**A pointer assigned from an array element keeps the base first.** `spawn =
+&spawns[idx]` expands as a plain add of two registers, base then index, while
+the same address formed inside a memory reference goes through the address
+path, which puts the scaled index first (`addu v0,v0,a3`). When the target has
+index-first for a pointer that is then dereferenced several times, the original
+did not build that pointer with `&array[idx]`; `func_800A4458` in `jet.c` still
+hangs on this.
+
 **Declarations must start a block.** gcc 2.6.3 is C89: a declaration after a
 statement is a `parse error`. Any nested `{ }` opens a new block, which is a
 legitimate way to keep a declaration next to its use.
