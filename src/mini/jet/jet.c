@@ -1506,9 +1506,6 @@ void func_800A334C(void) {
     D_800E25F8 = 1;
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3414);
-#else
 // Step the track streams forward, spawning whatever each segment lists.
 void func_800A3414(s32 advance) {
     u32* pos;
@@ -1517,8 +1514,6 @@ void func_800A3414(s32 advance) {
     u32 next;
     u32 steps;
     u32 i;
-    u16** tri;
-    u16** quad;
     u32 id;
     u8* first;
 
@@ -1531,36 +1526,46 @@ void func_800A3414(s32 advance) {
     segment = &D_800D16E0;
     segment[0] = segment[0] + steps;
     for (i = 0; i < steps + D_800E25F8; i++) {
+        u16** tri;
+        u16** quad;
+        u32 end;
+
         tri = &D_800D1C60;
+        end = 0xFFFF;
         quad = &D_800EE428;
         while (1) {
             id = *tri[0]++;
-            if (id == 0xFFFF) {
+            if (id == end) {
                 break;
             }
             func_800A385C(id);
         }
         while (1) {
             id = *quad[0]++;
-            if (id == 0xFFFF) {
+            if (id == end) {
                 break;
             }
             func_800A38D4(id);
         }
     }
     for (i = 0; i < steps; i++) {
+        u16** tri;
+        u16** quad;
+        u32 end;
+
         tri = &D_800D196C;
+        end = 0xFFFF;
         quad = &D_800EE188;
         while (1) {
             id = *tri[0]++;
-            if (id == 0xFFFF) {
+            if (id == end) {
                 break;
             }
             func_800A3980(id);
         }
         while (1) {
             id = *quad[0]++;
-            if (id == 0xFFFF) {
+            if (id == end) {
                 break;
             }
             func_800A3A20(id);
@@ -1571,7 +1576,6 @@ void func_800A3414(s32 advance) {
         *first = 0;
     }
 }
-#endif
 
 void func_800A35DC(s32 advance) {
     u32* pos;
@@ -1879,9 +1883,6 @@ void func_800A3D50(JetBuffer* arg0) {
     arg0->prims.ft4Cursor = poly;
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A3E58);
-#else
 // Draw the two laser beams, from each gun muzzle to the aiming cursor.
 void func_800A3E58(void) {
     JetBuffer** db;
@@ -1896,8 +1897,9 @@ void func_800A3E58(void) {
         power = g_JetShotPower;
         spread = power >> 3;
         poly = db[0]->prims.ft4Cursor;
-        setXY4(poly, D_800A895C + spread, D_800A8964, g_JetCursorX, g_JetCursorY, D_800A895C - spread, D_800A8964,
-               g_JetCursorX, g_JetCursorY);
+        // Signed cursor reads preserve the original load/store ordering.
+        setXY4(poly, D_800A895C + spread, D_800A8964, *(s16*)&g_JetCursorX, *(s16*)&g_JetCursorY, D_800A895C - spread,
+               D_800A8964, *(s16*)&g_JetCursorX, *(s16*)&g_JetCursorY);
         setRGB0(poly, 0x80, 0x80, 0x80);
         setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
         poly->tpage = g_JetSpriteTPage[1];
@@ -1905,8 +1907,8 @@ void func_800A3E58(void) {
         SetSemiTrans(poly, 1);
         addPrim(&db[0]->ot[1], poly);
         poly++;
-        setXY4(poly, D_800A8970 + spread, D_800A8978, g_JetCursorX, g_JetCursorY, D_800A8970 - spread, D_800A8978,
-               g_JetCursorX, g_JetCursorY);
+        setXY4(poly, D_800A8970 + spread, D_800A8978, *(s16*)&g_JetCursorX, *(s16*)&g_JetCursorY, D_800A8970 - spread,
+               D_800A8978, *(s16*)&g_JetCursorX, *(s16*)&g_JetCursorY);
         setRGB0(poly, 0x80, 0x80, 0x80);
         setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
         poly->tpage = g_JetSpriteTPage[1];
@@ -1917,19 +1919,15 @@ void func_800A3E58(void) {
         db[0]->prims.ft4Cursor = poly;
     }
 }
-#endif
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A40F4);
-#else
-// model's six bounding box face centres.
+// Allocate an object and its scene node, then initialise its six bounding box face centres.
 s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
     s16* count;
     Unk800A4390* obj;
     Unk800A4390* pool;
     Unk800A4390* parentObj;
     Unk800A4390* box;
-    JetModelInfo* info;
+    Unk800A4390* boxPool;
     s16 index;
     s32 rawId;
     s16 modelId;
@@ -1959,15 +1957,14 @@ s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
             obj->unkD4 = JetNodeAlloc(rawId, 0, 0, 1, parentObj->unkD4, src->unk0.vx, src->unk0.vy, src->unk0.vz,
                                       src->unk18.vx, src->unk18.vy, src->unk18.vz);
         }
-        info = &g_JetModelInfo[modelId];
-        pool = D_800D1DC0; // reloading the base keeps it out of a saved register
-        box = &pool[index];
-        minX = info->unk4.vx;
-        maxX = info->unkC.vx;
-        minY = info->unk4.vy;
-        maxY = info->unkC.vy;
-        minZ = info->unk4.vz;
-        maxZ = info->unkC.vz;
+        minX = g_JetModelInfo[modelId].unk4.vx;
+        maxX = g_JetModelInfo[modelId].unkC.vx;
+        minY = g_JetModelInfo[modelId].unk4.vy;
+        maxY = g_JetModelInfo[modelId].unkC.vy;
+        minZ = g_JetModelInfo[modelId].unk4.vz;
+        maxZ = g_JetModelInfo[modelId].unkC.vz;
+        boxPool = D_800D1DC0;
+        box = &boxPool[index];
         setVector(&box->unkDC[0], (maxX + minX) >> 1, (maxY + minY) >> 1, maxZ);
         setVector(&box->unkDC[1], (maxX + minX) >> 1, (maxY + minY) >> 1, minZ);
         setVector(&box->unkDC[2], (maxX + minX) >> 1, maxY, (maxZ + minZ) >> 1);
@@ -1977,7 +1974,6 @@ s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
     }
     return index;
 }
-#endif
 
 void func_800A4390(Unk800A4390* arg0) {
     u16* temp;
