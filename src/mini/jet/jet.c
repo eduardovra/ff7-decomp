@@ -2,7 +2,7 @@
 
 #include "types.h"
 #include <game.h>
-#include <inline_c.h>
+#include <inline_o.h>
 #include <libetc.h>
 #include <libc.h>
 
@@ -105,15 +105,17 @@ typedef struct {
     /* 0xC */ JetModel* model;
 } Unk800A8604; // size: 0x10
 
+// A doubly-linked draw-list entry, parallel to the array it orders. Both
+// links are indices into that array, with 0xFFFF for the ends.
 typedef struct {
-    /* 0x0 */ u16 unk0;
-    /* 0x2 */ u16 unk2;
-} Unk800E2608; // size: 0x4
+    /* 0x0 */ u16 prev;
+    /* 0x2 */ u16 next;
+} JetListLink; // size: 0x4
 
 // The behaviour state an object's type handler drives.
 typedef struct {
     /* 0x00 */ s32 unk0;
-    /* 0x04 */ s32 unk4;
+    /* 0x04 */ s32 hit;
     /* 0x08 */ s32 unk8;
     /* 0x0C */ s32 unkC;
     /* 0x10 */ s32 unk10;
@@ -172,7 +174,7 @@ MATRIX D_800A8340 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}
 MATRIX D_800A8360 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
 MATRIX D_800A8380 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
 SVECTOR D_800A83A0 = {0, 0, 0, 0}; // world rotation
-VECTOR D_800A83A8 = {0, 0, 0, 0};
+VECTOR g_JetCameraPos = {0, 0, 0, 0};
 VECTOR D_800A83B8 = {0, 0, 0, 0};
 VECTOR D_800A83C8 = {0, 0, 0, 0};
 VECTOR D_800A83D8 = {0, 0, 0, 0};
@@ -204,26 +206,26 @@ extern s32 D_800A8968;
 extern s32 D_800A8984;
 extern SVECTOR* D_800A8988;
 extern s32 D_800A898C;
-extern u16 D_800A8990[]; // sprite tpage table
-extern s32 D_800A89D0;   // fog near
-extern s32 D_800A89D4;   // fog far
+extern u16 g_JetSpriteTPage[];
+extern s32 D_800A89D0; // fog near
+extern s32 D_800A89D4; // fog far
 extern JetModelInfo* g_JetModelInfo;
-extern u16 D_800A89DC;
+extern u16 g_JetTrackListHead;
 extern s32 D_800A89E0;
 extern s32 D_800A8958;
 extern u_long D_800A89E4; // loaded TIM address table
 extern u16 D_800A8A68;    // background clut
 extern s32 g_JetLeftPlaneDistance;
-extern u16 D_800A8A60;
+extern u16 g_JetTriangleListHead;
 extern s32 g_JetRightPlaneDistance;
 extern s32 D_800A8A6C; // pad direction code, 1..9 keypad layout
 extern s32 g_JetTriangleCursor;
 extern s32 D_800A8A7C;
 extern s32 D_800A8A80; // frames R1 has been held
-extern s16 D_800A89CC;
+extern s16 g_JetPopupTimer;
 extern s16 g_JetPopupPoints;
 extern JetNode* D_800A8A74[1];
-extern s16 D_800A8A88;
+extern s16 g_JetPopupModelId;
 extern u32 g_JetModelCount;
 extern JetNode g_JetNodeListHeads[10];
 extern s32* D_800A8CC0;
@@ -254,8 +256,8 @@ extern s16 g_JetNodeFreeList[0xC8];
 extern void* D_800D1A38;
 extern void* D_800D1A3C;
 extern JetModel* D_800D186C; // shadow triangles
-extern MATRIX* D_800D1728;   // view matrix
-extern MATRIX* D_800D1BD0;   // world matrix
+extern MATRIX* g_JetViewMatrix;
+extern MATRIX* g_JetWorldMatrix;
 extern u_long D_800D1BD4;
 extern JetModelInfo* g_JetModelInfoBase;
 extern void* D_800D1BDC;
@@ -273,13 +275,13 @@ extern s32* D_800D1C08;
 extern Unk800D1C0C* D_800D1C0C;
 extern u8* D_800D1C10;
 extern JetQuad* g_JetQuadsBase;
-extern u8 D_800D1C4C;
+extern u8 g_JetFiring;
 extern u16 D_800D1C50;
 extern s32 D_800D1C54;
-extern SVECTOR* D_800D1C58;
+extern SVECTOR* g_JetTrackLeft;
 extern u16 g_JetShotPower;
 extern u16* D_800D1C60;
-extern u16 D_800D1C78;
+extern u16 g_JetTriangleListCount;
 extern u8 D_800D1C7C;
 extern u16 D_800D1C80;
 extern Unk800A4390 D_800D1C84;
@@ -288,37 +290,37 @@ extern u16 D_800D9930;
 extern DR_MODE D_800D9934;
 extern u16 D_800D9940;
 extern s16 g_JetNextFreeNode;
-extern Unk800E2608 D_800D9948[];
-extern u16 D_800E25EC;
-extern u16 D_800E25F0;
+extern JetListLink g_JetTrackLinks[];
+extern u16 g_JetCursorX;
+extern u16 g_JetCursorY;
 extern u8 D_800E25E8;
 extern u8 D_800E25F4;
 extern u8 D_800E25F8;
 extern s32 D_800E25FC;
 extern u8 D_800E2600;
 extern s32* D_800E2604;
-extern Unk800E2608 D_800E2608;
+extern JetListLink g_JetTriangleLinks;
 extern u16* D_800EE188;
-extern SVECTOR D_800EE18C;
-extern u16 D_800EE198[]; // sprite clut table
-extern SVECTOR* D_800EE194;
+extern SVECTOR g_JetPopupRot;
+extern u16 g_JetSpriteClut[];
+extern SVECTOR* g_JetTrackRight;
 extern JetNode g_JetNodeListTails[10];
-extern MATRIX D_800EE404; // camera rotation
-extern SVECTOR* D_800EE424;
+extern MATRIX g_JetCameraRot;
+extern SVECTOR* g_JetTrackRot;
 extern u16* D_800EE428;
 extern u16 D_800EE42C;
 extern void* D_80110BB8;
 
-void JetPrimsInit(JetPrimBuffer* arg0);
-void JetPrimCursorsReset(JetPrimBuffer* arg0);
-void JetNodeInit(JetNode* arg0, s16 arg1);
-void JetNodeIndexFree(s16);
-void JetNodeUnlink(JetNode*);
+void JetPrimsInit(JetPrimBuffer* prims);
+void JetPrimCursorsReset(JetPrimBuffer* prims);
+void JetNodeInit(JetNode* node, s16 index);
+void JetNodeIndexFree(s16 index);
+void JetNodeUnlink(JetNode* node);
 s16 JetNodeIndexAlloc(void);
-void JetNodeLink(JetNode* arg0, JetNode* arg1);
+void JetNodeLink(JetNode* node, JetNode* parent);
 void func_800A2518(void);
 void func_800A27F0(u_long* addr);
-void JetNodeFree(JetNode* arg0);
+void JetNodeFree(JetNode* node);
 void func_800A442C(s16 arg0);
 s16 func_800A4400(void);
 void func_800A2DE4(s32 arg0, s32 arg1);
@@ -336,7 +338,7 @@ JetQuad* JetQuadsAlloc(s32 count);
 void func_800A6BD8(Unk800A4390* arg0);
 s32 JetVectorInsidePlanes(VECTOR* arg0);
 void func_800A6B08(Unk800A4390* arg0);
-void func_800A12EC(void);
+void JetDrawTriangleList(void);
 void JetDrawTrack(void);
 void JetSetWorldMatrix();
 void JetDrawEnergyGauge();
@@ -347,7 +349,7 @@ void func_800A334C(void);
 void func_800A3AAC(void);
 void func_800A70D4(void);
 void JetModelsReset(void);
-JetModel* JetModelBuild(s32 arg0);
+JetModel* JetModelBuild(s32 infoIndex);
 void JetBuffersInit(void);
 void JetNodesInit(void);
 void JetTrackSample(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot);
@@ -385,14 +387,14 @@ u16 MINI_Jet(void) {
 
     func_800A2214();
     SetDrawMode(&D_800D9934, 0, 1, GetTPage(1, 1, 0x300, 0) & 0xFFFF, NULL);
-    D_800EE424 = D_800D1BF0;
+    g_JetTrackRot = D_800D1BF0;
     func_800A2DE4(0, 0);
     db = g_JetBufferPtr;
     speed = &D_800A897C;
     path = &D_800A8988;
-    D_800D1C58 = *path;
+    g_JetTrackLeft = *path;
     func_800A2DE4(1, 0);
-    D_800EE194 = *path;
+    g_JetTrackRight = *path;
     temp_s0 = 0x20;
     func_800A2860();
     SetFogNearFar(D_800A89D0, D_800A89D4, 0x100);
@@ -408,8 +410,8 @@ loop:
         func_800A35DC(*speed);
         JetSetWorldMatrix();
         JetDrawTrack();
-        func_800A12EC();
-        JetDrawScorePopup(db[0], D_800A8A88, 5, 0x28, 0);
+        JetDrawTriangleList();
+        JetDrawScorePopup(db[0], g_JetPopupModelId, 5, 0x28, 0);
         func_800A372C(*speed);
         func_800A46E8(db[0]);
         func_800A1CD8(g_JetScore, 0xF4, 0xC8, 0, 0);
@@ -472,7 +474,7 @@ void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     s16 maxY;
     s16 i;
 
-    world = &D_800D1BD0;
+    world = &g_JetWorldMatrix;
     m = world[0];
     m->m[0][0] = node->m.m[0][0];
     m->m[0][1] = node->m.m[0][1];
@@ -490,32 +492,34 @@ void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
         CompMatrix(&node->parent->m, m, m);
     }
     wm = world[0];
-    wm->t[0] -= D_800A83A8.vx;
-    wm->t[1] -= D_800A83A8.vy;
-    wm->t[2] -= D_800A83A8.vz;
-    cam = &D_800EE404;
-    gte_SetRotMatrix2(cam);
-    gte_ldclmv2(&world[0]->m[0][0]);
+    wm->t[0] -= g_JetCameraPos.vx;
+    wm->t[1] -= g_JetCameraPos.vy;
+    wm->t[2] -= g_JetCameraPos.vz;
+    cam = &g_JetCameraRot;
+    gte_SetRotMatrix(cam);
+    gte_ldclmv(&world[0]->m[0][0]);
     gte_rtir();
-    gte_stclmv2(&world[0]->m[0][0]);
-    gte_ldclmv2(&world[0]->m[0][1]);
+    gte_stclmv(&world[0]->m[0][0]);
+    gte_ldclmv(&world[0]->m[0][1]);
     gte_rtir();
-    gte_stclmv2(&world[0]->m[0][1]);
-    gte_ldclmv2(&world[0]->m[0][2]);
+    gte_stclmv(&world[0]->m[0][1]);
+    gte_ldclmv(&world[0]->m[0][2]);
     gte_rtir();
-    gte_stclmv2(&world[0]->m[0][2]);
-    gte_SetTransMatrix2(cam);
-    gte_ldlv0_2(&world[0]->t[0]);
-    gte_rt2();
-    gte_stlvnl2(&world[0]->t[0]);
-    gte_SetRotMatrix2(world[0]);
-    gte_SetTransMatrix2(world[0]);
+    gte_stclmv(&world[0]->m[0][2]);
+    gte_SetTransMatrix(cam);
+    gte_ldlv0(&world[0]->t[0]);
+    gte_rt();
+    gte_stlvl(&world[0]->t[0]);
+    gte_SetRotMatrix(world[0]);
+    gte_SetTransMatrix(world[0]);
     args.tris = node->model->tris;
     args.prim = db->prims.g3Cursor;
     args.ot = &db->ot[otIndex];
     args.model = node->model;
     db->prims.g3Cursor = JetDrawModelTris(&args);
     JetProject6Points(obj->unkDC, obj->unk11C);
+    // Both reads have to stay: -fforce-mem is what keeps the second one a
+    // word load instead of letting gcc narrow it to lhu.
     ys[0] = obj->unk11C[0] >> 16;
     minY = ys[0];
     maxY = minY;
@@ -538,11 +542,11 @@ void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
             maxY = ys[i];
         }
     }
-    if (JetVectorInsidePlanes((VECTOR*)&D_800D1BD0->t[0])) {
-        obj->unk28.unk4 = 0;
-        if ((s16)D_800E25EC < maxX && minX < (s16)D_800E25EC && (s16)D_800E25F0 < maxY && minY < (s16)D_800E25F0 &&
-            D_800D1C4C == 1) {
-            obj->unk28.unk4 = D_800D1C4C;
+    if (JetVectorInsidePlanes((VECTOR*)g_JetWorldMatrix->t)) {
+        obj->unk28.hit = 0;
+        if ((s16)g_JetCursorX < maxX && minX < (s16)g_JetCursorX && (s16)g_JetCursorY < maxY &&
+            minY < (s16)g_JetCursorY && g_JetFiring == 1) {
+            obj->unk28.hit = g_JetFiring;
         }
     }
 }
@@ -563,7 +567,7 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     u_long xy1;
     u_long xy2;
 
-    world = &D_800D1BD0;
+    world = &g_JetWorldMatrix;
     m = world[0];
     m->m[0][0] = node->m.m[0][0];
     m->m[0][1] = node->m.m[0][1];
@@ -581,26 +585,26 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
         CompMatrix(&node->parent->m, m, m);
     }
     wm = world[0];
-    wm->t[0] -= D_800A83A8.vx;
-    wm->t[1] -= D_800A83A8.vy;
-    wm->t[2] -= D_800A83A8.vz;
-    cam = &D_800EE404;
-    gte_SetRotMatrix2(cam);
-    gte_ldclmv2(&world[0]->m[0][0]);
+    wm->t[0] -= g_JetCameraPos.vx;
+    wm->t[1] -= g_JetCameraPos.vy;
+    wm->t[2] -= g_JetCameraPos.vz;
+    cam = &g_JetCameraRot;
+    gte_SetRotMatrix(cam);
+    gte_ldclmv(&world[0]->m[0][0]);
     gte_rtir();
-    gte_stclmv2(&world[0]->m[0][0]);
-    gte_ldclmv2(&world[0]->m[0][1]);
+    gte_stclmv(&world[0]->m[0][0]);
+    gte_ldclmv(&world[0]->m[0][1]);
     gte_rtir();
-    gte_stclmv2(&world[0]->m[0][1]);
-    gte_ldclmv2(&world[0]->m[0][2]);
+    gte_stclmv(&world[0]->m[0][1]);
+    gte_ldclmv(&world[0]->m[0][2]);
     gte_rtir();
-    gte_stclmv2(&world[0]->m[0][2]);
-    gte_SetTransMatrix2(cam);
-    gte_ldlv0_2(&world[0]->t[0]);
-    gte_rt2();
-    gte_stlvnl2(&world[0]->t[0]);
-    gte_SetRotMatrix2(world[0]);
-    gte_SetTransMatrix2(world[0]);
+    gte_stclmv(&world[0]->m[0][2]);
+    gte_SetTransMatrix(cam);
+    gte_ldlv0(&world[0]->t[0]);
+    gte_rt();
+    gte_stlvl(&world[0]->t[0]);
+    gte_SetRotMatrix(world[0]);
+    gte_SetTransMatrix(world[0]);
     args.tris = node->model->tris;
     args.prim = db->prims.g3Cursor;
     args.ot = &db->ot2[otIndex];
@@ -628,7 +632,7 @@ void JetDrawNodeUI(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, s32 arg4
     MATRIX** world;
     MATRIX* m;
 
-    world = &D_800D1BD0;
+    world = &g_JetWorldMatrix;
     m = world[0];
     m->m[0][0] = node->m.m[0][0];
     m->m[0][1] = node->m.m[0][1];
@@ -642,8 +646,8 @@ void JetDrawNodeUI(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, s32 arg4
     m->t[0] = node->m.t[0];
     m->t[1] = node->m.t[1];
     m->t[2] = node->m.t[2];
-    gte_SetRotMatrix2(world[0]);
-    gte_SetTransMatrix2(world[0]);
+    gte_SetRotMatrix(world[0]);
+    gte_SetTransMatrix(world[0]);
     args.tris = node->model->tris;
     args.prim = db->prims.g3Cursor;
     args.ot = &db->ot2[otIndex];
@@ -652,20 +656,20 @@ void JetDrawNodeUI(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, s32 arg4
 }
 
 // Draw every background triangle on the draw list, front to back.
-void func_800A12EC(void) {
-    Unk800E2608* list;
+void JetDrawTriangleList(void) {
+    JetListLink* list;
     JetTriangle* tris;
     u16 triId;
     POLY_G3* prim;
 
     prim = g_JetBufferPtr[0]->prims.g3Cursor;
     tris = g_JetTrianglesBase;
-    if (D_800D1C78) {
-        triId = D_800A8A60;
-        list = &D_800E2608;
+    if (g_JetTriangleListCount) {
+        triId = g_JetTriangleListHead;
+        list = &g_JetTriangleLinks;
         do {
             prim = JetDrawTriangle(&tris[triId], prim, g_JetBufferPtr[0]->ot, &tris[triId]);
-            triId = list[triId].unk2;
+            triId = list[triId].next;
         } while (triId != 0xFFFF);
     }
     g_JetBufferPtr[0]->prims.g3Cursor = prim;
@@ -673,21 +677,21 @@ void func_800A12EC(void) {
 
 // Draw every track element on the draw list, front to back.
 void JetDrawTrack(void) {
-    Unk800E2608* list;
+    JetListLink* list;
     SVECTOR* left;
     SVECTOR* right;
     u16 trackId;
     POLY_FT4* prim;
 
-    trackId = D_800A89DC;
+    trackId = g_JetTrackListHead;
     prim = g_JetBufferPtr[0]->prims.ft4Cursor;
-    list = D_800D9948;
-// A loop keyword makes gcc duplicate the exit test, so the goto is load-bearing.
+    list = g_JetTrackLinks;
+// A loop keyword hoists the 0xFFFF test into a register; the goto keeps it inline.
 loop:
-    left = D_800D1C58;
-    right = D_800EE194;
+    left = g_JetTrackLeft;
+    right = g_JetTrackRight;
     prim = JetDrawTrackQuad(&left[trackId], prim, g_JetBufferPtr[0]->ot, &right[trackId]);
-    trackId = list[trackId].unk2;
+    trackId = list[trackId].next;
     if (trackId != 0xFFFF) {
         goto loop;
     }
@@ -700,28 +704,28 @@ void JetSetWorldMatrix(void) {
     MATRIX** world;
     MATRIX* cam;
 
-    view = &D_800D1728;
-    view[0]->t[0] = -D_800A83A8.vx;
-    view[0]->t[1] = -D_800A83A8.vy;
-    view[0]->t[2] = -D_800A83A8.vz;
-    cam = &D_800EE404;
-    gte_SetRotMatrix2(cam);
-    gte_ldclmv2(&view[0]->m[0][0]);
+    view = &g_JetViewMatrix;
+    view[0]->t[0] = -g_JetCameraPos.vx;
+    view[0]->t[1] = -g_JetCameraPos.vy;
+    view[0]->t[2] = -g_JetCameraPos.vz;
+    cam = &g_JetCameraRot;
+    gte_SetRotMatrix(cam);
+    gte_ldclmv(&view[0]->m[0][0]);
     gte_rtir();
-    world = &D_800D1BD0;
-    gte_stclmv2(&world[0]->m[0][0]);
-    gte_ldclmv2(&view[0]->m[0][1]);
+    world = &g_JetWorldMatrix;
+    gte_stclmv(&world[0]->m[0][0]);
+    gte_ldclmv(&view[0]->m[0][1]);
     gte_rtir();
-    gte_stclmv2(&world[0]->m[0][1]);
-    gte_ldclmv2(&view[0]->m[0][2]);
+    gte_stclmv(&world[0]->m[0][1]);
+    gte_ldclmv(&view[0]->m[0][2]);
     gte_rtir();
-    gte_stclmv2(&world[0]->m[0][2]);
-    gte_SetTransMatrix2(cam);
-    gte_ldlv0_2(&view[0]->t[0]);
-    gte_rt2();
-    gte_stlvnl2(&world[0]->t[0]);
-    gte_SetRotMatrix2(world[0]);
-    gte_SetTransMatrix2(world[0]);
+    gte_stclmv(&world[0]->m[0][2]);
+    gte_SetTransMatrix(cam);
+    gte_ldlv0(&view[0]->t[0]);
+    gte_rt();
+    gte_stlvl(&world[0]->t[0]);
+    gte_SetRotMatrix(world[0]);
+    gte_SetTransMatrix(world[0]);
 }
 
 // Sample the track at a fractional segment index, giving a point lifted along
@@ -752,8 +756,8 @@ void JetTrackSample(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot) {
 
     seg = at >> 16;
     frac = at & 0xFFFF;
-    rotCur = &D_800EE424[seg];
-    rotNext = &D_800EE424[seg + 1];
+    rotCur = &g_JetTrackRot[seg];
+    rotNext = &g_JetTrackRot[seg + 1];
     dx = rotNext->vx - rotCur->vx;
     dy = rotCur->vy - rotNext->vy;
     dz = rotNext->vz - rotCur->vz;
@@ -782,14 +786,14 @@ void JetTrackSample(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot) {
     dy >>= 16;
     dz >>= 16;
 
-    leftCur = &D_800D1C58[seg];
-    leftNext = &D_800D1C58[seg + 1];
+    leftCur = &g_JetTrackLeft[seg];
+    leftNext = &g_JetTrackLeft[seg + 1];
     dLeft.vx = (leftNext->vx - leftCur->vx) * frac;
     dLeft.vy = (leftNext->vy - leftCur->vy) * frac;
     dLeft.vz = (leftNext->vz - leftCur->vz) * frac;
 
-    rightCur = &D_800EE194[seg];
-    rightNext = &D_800EE194[seg + 1];
+    rightCur = &g_JetTrackRight[seg];
+    rightNext = &g_JetTrackRight[seg + 1];
     left.vx = leftCur->vx + (dLeft.vx >> 16);
     left.vy = leftCur->vy + (dLeft.vy >> 16);
     left.vz = leftCur->vz + (dLeft.vz >> 16);
@@ -868,25 +872,25 @@ void JetDrawScorePopup(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) 
     index = 0;
     node = D_800A8A74[index];
     node->model = g_JetModelTable[arg1];
-    D_800EE18C.vx += arg2;
-    D_800EE18C.vy += arg3;
-    D_800EE18C.vz += arg4;
+    g_JetPopupRot.vx += arg2;
+    g_JetPopupRot.vy += arg3;
+    g_JetPopupRot.vz += arg4;
     if (alternate[0] == 1) {
-        RotMatrix(&D_800EE18C, &D_800A8A74[index]->m);
+        RotMatrix(&g_JetPopupRot, &D_800A8A74[index]->m);
         JetDrawNodeUI(arg0, D_800A8A74[index], 0, 0, unused);
-        func_800A1CD8(g_JetPopupPoints, 0xDC, 0xA0, 0, 0x18);
+        func_800A1CD8(g_JetPopupPoints, 220, 160, 0, 0x18);
     }
-    counter = &D_800A89CC;
+    counter = &g_JetPopupTimer;
     (*counter)--;
-    if (*counter < 0x32) {
+    if (*counter < 50) {
         if (alternate[0] == 0) {
             alternate[0] = 1;
         } else {
             alternate[0] = 0;
         }
     }
-    if (D_800A89CC == 0) {
-        D_800A8A88 = 0;
+    if (g_JetPopupTimer == 0) {
+        g_JetPopupModelId = 0;
     }
 }
 
@@ -926,8 +930,8 @@ void func_800A1CD8(s32 value, s32 x, s16 y, s16 padWithZero, u16 v) {
             setXY4(poly, x, y, startX + w, y, x, y + 0x10, startX + w, y + 0x10);
             setRGB0(poly, 0x80, 0x80, 0x80);
             setUVWH(poly, digit * 0x10 + 0x30, v, 0x10, 0x12);
-            poly->tpage = D_800A8990[8];
-            poly->clut = D_800EE198[8];
+            poly->tpage = g_JetSpriteTPage[8];
+            poly->clut = g_JetSpriteClut[8];
             SetSemiTrans(poly, 1);
             db = g_JetBufferPtr[0];
             addPrim(&db->ot2[1], poly);
@@ -951,8 +955,8 @@ void JetDrawSprite(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, 
     setXYWH(poly, x, y, w, h);
     setRGB0(poly, 0x80, 0x80, 0x80);
     setUVWH(poly, u, v, uw, vh);
-    poly->tpage = D_800A8990[spriteId];
-    poly->clut = D_800EE198[spriteId];
+    poly->tpage = g_JetSpriteTPage[spriteId];
+    poly->clut = g_JetSpriteClut[spriteId];
     SetSemiTrans(poly, semiTrans);
     addPrim(&db[0]->ot2[1], poly);
     poly++;
@@ -969,16 +973,16 @@ void func_800A2058(void) {
     setXY4(poly, 0, 0, 0, 0, 0, 0, 0, 0);
     setRGB0(poly, 0x80, 0x80, 0x80);
     setUV4(poly, 0, 0, 0, 0, 0, 0, 0, 0);
-    poly->tpage = D_800A8990[5];
-    poly->clut = D_800EE198[5];
+    poly->tpage = g_JetSpriteTPage[5];
+    poly->clut = g_JetSpriteClut[5];
     SetSemiTrans(poly, 0);
     addPrim(&db[0]->ot[0xFFF], poly);
     poly++;
     setXY4(poly, 0, 0, 0, 0, 0, 0, 0, 0);
     setRGB0(poly, 0x80, 0x80, 0x80);
     setUV4(poly, 0, 0, 0, 0, 0, 0, 0, 0);
-    poly->tpage = D_800A8990[5];
-    poly->clut = D_800EE198[5];
+    poly->tpage = g_JetSpriteTPage[5];
+    poly->clut = g_JetSpriteClut[5];
     SetSemiTrans(poly, 0);
     addPrim(&db[0]->ot[2], poly);
     poly++;
@@ -995,21 +999,21 @@ void func_800A2214(void) {
     D_80110BB8 = (void*)0x1F800000;
     D_800D16D4 = (void*)0x1F800000;
     D_800D16DC = 0;
-    D_800D1BD0 = (MATRIX*)0x1F800010;
-    D_800D1728 = (MATRIX*)0x1F800030;
+    g_JetWorldMatrix = (MATRIX*)0x1F800010;
+    g_JetViewMatrix = (MATRIX*)0x1F800030;
     D_800D1A38 = (void*)0x1F800050;
     D_800D1A3C = (void*)0x1F800058;
     D_800A891C = (void*)0x1F800060;
     D_800A8920 = (void*)0x1F800064;
-    D_800D1728->m[0][0] = 0x1000;
-    D_800D1728->m[0][1] = 0;
-    D_800D1728->m[0][2] = 0;
-    D_800D1728->m[1][0] = 0;
-    D_800D1728->m[1][1] = 0x1000;
-    D_800D1728->m[1][2] = 0;
-    D_800D1728->m[2][0] = 0;
-    D_800D1728->m[2][1] = 0;
-    D_800D1728->m[2][2] = 0x1000;
+    g_JetViewMatrix->m[0][0] = 0x1000;
+    g_JetViewMatrix->m[0][1] = 0;
+    g_JetViewMatrix->m[0][2] = 0;
+    g_JetViewMatrix->m[1][0] = 0;
+    g_JetViewMatrix->m[1][1] = 0x1000;
+    g_JetViewMatrix->m[1][2] = 0;
+    g_JetViewMatrix->m[2][0] = 0;
+    g_JetViewMatrix->m[2][1] = 0;
+    g_JetViewMatrix->m[2][2] = 0x1000;
     JetBuffersInit();
     func_800A2420();
     *state = 0x99;
@@ -1030,17 +1034,17 @@ void func_800A2214(void) {
     g_JetScore = 0;
     D_800E25F4 = 0;
     D_800E2600 = 0;
-    D_800A8A88 = 0;
+    g_JetPopupModelId = 0;
     D_800E25E8 = 0;
-    D_800EE18C.vx = 0;
-    D_800EE18C.vy = 0;
-    D_800EE18C.vz = 0;
+    g_JetPopupRot.vx = 0;
+    g_JetPopupRot.vy = 0;
+    g_JetPopupRot.vz = 0;
     D_800A8928 = 0;
     D_800A8330 = 0x7F;
     D_800A8334 = 0x7F;
     D_800A8338 = 0;
     D_800A833C = 0;
-    D_800A89CC = 0;
+    g_JetPopupTimer = 0;
 }
 
 void func_800A2420(void) {
@@ -1083,30 +1087,30 @@ void func_800A2518(void) {
     }
     D_800AB894 = GetTPage(0, 2, 0x280, 0);
     D_800A8A68 = GetClut(0, 0x1E0);
-    D_800A8990[0] = GetTPage(0, 1, 0x280, 0);
-    D_800EE198[0] = GetClut(0, 0x1E0);
-    D_800A8990[1] = GetTPage(1, 1, 0x2C0, 0);
-    D_800EE198[1] = GetClut(0, 0x1E1);
-    D_800A8990[2] = GetTPage(1, 1, 0x2D0, 0);
-    D_800EE198[2] = GetClut(0, 0x1E1);
-    D_800A8990[3] = GetTPage(1, 1, 0x2E0, 0);
-    D_800EE198[3] = GetClut(0, 0x1E1);
-    D_800A8990[4] = GetTPage(0, 1, 0x280, 0x100);
-    D_800EE198[4] = GetClut(0, 0x1FF);
-    D_800A8990[5] = GetTPage(0, 1, 0x280, 0x100);
-    D_800EE198[5] = GetClut(0, 0x1FE);
-    D_800A8990[6] = GetTPage(0, 1, 0x300, 0);
-    D_800EE198[6] = GetClut(0x10, 0x1E0);
-    D_800A8990[7] = GetTPage(0, 1, 0x240, 0);
-    D_800EE198[7] = GetClut(0x40, 0x1E0);
-    D_800A8990[8] = GetTPage(0, 1, 0x240, 0x18);
-    D_800EE198[8] = GetClut(0x30, 0x1E0);
-    D_800A8990[9] = GetTPage(0, 1, 0x240, 0x50);
-    D_800EE198[9] = GetClut(0x50, 0x1E0);
-    D_800A8990[10] = GetTPage(0, 1, 0x240, 0x30);
-    D_800EE198[10] = GetClut(0x20, 0x1E0);
-    D_800A8990[11] = GetTPage(0, 1, 0x240, 0);
-    D_800EE198[11] = GetClut(0x60, 0x1E0);
+    g_JetSpriteTPage[0] = GetTPage(0, 1, 0x280, 0);
+    g_JetSpriteClut[0] = GetClut(0, 0x1E0);
+    g_JetSpriteTPage[1] = GetTPage(1, 1, 0x2C0, 0);
+    g_JetSpriteClut[1] = GetClut(0, 0x1E1);
+    g_JetSpriteTPage[2] = GetTPage(1, 1, 0x2D0, 0);
+    g_JetSpriteClut[2] = GetClut(0, 0x1E1);
+    g_JetSpriteTPage[3] = GetTPage(1, 1, 0x2E0, 0);
+    g_JetSpriteClut[3] = GetClut(0, 0x1E1);
+    g_JetSpriteTPage[4] = GetTPage(0, 1, 0x280, 0x100);
+    g_JetSpriteClut[4] = GetClut(0, 0x1FF);
+    g_JetSpriteTPage[5] = GetTPage(0, 1, 0x280, 0x100);
+    g_JetSpriteClut[5] = GetClut(0, 0x1FE);
+    g_JetSpriteTPage[6] = GetTPage(0, 1, 0x300, 0);
+    g_JetSpriteClut[6] = GetClut(0x10, 0x1E0);
+    g_JetSpriteTPage[7] = GetTPage(0, 1, 0x240, 0);
+    g_JetSpriteClut[7] = GetClut(0x40, 0x1E0);
+    g_JetSpriteTPage[8] = GetTPage(0, 1, 0x240, 0x18);
+    g_JetSpriteClut[8] = GetClut(0x30, 0x1E0);
+    g_JetSpriteTPage[9] = GetTPage(0, 1, 0x240, 0x50);
+    g_JetSpriteClut[9] = GetClut(0x50, 0x1E0);
+    g_JetSpriteTPage[10] = GetTPage(0, 1, 0x240, 0x30);
+    g_JetSpriteClut[10] = GetClut(0x20, 0x1E0);
+    g_JetSpriteTPage[11] = GetTPage(0, 1, 0x240, 0);
+    g_JetSpriteClut[11] = GetClut(0x60, 0x1E0);
 }
 
 void func_800A27F0(u_long* addr) {
@@ -1273,15 +1277,15 @@ void func_800A2C50(s32 arg0) {
             limit[0] -= step;
         }
     }
-    D_800A83A8.vx = pos.vx;
-    D_800A83A8.vy = pos.vy;
-    D_800A83A8.vz = pos.vz;
+    g_JetCameraPos.vx = pos.vx;
+    g_JetCameraPos.vy = pos.vy;
+    g_JetCameraPos.vz = pos.vz;
     camRot.vx = -rot.vx;
     camRot.vy = -rot.vy;
     camRot.vz = 0;
-    RotMatrix(&camRot, &D_800EE404);
+    RotMatrix(&camRot, &g_JetCameraRot);
     RotMatrix(&D_800A83A0, &D_800A8380);
-    CompMatrix(&D_800A8380, &D_800EE404, &D_800EE404);
+    CompMatrix(&D_800A8380, &g_JetCameraRot, &g_JetCameraRot);
 }
 
 void func_800A2DE4(s32 arg0, s32 arg1) {
@@ -1349,22 +1353,22 @@ void func_800A2E38(void) {
         }
         if (D_800D1960 == 1) {
             if (pad & 0x4000) {
-                cursorY = &D_800E25F0;
+                cursorY = &g_JetCursorY;
                 *cursorY += 5;
             }
             if (pad & 0x1000) {
-                cursorY = &D_800E25F0;
+                cursorY = &g_JetCursorY;
                 *cursorY -= 5;
             }
             if (pad & 0x8000) {
-                cursorX = &D_800E25EC;
+                cursorX = &g_JetCursorX;
                 *cursorX -= 5;
             }
             if (pad & 0x2000) {
-                cursorX = &D_800E25EC;
+                cursorX = &g_JetCursorX;
                 *cursorX += 5;
             }
-            shoot = &D_800D1C4C;
+            shoot = &g_JetFiring;
             *shoot = 0;
             if (pad & 0x20) {
                 power = &g_JetShotPower;
@@ -1390,14 +1394,14 @@ void func_800A2E38(void) {
                     (*powerRegen)++;
                 }
             }
-            cursorX = &D_800E25EC;
+            cursorX = &g_JetCursorX;
             if ((s16)*cursorX > 320) {
                 *cursorX = 320;
             }
             if ((s16)*cursorX < 0) {
                 *cursorX = 0;
             }
-            cursorY = &D_800E25F0;
+            cursorY = &g_JetCursorY;
             if ((s16)*cursorY > 240) {
                 *cursorY = 240;
             }
@@ -1478,7 +1482,7 @@ void func_800A2E38(void) {
 
 // Reset both draw lists and the object streams for a new run.
 void func_800A334C(void) {
-    Unk800E2608* list;
+    JetListLink* list;
     s32 i;
 
     D_800D172C = 0xFFFE;
@@ -1487,16 +1491,16 @@ void func_800A334C(void) {
     D_800EE428 = D_800D1BF8;
     D_800D196C = D_800D1BDC;
     D_800EE188 = D_800D1BE0;
-    list = &D_800E2608;
+    list = &g_JetTriangleLinks;
     for (i = 0; i < 0x2EE0; i++) {
-        list[i].unk0 = 0xFFFF;
-        list[i].unk2 = 0xFFFF;
+        list[i].prev = 0xFFFF;
+        list[i].next = 0xFFFF;
     }
-    D_800D1C78 = 0;
-    list = D_800D9948;
+    g_JetTriangleListCount = 0;
+    list = g_JetTrackLinks;
     for (i = 0; i < 0x2328; i++) {
-        list[i].unk0 = 0xFFFF;
-        list[i].unk2 = 0xFFFF;
+        list[i].prev = 0xFFFF;
+        list[i].next = 0xFFFF;
     }
     D_800D1C50 = 0;
     D_800E25F8 = 1;
@@ -1644,60 +1648,60 @@ void func_800A372C(s32 advance) {
 }
 
 void func_800A385C(u16 arg0) {
-    Unk800E2608* elem;
+    JetListLink* elem;
     u16* pCount;
     u16* pTail;
     u16 newCount;
     u16 count;
     u16 tail;
 
-    elem = (&D_800E2608) + arg0;
-    pCount = &D_800D1C78;
+    elem = (&g_JetTriangleLinks) + arg0;
+    pCount = &g_JetTriangleListCount;
     count = *pCount;
     if (count == 0) {
-        D_800A8A60 = arg0;
+        g_JetTriangleListHead = arg0;
         D_800D9930 = arg0;
         *pCount = 1;
     } else {
         pTail = &D_800D9930;
         tail = *pTail;
         newCount = count + 1;
-        elem->unk0 = tail;
-        (&D_800E2608)[tail].unk2 = arg0;
+        elem->prev = tail;
+        (&g_JetTriangleLinks)[tail].next = arg0;
         *pTail = arg0;
         *pCount = newCount;
     }
 }
 
 void func_800A38D4(u16 arg0) {
-    Unk800E2608* list;
-    Unk800E2608* node;
+    JetListLink* list;
+    JetListLink* node;
     u16* pCount;
     u16 prev;
     u16 next;
 
-    node = (&D_800E2608) + arg0;
-    prev = node->unk0;
-    next = node->unk2;
-    list = &D_800E2608;
+    node = (&g_JetTriangleLinks) + arg0;
+    prev = node->prev;
+    next = node->next;
+    list = &g_JetTriangleLinks;
     if (prev != 0xFFFF) {
-        list[prev].unk2 = next;
+        list[prev].next = next;
     } else {
-        D_800A8A60 = next;
+        g_JetTriangleListHead = next;
     }
     if (next != 0xFFFF) {
-        (&D_800E2608)[next].unk0 = prev;
+        (&g_JetTriangleLinks)[next].prev = prev;
     } else {
         D_800D9930 = prev;
     }
     {
-        Unk800E2608* self;
+        JetListLink* self;
 
-        self = &D_800E2608;
-        self[arg0].unk0 = 0xFFFF;
-        self[arg0].unk2 = 0xFFFF;
+        self = &g_JetTriangleLinks;
+        self[arg0].prev = 0xFFFF;
+        self[arg0].next = 0xFFFF;
     }
-    pCount = &D_800D1C78;
+    pCount = &g_JetTriangleListCount;
     *pCount = *pCount - 1;
 }
 
@@ -1708,54 +1712,54 @@ void func_800A3980(u16 arg0) {
     pCount = &D_800D1C50;
     count = *pCount;
     if (count == 0) {
-        Unk800E2608* list;
-        Unk800E2608* node;
+        JetListLink* list;
+        JetListLink* node;
 
-        list = D_800D9948;
+        list = g_JetTrackLinks;
         node = &list[arg0];
-        node->unk0 = 0xFFFF;
-        node->unk2 = 0xFFFF;
-        D_800A89DC = arg0;
+        node->prev = 0xFFFF;
+        node->next = 0xFFFF;
+        g_JetTrackListHead = arg0;
         D_800D1C80 = arg0;
         *pCount = 1;
     } else {
-        Unk800E2608* list;
-        Unk800E2608* node;
+        JetListLink* list;
+        JetListLink* node;
         u16* pTail;
         u16 newCount;
         u16 tail;
 
         newCount = count + 1;
-        list = D_800D9948;
+        list = g_JetTrackLinks;
         node = &list[arg0];
         pTail = &D_800D1C80;
         tail = *pTail;
-        node->unk0 = tail;
-        node->unk2 = 0xFFFF;
-        list[tail].unk2 = arg0;
+        node->prev = tail;
+        node->next = 0xFFFF;
+        list[tail].next = arg0;
         *pTail = arg0;
         *pCount = newCount;
     }
 }
 
 void func_800A3A20(u16 arg0) {
-    Unk800E2608* list;
-    Unk800E2608* node;
+    JetListLink* list;
+    JetListLink* node;
     u16* pCount;
     u16 prev;
     u16 next;
 
-    node = &D_800D9948[arg0];
-    prev = node->unk0;
-    next = node->unk2;
-    list = D_800D9948;
+    node = &g_JetTrackLinks[arg0];
+    prev = node->prev;
+    next = node->next;
+    list = g_JetTrackLinks;
     if (prev != 0xFFFF) {
-        list[prev].unk2 = next;
+        list[prev].next = next;
     } else {
-        D_800A89DC = next;
+        g_JetTrackListHead = next;
     }
     if (next != 0xFFFF) {
-        D_800D9948[next].unk0 = prev;
+        g_JetTrackLinks[next].prev = prev;
     } else {
         D_800D1C80 = prev;
     }
@@ -1778,10 +1782,10 @@ void func_800A3AAC(void) {
         D_800D1970[i] = i + 1;
     }
     g_JetShotPower = 0x80;
-    D_800D1C4C = 0;
+    g_JetFiring = 0;
     D_800D1C7C = 0;
-    D_800E25EC = 0xA0;
-    D_800E25F0 = 0x78;
+    g_JetCursorX = 0xA0;
+    g_JetCursorY = 0x78;
     D_800A898C = 0;
     D_800A89E0 = 0;
     D_800EE42C = 0;
@@ -1860,15 +1864,15 @@ void func_800A3D50(JetBuffer* arg0) {
     s32 bottom;
 
     poly = arg0->prims.ft4Cursor;
-    left = D_800E25EC - 0x10;
-    top = D_800E25F0 - 0x10;
-    right = D_800E25EC + 0x10;
-    bottom = D_800E25F0 + 0x10;
+    left = g_JetCursorX - 0x10;
+    top = g_JetCursorY - 0x10;
+    right = g_JetCursorX + 0x10;
+    bottom = g_JetCursorY + 0x10;
     setXY4(poly, left, top, right, top, left, bottom, right, bottom);
     setRGB0(poly, 0x80, 0x80, 0x80);
     setUV4(poly, 0, 0, 0x40, 0, 0, 0x40, 0x40, 0x40);
-    poly->tpage = D_800A8990[0];
-    poly->clut = D_800EE198[0];
+    poly->tpage = g_JetSpriteTPage[0];
+    poly->clut = g_JetSpriteClut[0];
     SetSemiTrans(poly, 0);
     addPrim(&arg0->ot[1], poly);
     poly++;
@@ -1886,27 +1890,27 @@ void func_800A3E58(void) {
     s16 power;
     s32 spread;
 
-    if (D_800D1C4C == 1) {
+    if (g_JetFiring == 1) {
         db = g_JetBufferPtr;
         scroll = &D_800D1720;
         power = g_JetShotPower;
         spread = power >> 3;
         poly = db[0]->prims.ft4Cursor;
-        setXY4(poly, D_800A895C + spread, D_800A8964, D_800E25EC, D_800E25F0, D_800A895C - spread, D_800A8964,
-               D_800E25EC, D_800E25F0);
+        setXY4(poly, D_800A895C + spread, D_800A8964, g_JetCursorX, g_JetCursorY, D_800A895C - spread, D_800A8964,
+               g_JetCursorX, g_JetCursorY);
         setRGB0(poly, 0x80, 0x80, 0x80);
         setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
-        poly->tpage = D_800A8990[1];
-        poly->clut = D_800EE198[1];
+        poly->tpage = g_JetSpriteTPage[1];
+        poly->clut = g_JetSpriteClut[1];
         SetSemiTrans(poly, 1);
         addPrim(&db[0]->ot[1], poly);
         poly++;
-        setXY4(poly, D_800A8970 + spread, D_800A8978, D_800E25EC, D_800E25F0, D_800A8970 - spread, D_800A8978,
-               D_800E25EC, D_800E25F0);
+        setXY4(poly, D_800A8970 + spread, D_800A8978, g_JetCursorX, g_JetCursorY, D_800A8970 - spread, D_800A8978,
+               g_JetCursorX, g_JetCursorY);
         setRGB0(poly, 0x80, 0x80, 0x80);
         setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
-        poly->tpage = D_800A8990[1];
-        poly->clut = D_800EE198[1];
+        poly->tpage = g_JetSpriteTPage[1];
+        poly->clut = g_JetSpriteClut[1];
         SetSemiTrans(poly, 1);
         addPrim(&db[0]->ot[1], poly);
         poly++;
@@ -2050,7 +2054,7 @@ void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
     D_800D1C84.unk28.unk0 = arg3;
     D_800D1C84.unk28.unk10 = 1;
     D_800D1C84.unk28.unk8 = arg4;
-    D_800D1C84.unk28.unk4 = 0;
+    D_800D1C84.unk28.hit = 0;
     func_800A40F4(&D_800D1C84, 0);
 }
 
@@ -2061,7 +2065,7 @@ inline void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
     D_800D1C84.unk28.unk0 = arg3;
     D_800D1C84.unk28.unk10 = 1;
     D_800D1C84.unk28.unk8 = arg4;
-    D_800D1C84.unk28.unk4 = 0;
+    D_800D1C84.unk28.hit = 0;
     D_800D1C84.unk28.unk50[0xC] = 0;
     func_800A40F4(&D_800D1C84, 0);
 }
@@ -2124,7 +2128,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->unk14 = 0;
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unk50[10] = 1;
                 st->unk28 = 0;
                 st->unk2C = obj->unk0.vx;
@@ -2160,7 +2164,7 @@ void func_800A46E8(JetBuffer* db) {
                 }
                 st->unkC = 0;
             }
-            if (st->unk4 != 0) {
+            if (st->hit != 0) {
                 func_800A6B08(obj);
             }
             break;
@@ -2178,7 +2182,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->unk14 = 0;
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unk28 = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
@@ -2197,7 +2201,7 @@ void func_800A46E8(JetBuffer* db) {
                 release = 1;
                 break;
             }
-            if (st->unk4 != 0) {
+            if (st->hit != 0) {
                 func_800A6B08(obj);
             }
             if (st->unk28 < st->unk2C) {
@@ -2221,7 +2225,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->unk14 = 0;
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unk28 = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
@@ -2247,7 +2251,7 @@ void func_800A46E8(JetBuffer* db) {
             obj->unk18.vx += st->unk50[3];
             obj->unk18.vy += st->unk50[4];
             obj->unk18.vz += st->unk50[5];
-            if (st->unk4 != 0) {
+            if (st->hit != 0) {
                 func_800A6B08(obj);
             }
             break;
@@ -2265,7 +2269,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->unk14 = 0;
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unk28 = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
@@ -2295,7 +2299,7 @@ void func_800A46E8(JetBuffer* db) {
             obj->unk18.vx = ratan2(dy, SquareRoot0(dx * dx + dz * dz));
             obj->unk18.vy = -ratan2(dz, dx) - 0x400;
             obj->unk18.vz = 0;
-            if (st->unk4 != 0) {
+            if (st->hit != 0) {
                 func_800A6B08(obj);
             }
             break;
@@ -2312,7 +2316,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->unk14 = 0;
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unk28 = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
@@ -2336,7 +2340,7 @@ void func_800A46E8(JetBuffer* db) {
             }
             JetTrackSample(D_800D1C54 + 0x3FFFC, 10, &obj->unk0, &obj->unk18);
             drawMode = 1;
-            if (st->unk4 != 0) {
+            if (st->hit != 0) {
                 func_800A6B08(obj);
             }
             break;
@@ -2353,7 +2357,7 @@ void func_800A46E8(JetBuffer* db) {
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
-                st->unk4 = 0;
+                st->hit = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
                 func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
@@ -2373,7 +2377,7 @@ void func_800A46E8(JetBuffer* db) {
             if (obj->unk0.vy > 0) {
                 st->unkC = 0;
             }
-            if (st->unk4 != 0) {
+            if (st->hit != 0) {
                 func_800A6B08(obj);
             }
             break;
@@ -2390,7 +2394,7 @@ void func_800A46E8(JetBuffer* db) {
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unk28 = 0;
                 st->unk2C = (obj->unkC8 - 1) << 16;
                 obj->unk18.vx = st->unk50[3];
@@ -2423,7 +2427,7 @@ void func_800A46E8(JetBuffer* db) {
                 break;
             }
             func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
-            if (st->unk4 == 0) {
+            if (st->hit == 0) {
                 break;
             }
             if (st->unk50[10] != 5 || D_800A897C < 0x4015) {
@@ -2448,7 +2452,7 @@ void func_800A46E8(JetBuffer* db) {
                 D_800A8954 = path;
                 st->unk10 = 0;
                 st->unkC = 1;
-                st->unk4 = 0;
+                st->hit = 0;
                 step = st->unk50[3];
                 st->unk2C = 0;
                 st->unk30 = 0;
@@ -2479,7 +2483,7 @@ void func_800A46E8(JetBuffer* db) {
                 break;
             }
             func_800A3C04(st->unk30, obj->unkCC, &obj->unk0, 0);
-            if (st->unk4 != 0) {
+            if (st->hit != 0) {
                 func_800A6B08(obj);
             }
             break;
@@ -2487,7 +2491,7 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk10 == 1) {
                 st->unk10 = 0;
                 st->unkC = 1;
-                st->unk4 = 0;
+                st->hit = 0;
             }
             if (st->unk50[2] < D_800D16E0) {
                 st->unkC = 0;
@@ -2496,7 +2500,7 @@ void func_800A46E8(JetBuffer* db) {
                 release = 1;
                 break;
             }
-            if (st->unk4 != 0) {
+            if (st->hit != 0) {
                 func_800A6B08(obj);
             }
             break;
@@ -2510,7 +2514,7 @@ void func_800A46E8(JetBuffer* db) {
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
-                st->unk4 = 0;
+                st->hit = 0;
                 obj->unk18.vx = st->unk50[3];
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
@@ -2534,7 +2538,7 @@ void func_800A46E8(JetBuffer* db) {
                 release = 1;
                 break;
             }
-            if (st->unk4 != 0) {
+            if (st->hit != 0) {
                 func_800A6B08(obj);
             }
             break;
@@ -2553,7 +2557,7 @@ void func_800A46E8(JetBuffer* db) {
             // falls through into the debris behaviour below
         case 12:
             if (st->unk10 == 1) {
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unkC = 100;
                 st->unk10 = 0;
                 st->unk14 = 0;
@@ -2584,7 +2588,7 @@ void func_800A46E8(JetBuffer* db) {
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unk28 = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
@@ -2616,7 +2620,7 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 9:
             if (st->unk10 == 1) {
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unkC = 100;
                 st->unk10 = 0;
                 st->unk14 = 0;
@@ -2647,7 +2651,7 @@ void func_800A46E8(JetBuffer* db) {
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unk14 = 0;
                 st->unk28 = -0x46;
                 D_800A8984 = pathLen;
@@ -2692,13 +2696,13 @@ void func_800A46E8(JetBuffer* db) {
                 release = 1;
                 break;
             }
-            if (st->unk4 != 0) {
+            if (st->hit != 0) {
                 func_800A6B08(obj);
             }
             break;
         case 15:
             if (st->unk10 == 1) {
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unkC = 200;
                 st->unk10 = 0;
                 st->unk14 = 0;
@@ -2723,7 +2727,7 @@ void func_800A46E8(JetBuffer* db) {
         case 16:
             if (st->unk10 == 1) {
                 st->unkC = 200;
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unk10 = 0;
                 st->unk14 = 0;
                 st->unk28 = -0x3C;
@@ -2753,7 +2757,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unkC = 0x14;
                 st->unk10 = 0;
                 st->unk14 = 0;
-                st->unk4 = 0;
+                st->hit = 0;
             } else {
                 st->unk14++;
             }
@@ -2774,7 +2778,7 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 202:
             if (st->unk10 == 1) {
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unkC = 0x32;
                 st->unk10 = 0;
                 st->unk14 = 0;
@@ -2797,7 +2801,7 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 203:
             if (st->unk10 == 1) {
-                st->unk4 = 0;
+                st->hit = 0;
                 st->unkC = 0x32;
                 st->unk10 = 0;
                 st->unk14 = 0;
@@ -3042,12 +3046,12 @@ void func_800A6BD8(Unk800A4390* obj) {
             z = obj->unk0.vz;
             func_800A4650(x, y, z, 0xCA, rand() % 3 + 0x3F);
         }
-        D_800A8A88 = obj->unkD4->modelId;
+        g_JetPopupModelId = obj->unkD4->modelId;
         points = st->unk50[0];
         g_JetPopupPoints = points;
-        D_800A89CC = 100;
+        g_JetPopupTimer = 100;
         D_800E25E8 = 1;
-        setVector(&D_800EE18C, 0, 0, 0);
+        setVector(&g_JetPopupRot, 0, 0, 0);
     }
     if (st->unk50[10] == 2) {
         s32* score;
@@ -3066,12 +3070,12 @@ void func_800A6BD8(Unk800A4390* obj) {
             z = obj->unk0.vz;
             func_800A4650(x, y, z, 0xCB, rand() % 3 + 0x3C);
         }
-        D_800A8A88 = obj->unkD4->modelId;
+        g_JetPopupModelId = obj->unkD4->modelId;
         points = st->unk50[0];
         g_JetPopupPoints = points;
-        D_800A89CC = 100;
+        g_JetPopupTimer = 100;
         D_800E25E8 = 1;
-        setVector(&D_800EE18C, 0, 0, 0);
+        setVector(&g_JetPopupRot, 0, 0, 0);
     }
     if (st->unk50[10] == 3) {
         s32* score;
@@ -3089,12 +3093,12 @@ void func_800A6BD8(Unk800A4390* obj) {
         *score += st->unk50[0];
         func_800A29AC(st->unk50[18]);
         st->unkC = 0;
-        D_800A8A88 = obj->unkD4->modelId;
+        g_JetPopupModelId = obj->unkD4->modelId;
         points = st->unk50[0];
         g_JetPopupPoints = points;
-        D_800A89CC = 100;
+        g_JetPopupTimer = 100;
         D_800E25E8 = 1;
-        setVector(&D_800EE18C, 0, 0, 0);
+        setVector(&g_JetPopupRot, 0, 0, 0);
     }
     if (st->unk50[10] == 5) {
         s32* score;
@@ -3113,12 +3117,12 @@ void func_800A6BD8(Unk800A4390* obj) {
             z = obj->unk0.vz;
             func_800A4650(x, y, z, 0xCB, rand() % 3 + 0x3F);
         }
-        D_800A8A88 = obj->unkD4->modelId;
+        g_JetPopupModelId = obj->unkD4->modelId;
         points = st->unk50[0];
         g_JetPopupPoints = points;
-        D_800A89CC = 100;
+        g_JetPopupTimer = 100;
         D_800E25E8 = 1;
-        setVector(&D_800EE18C, 0, 0, 0);
+        setVector(&g_JetPopupRot, 0, 0, 0);
     }
     score = &g_JetScore;
     if (*score > 0x270F) {
@@ -3183,7 +3187,7 @@ void func_800A70D4(void) {
     g_JetRightNormalLength = SquareRoot0((rn->vx * rn->vx) + (rn->vy * rn->vy) + (rn->vz * rn->vz));
 }
 
-s32 JetVectorInsidePlanes(VECTOR* arg0) {
+s32 JetVectorInsidePlanes(VECTOR* point) {
     s32 hsLeft;
     s32 rightOk;
     s32 leftOk;
@@ -3200,11 +3204,11 @@ s32 JetVectorInsidePlanes(VECTOR* arg0) {
     lx = g_JetLeftPlaneNormalX;
     ly = g_JetLeftPlaneNormalY;
     lz = g_JetLeftPlaneNormalZ;
-    hsLeft = (lx * (arg0->vx >> 2)) + (ly * (arg0->vy >> 2)) + (lz * (arg0->vz >> 2)) + g_JetLeftPlaneDistance;
+    hsLeft = (lx * (point->vx >> 2)) + (ly * (point->vy >> 2)) + (lz * (point->vz >> 2)) + g_JetLeftPlaneDistance;
     rx = g_JetRightPlaneNormalX;
     ry = g_JetRightPlaneNormalY;
     rz = g_JetRightPlaneNormalZ;
-    hsRight = (rx * (arg0->vx >> 2)) + (ry * (arg0->vy >> 2)) + (rz * (arg0->vz >> 2)) + g_JetRightPlaneDistance;
+    hsRight = (rx * (point->vx >> 2)) + (ry * (point->vy >> 2)) + (rz * (point->vz >> 2)) + g_JetRightPlaneDistance;
     if (hsLeft > 0 && D_800A8950 > 0) {
         leftOk = 1;
     }
@@ -3220,7 +3224,7 @@ s32 JetVectorInsidePlanes(VECTOR* arg0) {
     return leftOk & rightOk;
 }
 
-s32 JetSVectorInsidePlanes(SVECTOR* arg0) {
+s32 JetSVectorInsidePlanes(SVECTOR* point) {
     s32 hsLeft;
     s32 rightOk;
     s32 leftOk;
@@ -3237,11 +3241,11 @@ s32 JetSVectorInsidePlanes(SVECTOR* arg0) {
     lx = g_JetLeftPlaneNormalX;
     ly = g_JetLeftPlaneNormalY;
     lz = g_JetLeftPlaneNormalZ;
-    hsLeft = (lx * (arg0->vx >> 2)) + (ly * (arg0->vy >> 2)) + (lz * (arg0->vz >> 2)) + g_JetLeftPlaneDistance;
+    hsLeft = (lx * (point->vx >> 2)) + (ly * (point->vy >> 2)) + (lz * (point->vz >> 2)) + g_JetLeftPlaneDistance;
     rx = g_JetRightPlaneNormalX;
     ry = g_JetRightPlaneNormalY;
     rz = g_JetRightPlaneNormalZ;
-    hsRight = (rx * (arg0->vx >> 2)) + (ry * (arg0->vy >> 2)) + (rz * (arg0->vz >> 2)) + g_JetRightPlaneDistance;
+    hsRight = (rx * (point->vx >> 2)) + (ry * (point->vy >> 2)) + (rz * (point->vz >> 2)) + g_JetRightPlaneDistance;
     if (hsLeft > 0 && D_800A8950 > 0) {
         leftOk = 1;
     }
@@ -3281,7 +3285,7 @@ s32 JetRightPlaneHalfSpace(s32 x, s32 y, s32 z) {
     return (nx * (x >> 2)) + (ny * (y >> 2)) + (nz * (z >> 2)) + g_JetRightPlaneDistance;
 }
 
-s32 JetSphereInsidePlanes(VECTOR* arg0, s16 arg1) {
+s32 JetSphereInsidePlanes(VECTOR* center, s16 radius) {
     s32 leftOk;
     s32 hsLeft;
     s32 rightOk;
@@ -3300,7 +3304,7 @@ s32 JetSphereInsidePlanes(VECTOR* arg0, s16 arg1) {
     lx = g_JetLeftPlaneNormalX;
     ly = g_JetLeftPlaneNormalY;
     lz = g_JetLeftPlaneNormalZ;
-    hsLeft = (lx * (arg0->vx >> 2)) + (ly * (arg0->vy >> 2)) + (lz * (arg0->vz >> 2)) + g_JetLeftPlaneDistance;
+    hsLeft = (lx * (center->vx >> 2)) + (ly * (center->vy >> 2)) + (lz * (center->vz >> 2)) + g_JetLeftPlaneDistance;
     if (D_800A8950 > 0 && hsLeft >= 0) {
         leftOk = 1;
     }
@@ -3310,14 +3314,14 @@ s32 JetSphereInsidePlanes(VECTOR* arg0, s16 arg1) {
     if (leftOk == 0) {
         len = g_JetLeftNormalLength;
         planeDistance = ((hsLeft < 0) ? -hsLeft : hsLeft) / len;
-        if (planeDistance < arg1) {
+        if (planeDistance < radius) {
             leftOk = 1;
         }
     }
     rx = g_JetRightPlaneNormalX;
     ry = g_JetRightPlaneNormalY;
     rz = g_JetRightPlaneNormalZ;
-    hsRight = (rx * (arg0->vx >> 2)) + (ry * (arg0->vy >> 2)) + (rz * (arg0->vz >> 2)) + g_JetRightPlaneDistance;
+    hsRight = (rx * (center->vx >> 2)) + (ry * (center->vy >> 2)) + (rz * (center->vz >> 2)) + g_JetRightPlaneDistance;
     if (D_800A8968 > 0 && hsRight >= 0) {
         rightOk = 1;
     }
@@ -3327,26 +3331,26 @@ s32 JetSphereInsidePlanes(VECTOR* arg0, s16 arg1) {
     if (rightOk == 0) {
         len = g_JetRightNormalLength;
         planeDistance = ((hsRight < 0) ? -hsRight : hsRight) / len;
-        if (planeDistance < arg1) {
+        if (planeDistance < radius) {
             rightOk = 1;
         }
     }
     return leftOk & rightOk;
 }
 
-s32 JetSphereInsideLeftPlane(s32 arg0, s32 arg1, s32 arg2, s16 arg3) {
-    s32 a;
-    s32 b;
-    s32 c;
+s32 JetSphereInsideLeftPlane(s32 x, s32 y, s32 z, s16 radius) {
+    s32 nx;
+    s32 ny;
+    s32 nz;
     s32 hs;
     s32 ok;
     s32 len;
 
-    a = g_JetLeftPlaneNormalX;
-    b = g_JetLeftPlaneNormalY;
-    c = g_JetLeftPlaneNormalZ;
+    nx = g_JetLeftPlaneNormalX;
+    ny = g_JetLeftPlaneNormalY;
+    nz = g_JetLeftPlaneNormalZ;
     ok = 0;
-    hs = (a * (arg0 >> 2)) + (b * (arg1 >> 2)) + (c * (arg2 >> 2)) + g_JetLeftPlaneDistance;
+    hs = (nx * (x >> 2)) + (ny * (y >> 2)) + (nz * (z >> 2)) + g_JetLeftPlaneDistance;
     if (D_800A8950 > 0 && hs >= 0) {
         ok = 1;
     }
@@ -3358,26 +3362,26 @@ s32 JetSphereInsideLeftPlane(s32 arg0, s32 arg1, s32 arg2, s16 arg3) {
         if (hs < 0) {
             hs = -hs;
         }
-        if (hs / len < arg3) {
+        if (hs / len < radius) {
             ok = 1;
         }
     }
     return ok;
 }
 
-s32 JetSphereInsideRightPlane(s32 arg0, s32 arg1, s32 arg2, s16 arg3) {
-    s32 a;
-    s32 b;
-    s32 c;
+s32 JetSphereInsideRightPlane(s32 x, s32 y, s32 z, s16 radius) {
+    s32 nx;
+    s32 ny;
+    s32 nz;
     s32 hs;
     s32 ok;
     s32 len;
 
-    a = g_JetRightPlaneNormalX;
-    b = g_JetRightPlaneNormalY;
-    c = g_JetRightPlaneNormalZ;
+    nx = g_JetRightPlaneNormalX;
+    ny = g_JetRightPlaneNormalY;
+    nz = g_JetRightPlaneNormalZ;
     ok = 0;
-    hs = (a * (arg0 >> 2)) + (b * (arg1 >> 2)) + (c * (arg2 >> 2)) + g_JetRightPlaneDistance;
+    hs = (nx * (x >> 2)) + (ny * (y >> 2)) + (nz * (z >> 2)) + g_JetRightPlaneDistance;
     if (D_800A8968 > 0 && hs >= 0) {
         ok = 1;
     }
@@ -3389,7 +3393,7 @@ s32 JetSphereInsideRightPlane(s32 arg0, s32 arg1, s32 arg2, s16 arg3) {
         if (hs < 0) {
             hs = -hs;
         }
-        if (hs / len < arg3) {
+        if (hs / len < radius) {
             ok = 1;
         }
     }
@@ -3405,18 +3409,18 @@ void JetModelsReset(void) {
     g_JetModelInfo = g_JetModelInfoBase;
 }
 
-JetModel* JetModelBuild(s32 arg0) {
+JetModel* JetModelBuild(s32 infoIndex) {
     JetModel* model;
     s32 numTri;
     s32 numQua;
 
     model = JetModelAlloc();
-    numTri = g_JetModelInfo[arg0].triCount;
-    numQua = g_JetModelInfo[arg0].quadCount;
-    model->unk16 = g_JetModelInfo[arg0].unk4.vx;
-    model->unk14 = g_JetModelInfo[arg0].unkC.vx;
-    model->unk1A = g_JetModelInfo[arg0].unk4.vz;
-    model->unk18 = g_JetModelInfo[arg0].unkC.vz;
+    numTri = g_JetModelInfo[infoIndex].triCount;
+    numQua = g_JetModelInfo[infoIndex].quadCount;
+    model->unk16 = g_JetModelInfo[infoIndex].unk4.vx;
+    model->unk14 = g_JetModelInfo[infoIndex].unkC.vx;
+    model->unk1A = g_JetModelInfo[infoIndex].unk4.vz;
+    model->unk18 = g_JetModelInfo[infoIndex].unkC.vz;
     model->unk2 = 0;
     model->triCount = numTri;
     model->quadCount = numQua;
@@ -3465,7 +3469,7 @@ JetQuad* JetQuadsAlloc(s32 count) {
 
 // No PC counterpart; the port replaced the PSX double buffer with the DirectX driver
 void JetBuffersInit(void) {
-    JetPrimBuffer* temp_s1;
+    JetPrimBuffer* prims;
     JetBuffer* db;
     u_char* isbg;
 
@@ -3485,10 +3489,10 @@ void JetBuffersInit(void) {
     SetDispMask(1);
     SetBackColor(0x80, 0x80, 0x80);
     SetFarColor(0, 0, 8);
-    temp_s1 = &g_JetBuffers[0].prims;
-    JetPrimsInit(temp_s1);
+    prims = &g_JetBuffers[0].prims;
+    JetPrimsInit(prims);
     JetPrimsInit(&g_JetBuffers[1].prims);
-    JetPrimCursorsReset(temp_s1);
+    JetPrimCursorsReset(prims);
     JetPrimCursorsReset(&g_JetBuffers[1].prims);
     ClearOTagR(g_JetBuffers[0].ot, LEN(g_JetBuffers[0].ot));
     ClearOTagR(g_JetBuffers[1].ot, LEN(g_JetBuffers[1].ot));
@@ -3504,53 +3508,53 @@ void JetBufferReset(void) {
 }
 
 // Tag every primitive in the nine pools with its type and length.
-void JetPrimsInit(JetPrimBuffer* arg0) {
+void JetPrimsInit(JetPrimBuffer* prims) {
     s32 i;
 
-    for (i = 0; i < LEN(arg0->f3); i++) {
-        SetPolyF3(&arg0->f3[i]);
+    for (i = 0; i < LEN(prims->f3); i++) {
+        SetPolyF3(&prims->f3[i]);
     }
-    for (i = 0; i < LEN(arg0->f4); i++) {
-        SetPolyF4(&arg0->f4[i]);
+    for (i = 0; i < LEN(prims->f4); i++) {
+        SetPolyF4(&prims->f4[i]);
     }
-    for (i = 0; i < LEN(arg0->g3); i++) {
-        SetPolyG3(&arg0->g3[i]);
+    for (i = 0; i < LEN(prims->g3); i++) {
+        SetPolyG3(&prims->g3[i]);
     }
-    for (i = 0; i < LEN(arg0->g4); i++) {
-        SetPolyG4(&arg0->g4[i]);
+    for (i = 0; i < LEN(prims->g4); i++) {
+        SetPolyG4(&prims->g4[i]);
     }
-    for (i = 0; i < LEN(arg0->ft3); i++) {
-        SetPolyFT3(&arg0->ft3[i]);
+    for (i = 0; i < LEN(prims->ft3); i++) {
+        SetPolyFT3(&prims->ft3[i]);
     }
-    for (i = 0; i < LEN(arg0->ft4); i++) {
-        SetPolyFT4(&arg0->ft4[i]);
+    for (i = 0; i < LEN(prims->ft4); i++) {
+        SetPolyFT4(&prims->ft4[i]);
     }
-    for (i = 0; i < LEN(arg0->gt3); i++) {
-        SetPolyGT3(&arg0->gt3[i]);
+    for (i = 0; i < LEN(prims->gt3); i++) {
+        SetPolyGT3(&prims->gt3[i]);
     }
-    for (i = 0; i < LEN(arg0->gt4); i++) {
-        SetPolyGT4(&arg0->gt4[i]);
+    for (i = 0; i < LEN(prims->gt4); i++) {
+        SetPolyGT4(&prims->gt4[i]);
     }
-    for (i = 0; i < LEN(arg0->line); i++) {
-        SetLineF2(&arg0->line[i]);
+    for (i = 0; i < LEN(prims->line); i++) {
+        SetLineF2(&prims->line[i]);
     }
 }
 
-void JetPrimCursorsReset(JetPrimBuffer* arg0) {
-    arg0->f3Cursor = arg0->f3;
-    arg0->f4Cursor = arg0->f4;
-    arg0->g3Cursor = arg0->g3;
-    arg0->g4Cursor = arg0->g4;
-    arg0->ft3Cursor = arg0->ft3;
-    arg0->ft4Cursor = arg0->ft4;
-    arg0->gt3Cursor = arg0->gt3;
-    arg0->gt4Cursor = arg0->gt4;
-    arg0->lineCursor = arg0->line;
+void JetPrimCursorsReset(JetPrimBuffer* prims) {
+    prims->f3Cursor = prims->f3;
+    prims->f4Cursor = prims->f4;
+    prims->g3Cursor = prims->g3;
+    prims->g4Cursor = prims->g4;
+    prims->ft3Cursor = prims->ft3;
+    prims->ft4Cursor = prims->ft4;
+    prims->gt3Cursor = prims->gt3;
+    prims->gt4Cursor = prims->gt4;
+    prims->lineCursor = prims->line;
 }
 
 void JetNodesInit(void) {
-    JetNode* a;
-    JetNode* b;
+    JetNode* head;
+    JetNode* tail;
     s32 i;
 
     JetNodeInit(&g_JetRootNode, 0);
@@ -3560,32 +3564,32 @@ void JetNodesInit(void) {
         g_JetNodeFreeList[i] = i + 1;
     }
     for (i = 0; i < LEN(g_JetNodeListHeads); i++) {
-        a = &g_JetNodeListHeads[i];
-        b = &g_JetNodeListTails[i];
-        a->prev = NULL;
-        a->next = b;
-        b->prev = a;
-        b->next = NULL;
+        head = &g_JetNodeListHeads[i];
+        tail = &g_JetNodeListTails[i];
+        head->prev = NULL;
+        head->next = tail;
+        tail->prev = head;
+        tail->next = NULL;
     }
 }
 
-void JetNodeInit(JetNode* arg0, s16 arg1) {
-    arg0->m.m[0][0] = 0x1000;
-    arg0->m.m[1][1] = 0x1000;
-    arg0->m.m[2][2] = 0x1000;
-    arg0->m.t[0] = 0;
-    arg0->m.t[1] = 0;
-    arg0->m.t[2] = 0;
-    arg0->m.m[0][1] = 0;
-    arg0->m.m[0][2] = 0;
-    arg0->m.m[1][0] = 0;
-    arg0->m.m[1][2] = 0;
-    arg0->m.m[2][0] = 0;
-    arg0->m.m[2][1] = 0;
-    arg0->parent = &g_JetRootNode;
-    arg0->index = arg1;
-    arg0->prev = 0;
-    arg0->next = 0;
+void JetNodeInit(JetNode* node, s16 index) {
+    node->m.m[0][0] = 0x1000;
+    node->m.m[1][1] = 0x1000;
+    node->m.m[2][2] = 0x1000;
+    node->m.t[0] = 0;
+    node->m.t[1] = 0;
+    node->m.t[2] = 0;
+    node->m.m[0][1] = 0;
+    node->m.m[0][2] = 0;
+    node->m.m[1][0] = 0;
+    node->m.m[1][2] = 0;
+    node->m.m[2][0] = 0;
+    node->m.m[2][1] = 0;
+    node->parent = &g_JetRootNode;
+    node->index = index;
+    node->prev = 0;
+    node->next = 0;
 }
 
 JetNode* JetNodeAlloc(s16 arg0, s32 arg1, s32 arg2, s32 arg3, JetNode* arg4, s32 arg5, s32 arg6, s32 arg7, s16 arg8,
@@ -3610,9 +3614,9 @@ JetNode* JetNodeAlloc(s16 arg0, s32 arg1, s32 arg2, s32 arg3, JetNode* arg4, s32
     return temp_s0;
 }
 
-void JetNodeFree(JetNode* arg0) {
-    JetNodeUnlink(arg0);
-    JetNodeIndexFree(arg0->index);
+void JetNodeFree(JetNode* node) {
+    JetNodeUnlink(node);
+    JetNodeIndexFree(node->index);
 }
 
 s16 JetNodeIndexAlloc(void) {
@@ -3626,33 +3630,33 @@ s16 JetNodeIndexAlloc(void) {
     return result;
 }
 
-void JetNodeIndexFree(s16 arg0) {
-    s16* temp;
-    s16* temp2;
+void JetNodeIndexFree(s16 index) {
+    s16* head;
+    s16* slot;
 
-    temp2 = &g_JetNodeFreeList[arg0];
-    temp = &g_JetNextFreeNode;
-    *temp2 = *temp;
-    *temp = arg0;
+    slot = &g_JetNodeFreeList[index];
+    head = &g_JetNextFreeNode;
+    *slot = *head;
+    *head = index;
 }
 
-void JetNodeLink(JetNode* arg0, JetNode* arg1) {
-    JetNode* temp_v0_2;
-    JetNode* temp_v1;
-    s16 temp_v0;
+void JetNodeLink(JetNode* node, JetNode* parent) {
+    JetNode* last;
+    JetNode* tail;
+    s16 depth;
 
-    arg0->parent = arg1;
-    temp_v0 = arg1->depth + 1;
-    arg0->depth = temp_v0;
-    temp_v1 = &g_JetNodeListTails[temp_v0];
-    temp_v0_2 = temp_v1->prev;
-    arg0->prev = temp_v0_2;
-    arg0->next = temp_v0_2->next;
-    temp_v1->prev->next = arg0;
-    temp_v1->prev = arg0;
+    node->parent = parent;
+    depth = parent->depth + 1;
+    node->depth = depth;
+    tail = &g_JetNodeListTails[depth];
+    last = tail->prev;
+    node->prev = last;
+    node->next = last->next;
+    tail->prev->next = node;
+    tail->prev = node;
 }
 
-void JetNodeUnlink(JetNode* arg0) {
-    arg0->prev->next = arg0->next;
-    arg0->next->prev = arg0->prev;
+void JetNodeUnlink(JetNode* node) {
+    node->prev->next = node->next;
+    node->next->prev = node->prev;
 }
