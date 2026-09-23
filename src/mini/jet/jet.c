@@ -181,7 +181,7 @@ VECTOR D_800A83D8 = {0, 0, 0, 0};
 s32 D_800A83E8[2] = {0, 0};
 
 extern u8 D_800A8928;
-extern volatile s32 D_800A8A84;
+extern s32 D_800A8A84;
 extern void* D_800A891C;
 extern void* D_800A8920;
 extern s32 g_JetLeftPlaneNormalX;
@@ -359,7 +359,7 @@ void func_800A2058();
 void func_800A2214();
 void func_800A2860(void);
 void func_800A2B78(void);
-void func_800A2C50(s32 arg0);
+void func_800A2C50(void);
 void func_800A2E38();
 void func_800A35DC(s32 arg0);
 void func_800A385C(u16 arg0);
@@ -373,91 +373,85 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
 JetNode* JetNodeAlloc(
     s16 arg0, s32 arg1, s32 arg2, s32 arg3, JetNode* arg4, s32 arg5, s32 arg6, s32 arg7, s16 arg8, s16 arg9, s16 arg10);
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", MINI_Jet);
-#else
 // The dummy local reproduces the target stack frame.
 u16 MINI_Jet(void) {
     volatile s32 dummy;
-    JetBuffer** db;
     JetBuffer* var_a2;
+    JetBuffer* current;
     s32* speed;
+    volatile s32* frame;
     SVECTOR** path;
-    s32 temp_s0;
 
     func_800A2214();
-    SetDrawMode(&D_800D9934, 0, 1, GetTPage(1, 1, 0x300, 0) & 0xFFFF, NULL);
+    SetDrawMode(&D_800D9934, 0, 1, GetTPage(1, 1, 768, 0) & 0xFFFF, NULL);
     g_JetTrackRot = D_800D1BF0;
     func_800A2DE4(0, 0);
-    db = g_JetBufferPtr;
-    speed = &D_800A897C;
     path = &D_800A8988;
     g_JetTrackLeft = *path;
     func_800A2DE4(1, 0);
     g_JetTrackRight = *path;
-    temp_s0 = 0x20;
     func_800A2860();
-    SetFogNearFar(D_800A89D0, D_800A89D4, 0x100);
-    D_800A8A74[0] = JetNodeAlloc(0x1E, 0, 0, 1, &g_JetRootNode, 0x4B0, 0x32, 0xBB8, 0, 0x3E8, 0);
-    // A loop keyword makes gcc duplicate the exit test and hoist loop constants.
-loop:
-    if ((D_800D16E0 * 4) > (D_800D1724 - 0x10) || D_800E2600 == 1) {
-        goto done;
-    }
-    func_800A2E38();
-    if (D_800D16DC == 0) {
-        func_800A2C50(9);
-        func_800A35DC(*speed);
-        JetSetWorldMatrix();
-        JetDrawTrack();
-        JetDrawTriangleList();
-        JetDrawScorePopup(db[0], g_JetPopupModelId, 5, 0x28, 0);
-        func_800A372C(*speed);
-        func_800A46E8(db[0]);
-        func_800A1CD8(g_JetScore, 0xF4, 0xC8, 0, 0);
-        JetDrawSprite(7, 0xCC, 0xC8, 0x27, 0x11, 0, 0, 0x27, 0x11, 0);
-        JetDrawSprite(0xB, 0x12, 0x56, 0xC, 0x8C, 0, 0x70, 0xC, 0x8C, 0);
-        JetDrawEnergyGauge();
-        if (*speed < 0x4000) {
-            D_800A8338 = 0;
-        } else {
-            D_800A8338 = 0x7F;
+    SetFogNearFar(D_800A89D0, D_800A89D4, 256);
+    D_800A8A74[0] = JetNodeAlloc(30, 0, 0, 1, &g_JetRootNode, 1200, 50, 3000, 0, 1000, 0);
+    for (;;) {
+        speed = &D_800A897C;
+        if ((D_800D16E0 * 4) > (D_800D1724 - 0x10) || D_800E2600 == 1) {
+            break;
         }
-    } else {
-        JetDrawSprite(9, 0xCA, 0xC0, 0x60, temp_s0, 0, 0x50, 0x60, temp_s0, 0);
-        D_800A8338 = 0;
-        D_800A833C = 0;
+        func_800A2E38();
+        if (D_800D16DC == 0) {
+            func_800A2C50();
+            func_800A35DC(*speed);
+            JetSetWorldMatrix();
+            JetDrawTrack();
+            JetDrawTriangleList();
+            JetDrawScorePopup(g_JetBufferPtr[0], g_JetPopupModelId, 5, 40, 0);
+            func_800A372C(*speed);
+            func_800A46E8(g_JetBufferPtr[0]);
+            func_800A1CD8(g_JetScore, 244, 200, 0, 0);
+            JetDrawSprite(7, 204, 200, 39, 17, 0, 0, 0x27, 0x11, 0);
+            JetDrawSprite(11, 18, 86, 12, 140, 0, 0x70, 0xC, 0x8C, 0);
+            JetDrawEnergyGauge();
+            if (*speed < 0x4000) {
+                D_800A8338 = 0;
+            } else {
+                D_800A8338 = 0x7F;
+            }
+        } else {
+            JetDrawSprite(9, 202, 192, 96, 32, 0, 0x50, 0x60, 0x20, 0);
+            D_800A8338 = 0;
+            D_800A833C = 0;
+        }
+        func_800A2B78();
+        func_800A2058();
+        JetDrawSprite(10, 200, 192, 111, 31, 0, 0x30, 0x70, 0x20, 0);
+        DrawSync(0);
+        VSync(0);
+        ResetGraph(1);
+        PutDrawEnv(&g_JetBufferPtr[0]->draw);
+        PutDispEnv(&g_JetBufferPtr[0]->disp);
+        ClearImage(&g_JetBufferPtr[0]->draw.clip, 0, 0, 0);
+        if (D_800E25F4 != 0) {
+            DrawOTag(&g_JetBufferPtr[0]->ot[0xFFF]);
+            DrawOTag(&g_JetBufferPtr[0]->ot2[0xB3]);
+        }
+        var_a2 = g_JetBuffers;
+        current = g_JetBufferPtr[0];
+        frame = &D_800E25FC;
+        *frame = 0;
+        if (current == var_a2) {
+            var_a2++;
+        }
+        g_JetBufferPtr[0] = var_a2;
+        ClearOTagR(var_a2->ot, 0x1000);
+        ClearOTagR(g_JetBufferPtr[0]->ot2, 0xB4);
+        JetPrimCursorsReset(&g_JetBufferPtr[0]->prims);
     }
-    func_800A2B78();
-    func_800A2058();
-    JetDrawSprite(0xA, 0xC8, 0xC0, 0x6F, 0x1F, 0, 0x30, 0x70, temp_s0, 0);
-    DrawSync(0);
-    VSync(0);
-    ResetGraph(1);
-    PutDrawEnv(&db[0]->draw);
-    PutDispEnv(&db[0]->disp);
-    ClearImage(&db[0]->draw.clip, 0, 0, 0);
-    if (D_800E25F4 != 0) {
-        DrawOTag(&db[0]->ot[0xFFF]);
-        DrawOTag(&db[0]->ot2[0xB3]);
-    }
-    var_a2 = g_JetBuffers;
-    D_800E25FC = 0;
-    if (db[0] == var_a2) {
-        var_a2++;
-    }
-    db[0] = var_a2;
-    ClearOTagR(var_a2->ot, 0x1000);
-    ClearOTagR(db[0]->ot2, 0xB4);
-    JetPrimCursorsReset(&db[0]->prims);
-    goto loop;
-done:
     *D_8009A000 = 0xB8;
     D_8009A004 = 0;
     AkaoExec();
     return g_JetScore;
 }
-#endif
 
 // Draw one object's model, project its bounding box and flag a cursor hit.
 void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4390* obj) {
@@ -1245,7 +1239,7 @@ void func_800A2BE0(void) {
 }
 
 // Advance the camera along its path and rebuild the view matrices.
-void func_800A2C50(s32 arg0) {
+void func_800A2C50(void) {
     VECTOR pos;
     SVECTOR rot;
     SVECTOR camRot;
