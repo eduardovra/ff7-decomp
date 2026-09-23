@@ -371,7 +371,7 @@ void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4);
 void func_800A46E8(JetBuffer* db);
 void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4390* obj);
 JetNode* JetNodeAlloc(
-    s16 arg0, s32 arg1, s32 arg2, s32 arg3, JetNode* arg4, s32 arg5, s32 arg6, s32 arg7, s16 arg8, s16 arg9, s16 arg10);
+    s16 modelId, s32 arg1, s32 arg2, s32 arg3, JetNode* parent, s32 x, s32 y, s32 z, s16 rotX, s16 rotY, s16 rotZ);
 
 // The dummy local reproduces the target stack frame.
 u16 MINI_Jet(void) {
@@ -447,8 +447,8 @@ u16 MINI_Jet(void) {
         ClearOTagR(g_JetBufferPtr[0]->ot2, 0xB4);
         JetPrimCursorsReset(&g_JetBufferPtr[0]->prims);
     }
-    *D_8009A000 = 0xB8;
-    D_8009A004 = 0;
+    g_AkaoCmd.opcode = 0xB8;
+    g_AkaoCmd.params[0] = 0;
     AkaoExec();
     return g_JetScore;
 }
@@ -1123,35 +1123,35 @@ void func_800A27F0(u_long* addr) {
 }
 
 void func_800A2860(void) {
-    D_8009A000[0] = 0x10;
-    D_8009A004 = D_800D1BD4;
+    g_AkaoCmd.opcode = 0x10;
+    g_AkaoCmd.params[0] = D_800D1BD4;
     AkaoExec();
-    D_8009A000[0] = 0xC0;
-    D_8009A004 = 0x7F;
+    g_AkaoCmd.opcode = 0xC0;
+    g_AkaoCmd.params[0] = 0x7F;
     AkaoExec();
-    D_8009A000[0] = 0xB8;
-    D_8009A004 = 0x7F;
+    g_AkaoCmd.opcode = 0xB8;
+    g_AkaoCmd.params[0] = 0x7F;
     AkaoExec();
-    D_8009A000[0] = 0xBC;
-    D_8009A004 = 0;
+    g_AkaoCmd.opcode = 0xBC;
+    g_AkaoCmd.params[0] = 0;
     AkaoExec();
-    D_8009A000[0] = 0xA2;
-    D_8009A004 = 0;
+    g_AkaoCmd.opcode = 0xA2;
+    g_AkaoCmd.params[0] = 0;
     AkaoExec();
-    D_8009A000[0] = 0x2A;
-    D_8009A004 = 0x40;
-    D_8009A008 = 0x177;
+    g_AkaoCmd.opcode = 0x2A;
+    g_AkaoCmd.params[0] = 0x40;
+    g_AkaoCmd.params[1] = 0x177;
     AkaoExec();
 }
 
 void func_800A2938(void) {
-    D_8009A000[0] = 0xC1;
-    D_8009A004 = 0xF0;
-    D_8009A008 = 0;
+    g_AkaoCmd.opcode = 0xC1;
+    g_AkaoCmd.params[0] = 0xF0;
+    g_AkaoCmd.params[1] = 0;
     AkaoExec();
-    D_8009A000[0] = 0xB9;
-    D_8009A004 = 0xF0;
-    D_8009A008 = 0;
+    g_AkaoCmd.opcode = 0xB9;
+    g_AkaoCmd.params[0] = 0xF0;
+    g_AkaoCmd.params[1] = 0;
     AkaoExec();
 }
 
@@ -1164,21 +1164,21 @@ void func_800A29AC(s16 arg0) {
     channel = (*pChannel + 1) & 1;
     *pChannel = channel;
     if (channel == 0) {
-        D_8009A000[0] = 0xB0;
-        D_8009A004 = 0;
+        g_AkaoCmd.opcode = 0xB0;
+        g_AkaoCmd.params[0] = 0;
         AkaoExec();
-        D_8009A000[0] = 0x28;
-        D_8009A004 = 0x40;
-        D_8009A008 = arg0;
+        g_AkaoCmd.opcode = 0x28;
+        g_AkaoCmd.params[0] = 0x40;
+        g_AkaoCmd.params[1] = arg0;
         AkaoExec();
     }
     if (*pChannel == 1) {
-        D_8009A000[0] = 0xB1;
-        D_8009A004 = 0;
+        g_AkaoCmd.opcode = 0xB1;
+        g_AkaoCmd.params[0] = 0;
         AkaoExec();
-        D_8009A000[0] = 0x29;
-        D_8009A004 = 0x40;
-        D_8009A008 = arg0;
+        g_AkaoCmd.opcode = 0x29;
+        g_AkaoCmd.params[0] = 0x40;
+        g_AkaoCmd.params[1] = arg0;
         AkaoExec();
     }
 }
@@ -1190,14 +1190,14 @@ void func_800A2AA0(s32 arg0) {
     temp = &D_800A8958;
     if (*temp == 0) {
         if (arg0 & 0xFF) {
-            *D_8009A000 = 0x2B;
-            D_8009A004 = 0x40;
-            D_8009A008 = 0x22B;
+            g_AkaoCmd.opcode = 0x2B;
+            g_AkaoCmd.params[0] = 0x40;
+            g_AkaoCmd.params[1] = 0x22B;
             AkaoExec();
         } else {
-            *D_8009A000 = 0x2B;
-            D_8009A004 = 0x40;
-            D_8009A008 = 0;
+            g_AkaoCmd.opcode = 0x2B;
+            g_AkaoCmd.params[0] = 0x40;
+            g_AkaoCmd.params[1] = 0;
             AkaoExec();
             D_800A8958 = 0;
             return;
@@ -1206,25 +1206,25 @@ void func_800A2AA0(s32 arg0) {
     temp_s0 = arg0 & 0xFF;
     if (temp_s0) {
         D_800A833C = temp_s0;
-        *D_8009A000 = 0xB3;
-        D_8009A004 = temp_s0;
+        g_AkaoCmd.opcode = 0xB3;
+        g_AkaoCmd.params[0] = temp_s0;
         AkaoExec();
         *temp = temp_s0;
     } else {
-        *D_8009A000 = 0x2B;
-        D_8009A004 = 0x40;
-        D_8009A008 = 0;
+        g_AkaoCmd.opcode = 0x2B;
+        g_AkaoCmd.params[0] = 0x40;
+        g_AkaoCmd.params[1] = 0;
         AkaoExec();
         D_800A8958 = 0;
     }
 }
 
 void func_800A2B78(void) {
-    D_8009A000[0] = 0xA2;
-    D_8009A004 = D_800A8338;
+    g_AkaoCmd.opcode = 0xA2;
+    g_AkaoCmd.params[0] = D_800A8338;
     AkaoExec();
-    D_8009A000[0] = 0xA3;
-    D_8009A004 = D_800A833C;
+    g_AkaoCmd.opcode = 0xA3;
+    g_AkaoCmd.params[0] = D_800A833C;
     AkaoExec();
 }
 
@@ -3469,7 +3469,7 @@ void JetBuffersInit(void) {
     SetDefDispEnv(&g_JetBuffers[1].disp, 0, 0, 320, 240);
     db = g_JetBuffers;
     g_JetBuffers[0].draw.isbg = 0;
-    // Stored off the buffer base register; a direct field store folds to an absolute address.
+    // do not fold into a direct store; it stops matching.
     isbg = &db[1].draw.isbg;
     *isbg = 0;
     setRGB0(&g_JetBuffers[0].draw, 0, 0, 8);
@@ -3582,26 +3582,26 @@ void JetNodeInit(JetNode* node, s16 index) {
     node->next = 0;
 }
 
-JetNode* JetNodeAlloc(s16 arg0, s32 arg1, s32 arg2, s32 arg3, JetNode* arg4, s32 arg5, s32 arg6, s32 arg7, s16 arg8,
-                      s16 arg9, s16 arg10) {
-    SVECTOR sp10;
-    JetNode* temp_s0;
-    JetNode* temp_v1;
-    s16 temp_v0;
+JetNode* JetNodeAlloc(
+    s16 modelId, s32 arg1, s32 arg2, s32 arg3, JetNode* parent, s32 x, s32 y, s32 z, s16 rotX, s16 rotY, s16 rotZ) {
+    SVECTOR rot;
+    JetNode* node;
+    JetNode* pool;
+    s16 index;
 
-    temp_v0 = JetNodeIndexAlloc();
-    temp_v1 = g_JetNodePool;
-    temp_s0 = &temp_v1[temp_v0];
-    JetNodeLink(temp_s0, arg4);
-    temp_s0->model = g_JetModelTable[arg0];
-    temp_s0->modelId = arg0;
-    temp_s0->index = temp_v0;
-    setVector(&sp10, arg8, arg9, arg10);
-    RotMatrix(&sp10, &temp_s0->m);
-    temp_s0->m.t[0] = arg5;
-    temp_s0->m.t[1] = arg6;
-    temp_s0->m.t[2] = arg7;
-    return temp_s0;
+    index = JetNodeIndexAlloc();
+    pool = g_JetNodePool;
+    node = &pool[index];
+    JetNodeLink(node, parent);
+    node->model = g_JetModelTable[modelId];
+    node->modelId = modelId;
+    node->index = index;
+    setVector(&rot, rotX, rotY, rotZ);
+    RotMatrix(&rot, &node->m);
+    node->m.t[0] = x;
+    node->m.t[1] = y;
+    node->m.t[2] = z;
+    return node;
 }
 
 void JetNodeFree(JetNode* node) {
