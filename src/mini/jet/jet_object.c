@@ -25,15 +25,15 @@ extern s32* D_800D1C08;
 extern Unk800D1C0C* g_JetSpawns;
 extern u8* g_JetSpawnCounts;
 extern Unk800A4390 g_JetSpawnTemplate;
-extern Unk800A4390 D_800D1DC0[0x64];
+extern Unk800A4390 g_JetObjects[0x64];
 extern u16 D_800D9940;
-extern s16 D_800EE42C;
+extern s16 g_JetObjectCount;
 
 static s16 func_800A4400(void);
 static void func_800A442C(s16 arg0);
 static void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 type, s16 arg4);
-static void func_800A6B08(Unk800A4390* arg0);
-static void func_800A6BD8(Unk800A4390* arg0);
+static void JetObjectDamage(Unk800A4390* arg0);
+static void JetObjectAwardPoints(Unk800A4390* arg0);
 
 const u8 D_800A0008 = 0; // the rotation order the object matrices use
 
@@ -42,8 +42,8 @@ void func_800A3AAC(void) {
     Unk800A4390* pool;
     s32 i;
 
-    obj = D_800D1DC0;
-    for (i = 0; i < LEN(D_800D1DC0); i++) {
+    obj = g_JetObjects;
+    for (i = 0; i < LEN(g_JetObjects); i++) {
         obj[i].unkD8 = -1;
         obj[i].unkDA = 0;
     }
@@ -58,7 +58,7 @@ void func_800A3AAC(void) {
     g_JetCursorY = 120;
     g_JetNextSpawnSegment = 0;
     g_JetSpawnIndex = 0;
-    D_800EE42C = 0;
+    g_JetObjectCount = 0;
 }
 
 static void func_800A3B58(u8 pathIndex, u8 mode) {
@@ -196,12 +196,12 @@ static s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
     s16 minZ;
     s16 maxZ;
 
-    count = &D_800EE42C;
+    count = &g_JetObjectCount;
     if (*count < 0x63) {
         *count = *count + 1;
         index = func_800A4400();
-        D_800D1DC0[index] = *src;
-        pool = D_800D1DC0;
+        g_JetObjects[index] = *src;
+        pool = g_JetObjects;
         obj = &pool[index];
         rawId = src->unk28.unk8;
         modelId = rawId;
@@ -221,7 +221,7 @@ static s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
         maxY = g_JetModelInfo[modelId].unkC.vy;
         minZ = g_JetModelInfo[modelId].unk4.vz;
         maxZ = g_JetModelInfo[modelId].unkC.vz;
-        boxPool = D_800D1DC0;
+        boxPool = g_JetObjects;
         box = &boxPool[index];
         setVector(&box->unkDC[0], (maxX + minX) >> 1, (maxY + minY) >> 1, maxZ);
         setVector(&box->unkDC[1], (maxX + minX) >> 1, (maxY + minY) >> 1, minZ);
@@ -237,7 +237,7 @@ static void func_800A4390(Unk800A4390* arg0) {
     s16* count;
 
     if (arg0->unkD8 != -1) {
-        count = &D_800EE42C;
+        count = &g_JetObjectCount;
         *count -= 1;
         JetNodeFree(arg0->unkD4);
         func_800A442C(arg0->unkD8);
@@ -320,7 +320,7 @@ inline void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 type, s16 arg4) {
 
 static inline void JetObjectFree(Unk800A4390* obj) {
     if (obj->unkD8 != -1) {
-        D_800EE42C--;
+        g_JetObjectCount--;
         JetNodeFree(obj->unkD4);
         func_800A442C(obj->unkD8);
         obj->unkD8 = -1;
@@ -357,9 +357,9 @@ void func_800A46E8(JetBuffer* db) {
     func_800A4458();
     func_800A3D50(db);
     func_800A3E58();
-    for (i = 0; i < LEN(D_800D1DC0); i++) {
+    for (i = 0; i < LEN(g_JetObjects); i++) {
         otIndex = 0;
-        pool = D_800D1DC0;
+        pool = g_JetObjects;
         obj = &pool[i];
         st = &obj->unk28;
         if (obj->unkDA == 0) {
@@ -436,7 +436,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unkC = 0;
             }
             if (st->hit != 0) {
-                func_800A6B08(obj);
+                JetObjectDamage(obj);
             }
             break;
         case 17:
@@ -447,7 +447,7 @@ void func_800A46E8(JetBuffer* db) {
 
                 sound = st->unk50[17];
                 if (sound != 0) {
-                    func_800A29AC(sound);
+                    JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[pathIndex];
@@ -478,7 +478,7 @@ void func_800A46E8(JetBuffer* db) {
                 break;
             }
             if (st->hit != 0) {
-                func_800A6B08(obj);
+                JetObjectDamage(obj);
             }
             if (st->unk28 < st->unk2C) {
                 func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
@@ -495,7 +495,7 @@ void func_800A46E8(JetBuffer* db) {
 
                 sound = st->unk50[17];
                 if (sound != 0) {
-                    func_800A29AC(sound);
+                    JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[pathIndex];
@@ -533,7 +533,7 @@ void func_800A46E8(JetBuffer* db) {
             obj->unk18.vy += st->unk50[4];
             obj->unk18.vz += st->unk50[5];
             if (st->hit != 0) {
-                func_800A6B08(obj);
+                JetObjectDamage(obj);
             }
             break;
         case 1:
@@ -544,7 +544,7 @@ void func_800A46E8(JetBuffer* db) {
 
                 sound = st->unk50[17];
                 if (sound != 0) {
-                    func_800A29AC(sound);
+                    JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[pathIndex];
@@ -586,7 +586,7 @@ void func_800A46E8(JetBuffer* db) {
             obj->unk18.vy = -ratan2(dz, dx) - 0x400;
             obj->unk18.vz = 0;
             if (st->hit != 0) {
-                func_800A6B08(obj);
+                JetObjectDamage(obj);
             }
             break;
         case 10:
@@ -597,7 +597,7 @@ void func_800A46E8(JetBuffer* db) {
 
                 sound = st->unk50[17];
                 if (sound != 0) {
-                    func_800A29AC(sound);
+                    JetPlaySfx(sound);
                 }
                 pathLen = D_800D1BEC[0];
                 offset = D_800D1BE8[0];
@@ -632,7 +632,7 @@ void func_800A46E8(JetBuffer* db) {
             JetTrackSample(D_800D1C54 + 0x3FFFC, 10, &obj->unk0, &obj->unk18);
             drawMode = 1;
             if (st->hit != 0) {
-                func_800A6B08(obj);
+                JetObjectDamage(obj);
             }
             break;
         case 4:
@@ -643,7 +643,7 @@ void func_800A46E8(JetBuffer* db) {
 
                 sound = st->unk50[17];
                 if (sound != 0) {
-                    func_800A29AC(sound);
+                    JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[pathIndex];
@@ -674,7 +674,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unkC = 0;
             }
             if (st->hit != 0) {
-                func_800A6B08(obj);
+                JetObjectDamage(obj);
             }
             break;
         case 5:
@@ -685,7 +685,7 @@ void func_800A46E8(JetBuffer* db) {
 
                 sound = st->unk50[17];
                 if (sound != 0) {
-                    func_800A29AC(sound);
+                    JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[pathIndex];
@@ -726,8 +726,8 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unkC != 0) {
                 func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
                 if (st->hit != 0) {
-                    if (st->unk50[10] != 5 || D_800A897C < 0x4015) {
-                        func_800A6B08(obj);
+                    if (st->unk50[10] != 5 || g_JetSpeed < 0x4015) {
+                        JetObjectDamage(obj);
                     }
                     if (st->unk50[10] == 5) {
                         st->unk50[14] = 1;
@@ -745,7 +745,7 @@ void func_800A46E8(JetBuffer* db) {
 
                 sound = st->unk50[17];
                 if (sound != 0) {
-                    func_800A29AC(sound);
+                    JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[pathIndex];
@@ -788,7 +788,7 @@ void func_800A46E8(JetBuffer* db) {
             }
             func_800A3C04(st->unk30, obj->unkCC, &obj->unk0, 0);
             if (st->hit != 0) {
-                func_800A6B08(obj);
+                JetObjectDamage(obj);
             }
             break;
         case 230:
@@ -802,7 +802,7 @@ void func_800A46E8(JetBuffer* db) {
             }
             if (st->unkC != 0) {
                 if (st->hit != 0) {
-                    func_800A6B08(obj);
+                    JetObjectDamage(obj);
                 }
             } else {
                 JetObjectFree(obj);
@@ -845,14 +845,14 @@ void func_800A46E8(JetBuffer* db) {
             }
             if (st->unkC != 0) {
                 if (st->hit != 0) {
-                    func_800A6B08(obj);
+                    JetObjectDamage(obj);
                 }
             } else {
                 JetObjectFree(obj);
             }
             break;
         case 11:
-            func_800A29AC(0x8E);
+            JetPlaySfx(0x8E);
             for (j = 0; j < st->unk50[3]; j++) {
                 func_800A4650(0x3446, -0x2710, 0x20CB, 0xC, 0x2A);
             }
@@ -912,7 +912,7 @@ void func_800A46E8(JetBuffer* db) {
             obj->unk0.vy -= st->unk50[3];
             st->unk50[3] -= st->unk50[4];
             if (st->unk50[3] < 0) {
-                func_800A29AC(0x98);
+                JetPlaySfx(0x98);
                 for (j = 0; j < 20; j++) {
                     s32 x;
                     s32 y;
@@ -955,7 +955,7 @@ void func_800A46E8(JetBuffer* db) {
                 s32 pathLen;
                 s32 offset;
 
-                func_800A29AC(0xA);
+                JetPlaySfx(0xA);
                 pathIndex = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[pathIndex];
                 offset = D_800D1C04[pathIndex];
@@ -1007,7 +1007,7 @@ void func_800A46E8(JetBuffer* db) {
             }
             if (st->unkC != 0) {
                 if (st->hit != 0) {
-                    func_800A6B08(obj);
+                    JetObjectDamage(obj);
                 }
             } else {
                 JetObjectFree(obj);
@@ -1145,7 +1145,7 @@ void func_800A46E8(JetBuffer* db) {
             {
                 s32* speed;
 
-                speed = &D_800A897C;
+                speed = &g_JetSpeed;
                 if (*speed > st->unk50[2]) {
                     *speed -= st->unk50[0];
                 }
@@ -1169,12 +1169,12 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk14++;
             }
             if (st->unk28 == 0) {
-                D_800A897C = 0;
+                g_JetSpeed = 0;
             }
             if (st->unk28 == 1) {
                 s32* speed;
 
-                speed = &D_800A897C;
+                speed = &g_JetSpeed;
                 *speed += st->unk50[1];
                 st->unk30++;
             }
@@ -1189,7 +1189,7 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk10 == 1) {
                 st->unk10 = 0;
                 st->unk14 = 0;
-                D_800A897C = 0;
+                g_JetSpeed = 0;
                 D_800E25F4 = 1;
                 func_800A4650(0, 0, 0, 3, 0x3B);
             } else {
@@ -1217,14 +1217,14 @@ void func_800A46E8(JetBuffer* db) {
             db->prims.ft4Cursor = tpagePrim;
             if (st->unk14 >= 0x7E) {
                 JetObjectFree(obj);
-                D_800A897C = 0x4000;
+                g_JetSpeed = 0x4000;
             }
             break;
         case 253:
             if (st->unk10 == 1) {
                 st->unk10 = 0;
                 st->unk14 = 0;
-                D_800A897C = 0;
+                g_JetSpeed = 0;
                 func_800A2938();
             } else {
                 st->unk14++;
@@ -1251,9 +1251,9 @@ void func_800A46E8(JetBuffer* db) {
             db->prims.ft4Cursor = tpagePrim;
             if (st->unk14 >= 0x80) {
                 JetObjectFree(obj);
-                D_800A897C = 0x4000;
+                g_JetSpeed = 0x4000;
                 D_800E25F4 = 0;
-                D_800E2600 = 1;
+                g_JetExit = 1;
             }
             break;
         case 250:
@@ -1302,7 +1302,7 @@ void func_800A46E8(JetBuffer* db) {
     }
 }
 
-static void func_800A6B08(Unk800A4390* arg0) {
+static void JetObjectDamage(Unk800A4390* arg0) {
     Unk800D1CAC* state = &arg0->unk28;
     u8 amount;
     s32 x;
@@ -1315,7 +1315,7 @@ static void func_800A6B08(Unk800A4390* arg0) {
     }
     state->unk50[0xD] -= amount;
     if (state->unk50[0xD] < 0) {
-        func_800A6BD8(arg0);
+        JetObjectAwardPoints(arg0);
     } else {
         x = arg0->unk0.vx;
         y = arg0->unk0.vy;
@@ -1325,7 +1325,7 @@ static void func_800A6B08(Unk800A4390* arg0) {
 }
 
 // Award the score for a hit object and scatter its debris.
-static void func_800A6BD8(Unk800A4390* obj) {
+static void JetObjectAwardPoints(Unk800A4390* obj) {
     Unk800D1CAC* st = &obj->unk28;
     s32* score;
     s32* frame;
@@ -1344,7 +1344,7 @@ static void func_800A6BD8(Unk800A4390* obj) {
 
         score = &g_JetScore;
         *score += st->unk50[0];
-        func_800A29AC(st->unk50[18]);
+        JetPlaySfx(st->unk50[18]);
         st->unkC = 0;
         for (i = 0; i < 3; i++) {
             x = obj->unk0.vx;
@@ -1368,7 +1368,7 @@ static void func_800A6BD8(Unk800A4390* obj) {
 
         score = &g_JetScore;
         *score += st->unk50[0];
-        func_800A29AC(st->unk50[18]);
+        JetPlaySfx(st->unk50[18]);
         st->unkC = 0;
         for (i = 0; i < 3; i++) {
             x = obj->unk0.vx;
@@ -1397,7 +1397,7 @@ static void func_800A6BD8(Unk800A4390* obj) {
         s32 points;
         score = &g_JetScore;
         *score += st->unk50[0];
-        func_800A29AC(st->unk50[18]);
+        JetPlaySfx(st->unk50[18]);
         st->unkC = 0;
         g_JetPopupModelId = obj->unkD4->modelId;
         points = st->unk50[0];
@@ -1415,7 +1415,7 @@ static void func_800A6BD8(Unk800A4390* obj) {
 
         score = &g_JetScore;
         *score += st->unk50[0];
-        func_800A29AC(st->unk50[18]);
+        JetPlaySfx(st->unk50[18]);
         st->unkC = 0;
         for (i = 0; i < 100; i++) {
             x = obj->unk0.vx;

@@ -34,17 +34,17 @@ extern u16 g_JetTrackListHead;
 extern s32 D_800A8958;
 extern u_long D_800A89E4; // loaded TIM address table
 extern u16 g_JetTriangleListHead;
-extern s32 D_800A8A6C; // pad direction code, 1..9 keypad layout
+extern s32 g_JetPadDir; // 1..9 keypad layout, 0 = none
 extern s32 D_800A8A7C;
 extern s32 D_800A8A80; // frames R1 has been held
 extern JetNode* D_800A8A74[1];
 extern s32* D_800A8CC0;
 extern u32 D_800A8CC8;
-extern u8 D_800D16DC;
+extern u8 g_JetPaused;
 extern void* D_800D16D4;
 extern s32 D_800D1724;
 extern u32 D_800D172C;
-extern u8 D_800D1960;
+extern u8 g_JetAimMode;
 extern u16* D_800D196C;
 extern void* D_800D1A38;
 extern void* D_800D1A3C;
@@ -152,12 +152,12 @@ u16 MINI_Jet(void) {
     SetFogNearFar(D_800A89D0, D_800A89D4, 256);
     D_800A8A74[0] = JetNodeAlloc(30, 0, 0, 1, &g_JetRootNode, 1200, 50, 3000, 0, 1000, 0);
     for (;;) {
-        speed = &D_800A897C;
-        if ((g_JetTrackSegment * 4) > (D_800D1724 - 0x10) || D_800E2600 == 1) {
+        speed = &g_JetSpeed;
+        if ((g_JetTrackSegment * 4) > (D_800D1724 - 0x10) || g_JetExit == 1) {
             break;
         }
         func_800A2E38();
-        if (D_800D16DC == 0) {
+        if (g_JetPaused == 0) {
             func_800A2C50();
             func_800A35DC(*speed);
             JetSetWorldMatrix();
@@ -743,7 +743,7 @@ static void func_800A2214(void) {
     *state = 0;
     D_80110BB8 = (void*)0x1F800000;
     D_800D16D4 = (void*)0x1F800000;
-    D_800D16DC = 0;
+    g_JetPaused = 0;
     g_JetWorldMatrix = (MATRIX*)0x1F800010;
     g_JetViewMatrix = (MATRIX*)0x1F800030;
     D_800D1A38 = (void*)0x1F800050;
@@ -771,14 +771,14 @@ static void func_800A2214(void) {
     for (i = 0; i < LEN(g_JetModelTable); i++) {
         g_JetModelTable[i] = JetModelBuild(i);
     }
-    D_800A897C = 0x2710;
+    g_JetSpeed = 0x2710;
     D_800A89D0 = 0x28AA;
     D_800A89D4 = 0x37DC;
     g_JetTrackSegment = 0;
     D_800D1C54 = 0;
     g_JetScore = 0;
     D_800E25F4 = 0;
-    D_800E2600 = 0;
+    g_JetExit = 0;
     g_JetPopupModelId = 0;
     D_800E25E8 = 0;
     g_JetPopupRot.vx = 0;
@@ -907,7 +907,7 @@ void func_800A2938(void) {
 }
 
 // Alternate the two laser channels on each shot.
-void func_800A29AC(s16 arg0) {
+void JetPlaySfx(s16 arg0) {
     u8* pChannel;
     s32 channel;
 
@@ -986,7 +986,7 @@ static void func_800A2BE0(void) {
     D_800E2604 = D_800D1BEC;
     D_800A8CC0 = D_800D1BE8;
     func_800A2DE4(0, 3);
-    D_800D1960 = 1;
+    g_JetAimMode = 1;
 }
 
 // Advance the camera along its path and rebuild the view matrices.
@@ -1001,7 +1001,7 @@ static void func_800A2C50(void) {
 
     pathPos = &D_800D1C54;
     JetTrackSample(pathPos[0], -0x64, &pos, &rot);
-    speed = &D_800A897C;
+    speed = &g_JetSpeed;
     pathPos[0] += speed[0];
     D_800A83B8.vx = pos.vx;
     D_800A83B8.vy = pos.vy;
@@ -1017,7 +1017,7 @@ static void func_800A2C50(void) {
         }
     }
     if (step < 0) {
-        limit = &D_800A897C;
+        limit = &g_JetSpeed;
         if (limit[0] <= 0x1D4BF) {
             limit[0] -= step;
         }
@@ -1067,8 +1067,8 @@ static void func_800A2E38(void) {
     s32 count;
 
     pad = InputReadPadsRaw(1);
-    if (D_800D16DC == 0) {
-        dir = &D_800A8A6C;
+    if (g_JetPaused == 0) {
+        dir = &g_JetPadDir;
         *dir = 0;
         D_800A8A7C = 0;
         if (pad & 0x8000) {
@@ -1087,7 +1087,7 @@ static void func_800A2E38(void) {
             }
         }
         if (pad & 0x4000) {
-            dir = &D_800A8A6C;
+            dir = &g_JetPadDir;
             *dir = 2;
             if (pad & 0x8000) {
                 *dir = 1;
@@ -1096,7 +1096,7 @@ static void func_800A2E38(void) {
                 *dir = 3;
             }
         }
-        if (D_800D1960 == 1) {
+        if (g_JetAimMode == 1) {
             if (pad & 0x4000) {
                 cursorY = &g_JetCursorY;
                 *cursorY += 5;
@@ -1154,7 +1154,7 @@ static void func_800A2E38(void) {
                 *cursorY = 0;
             }
         }
-        if (D_800D1960 == 0) {
+        if (g_JetAimMode == 0) {
             if (pad & 0x4000) {
                 fogFar = &D_800A89D4;
                 *fogFar -= 10;
@@ -1194,17 +1194,17 @@ static void func_800A2E38(void) {
                 cam->vy += 100;
             }
             if (pad & 0x4) {
-                speed = &D_800A897C;
+                speed = &g_JetSpeed;
                 *speed += 0x400;
             }
             if (pad & 0x1) {
-                brake = &D_800A897C;
+                brake = &g_JetSpeed;
                 if (*brake >= 0x400) {
                     *brake -= 0x400;
                 }
             }
             if (pad & 0x800) {
-                D_800A897C = 0;
+                g_JetSpeed = 0;
             }
         }
     }
@@ -1215,13 +1215,13 @@ static void func_800A2E38(void) {
         D_800A8A80 = 0;
     }
     if (D_800A8A80 == 1) {
-        paused = &D_800D16DC;
+        paused = &g_JetPaused;
         if (*paused == 1) {
             *paused = 0;
         } else {
             *paused = 1;
         }
-        func_800A29AC(0x3B);
+        JetPlaySfx(0x3B);
     }
 }
 

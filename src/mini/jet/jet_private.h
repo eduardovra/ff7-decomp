@@ -102,8 +102,8 @@ typedef struct {
     /* 0x30 */ s32 unk30;
     /* 0x34 */ s32 unk34;
     /* 0x38 */ char pad38[0x18];
-    /* 0x50 */ s32 unk50[0x14];
-} Unk800D1CAC; // size: 0xA0
+    /* 0x50 */ s32 unk50[0x14]; // shootable types: [0] points, [0xD] hit points, [18] death sfx
+} Unk800D1CAC;                  // size: 0xA0
 
 typedef struct {
     /* 0x00 */ VECTOR unk0;
@@ -128,7 +128,7 @@ extern s16 D_800A895C;
 extern s16 D_800A8964;
 extern s16 D_800A8970;
 extern s16 D_800A8978;
-extern s32 D_800A897C;
+extern s32 g_JetSpeed;
 extern u16 g_JetSpriteTPage[];
 extern JetModelInfo* g_JetModelInfo;
 extern u16 D_800A8A68; // background clut
@@ -155,13 +155,13 @@ extern s16 g_JetCursorX;
 extern s16 g_JetCursorY;
 extern u8 D_800E25E8;
 extern u8 D_800E25F4;
-extern u8 D_800E2600;
+extern u8 g_JetExit;
 extern SVECTOR g_JetPopupRot;
 extern u16 g_JetSpriteClut[];
 
 void JetPrimCursorsReset(JetPrimBuffer* prims);
 void JetNodeFree(JetNode* node);
-void func_800A29AC(s16 arg0);
+void JetPlaySfx(s16 arg0);
 void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4390* obj);
 s32 JetVectorInsidePlanes(VECTOR* arg0);
 void func_800A3AAC(void);
