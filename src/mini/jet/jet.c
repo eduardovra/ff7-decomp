@@ -197,9 +197,6 @@ void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     }
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A0D78);
-#else
 // The two locals before screen exist only to reproduce the target stack frame.
 void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4390* obj) {
     Unk800A8604 args;
@@ -212,26 +209,28 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     JetModel** shadow;
     u_long xy1;
     u_long xy2;
+    s32 index;
 
     world = &g_JetWorldMatrix;
     m = world[0];
-    m->m[0][0] = node->m.m[0][0];
-    m->m[0][1] = node->m.m[0][1];
-    m->m[0][2] = node->m.m[0][2];
-    m->m[1][0] = node->m.m[1][0];
+    index = 0;
+    m->m[0][0] = node->m.m[index][index];
+    m->m[index][1] = node->m.m[index][1];
+    m->m[index][2] = node->m.m[index][2];
+    m->m[1][index] = node->m.m[1][index];
     m->m[1][1] = node->m.m[1][1];
     m->m[1][2] = node->m.m[1][2];
-    m->m[2][0] = node->m.m[2][0];
+    m->m[2][index] = node->m.m[2][index];
     m->m[2][1] = node->m.m[2][1];
     m->m[2][2] = node->m.m[2][2];
-    m->t[0] = node->m.t[0];
+    m->t[index] = node->m.t[index];
     m->t[1] = node->m.t[1];
     m->t[2] = node->m.t[2];
     if (node->parent != &g_JetRootNode) {
         CompMatrix(&node->parent->m, m, m);
     }
-    wm = world[0];
-    wm->t[0] -= g_JetCameraPos.vx;
+    wm = world[index];
+    wm->t[index] -= g_JetCameraPos.vx;
     wm->t[1] -= g_JetCameraPos.vy;
     wm->t[2] -= g_JetCameraPos.vz;
     cam = &g_JetCameraRot;
@@ -257,12 +256,12 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     args.model = node->model;
     db->prims.g3Cursor = JetDrawModelTris(&args);
     shadow = &D_800D186C;
-    func_800A84A4(shadow[0]->tris, screen);
+    func_800A84A4((s32*)shadow[index]->tris, screen);
     D_800A8964 = screen[1] >> 16;
     D_800A895C = screen[1];
     D_800A896C = screen[2] >> 16;
     D_800A8960 = screen[2];
-    func_800A84A4(shadow[0]->tris + 9, screen);
+    func_800A84A4((s32*)shadow[index]->tris + 9, screen);
     xy1 = screen[1];
     xy2 = screen[2];
     D_800A8978 = xy1 >> 16;
@@ -270,7 +269,6 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     D_800A8980 = xy2 >> 16;
     D_800A8974 = xy2;
 }
-#endif
 
 // Load a node's matrix into the GTE and draw its model's triangles.
 void JetDrawNodeUI(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, s32 arg4) {
@@ -540,10 +538,7 @@ void JetDrawScorePopup(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) 
     }
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet", func_800A1CD8);
-#else
-void func_800A1CD8(s32 value, s32 x, s16 y, s16 padWithZero, u16 v) {
+void func_800A1CD8(s32 value, s32 x, s32 y, s16 padWithZero, u16 v) {
     POLY_FT4* poly;
     JetBuffer* db;
     s32 digit;
@@ -552,13 +547,13 @@ void func_800A1CD8(s32 value, s32 x, s16 y, s16 padWithZero, u16 v) {
     s32 i;
     u16 startX;
     s32 w;
+    s32 left;
     u8 leading;
 
     startX = x;
     power = 1000;
     leading = 1;
     remain = value + 1;
-    w = 0x10;
     poly = g_JetBufferPtr[0]->prims.ft4Cursor;
     for (i = 0; i < 4; i++) {
         digit = 0;
@@ -573,7 +568,9 @@ void func_800A1CD8(s32 value, s32 x, s16 y, s16 padWithZero, u16 v) {
             leading = 0;
         }
         if (padWithZero == 1 || digit || leading == 0) {
-            setXY4(poly, x, y, startX + w, y, x, y + 0x10, startX + w, y + 0x10);
+            left = x + i * 0xE;
+            w = i * 0xE + 0x10;
+            setXY4(poly, left, y, startX + w, y, left, y + 0x10, startX + w, y + 0x10);
             setRGB0(poly, 0x80, 0x80, 0x80);
             setUVWH(poly, digit * 0x10 + 0x30, v, 0x10, 0x12);
             poly->tpage = g_JetSpriteTPage[8];
@@ -584,12 +581,9 @@ void func_800A1CD8(s32 value, s32 x, s16 y, s16 padWithZero, u16 v) {
             poly++;
         }
         power /= 10;
-        w += 0xE;
-        x += 0xE;
     }
     g_JetBufferPtr[0]->prims.ft4Cursor = poly;
 }
-#endif
 
 // Draw one sprite from the HUD sprite table.
 void JetDrawSprite(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans) {

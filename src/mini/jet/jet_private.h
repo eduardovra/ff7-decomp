@@ -327,7 +327,7 @@ JetModel* JetModelBuild(s32 infoIndex);
 void JetBuffersInit(void);
 void JetNodesInit(void);
 void JetTrackSample(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot);
-void func_800A1CD8(s32 value, s32 x, s16 y, s16 padWithZero, u16 v);
+void func_800A1CD8(s32 value, s32 x, s32 y, s16 padWithZero, u16 v);
 void JetDrawSprite(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans);
 void func_800A2058();
 void func_800A2214();
