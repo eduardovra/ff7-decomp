@@ -3,6 +3,8 @@
 #include "jet_private.h"
 #include <libc.h>
 
+const u8 D_800A0008 = 0;
+
 void func_800A3AAC(void) {
     Unk800A4390* obj;
     Unk800A4390* pool;
@@ -284,14 +286,20 @@ inline void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
     func_800A40F4(&g_JetSpawnTemplate, 0);
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet_object", func_800A46E8);
-#else
+static inline void JetObjectFree(Unk800A4390* obj) {
+    if (obj->unkD8 != -1) {
+        D_800EE42C--;
+        JetNodeFree(obj->unkD4);
+        func_800A442C(obj->unkD8);
+        obj->unkD8 = -1;
+        obj->unkDA = 0;
+    }
+}
+
 // Step every live object through its behaviour, then queue its model.
 void func_800A46E8(JetBuffer* db) {
     VECTOR next;
-    VECTOR unusedA;
-    VECTOR unusedB;
+    VECTOR unused[2];
     VECTOR pos;
     SVECTOR rot;
     Unk800A4390* obj;
@@ -299,7 +307,6 @@ void func_800A46E8(JetBuffer* db) {
     Unk800D1CAC* st;
     POLY_G4* fade;
     POLY_FT4* flash;
-    s32 rawId;
     s16 modelId;
     s32 shade;
     s32 count;
@@ -308,13 +315,9 @@ void func_800A46E8(JetBuffer* db) {
     s32 dx;
     s32 dy;
     s32 dz;
-    s32 step;
     s32* score;
     s32* segment;
-    SVECTOR* path;
-    s32 pathLen;
     s32 sound;
-    s32 release;
     u8 order;
     u8 drawMode;
     u16 otIndex;
@@ -324,19 +327,26 @@ void func_800A46E8(JetBuffer* db) {
     func_800A3E58();
     for (i = 0; i < LEN(D_800D1DC0); i++) {
         otIndex = 0;
-        obj = &D_800D1DC0[i];
+        pool = D_800D1DC0;
+        obj = &pool[i];
         st = &obj->unk28;
         if (obj->unkDA == 0) {
             continue;
         }
         drawMode = 0;
-        release = 0;
+        do {
+        } while (0);
         switch (obj->unk28.unk0) {
         case 100:
             if (st->unk10 == 1) {
+                SVECTOR* path;
+                s32 pathLen;
+                s32 offset;
+
                 modelId = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[modelId];
-                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                offset = D_800D1C04[modelId];
+                path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
@@ -349,32 +359,47 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk30 = obj->unk0.vy;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                st->unk50[0] = 0;
                 st->unk34 = obj->unk0.vz;
+                st->unk50[0] = 0;
             } else {
                 st->unk14++;
                 st->unk28++;
             }
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
                 break;
             }
-            step = st->unk28;
-            JetTrackSample(D_800D1C54 + 0x2FFFD, -100, &pos, &rot);
-            obj->unk0.vx = st->unk2C + ((step * (pos.vx - st->unk2C)) >> 7);
-            obj->unk0.vy = st->unk30 + ((step * (pos.vy - st->unk30)) >> 7);
-            obj->unk0.vz = st->unk34 + ((step * (pos.vz - st->unk34)) >> 7);
-            JetTrackSample(D_800D1C54 + 0x3FFFC, -100, &pos, &rot);
+            {
+                s32 step;
+                s32* pathPos;
+                s32 x;
+                s32 y;
+                s32 z;
+
+                step = st->unk28;
+                pathPos = &D_800D1C54;
+                JetTrackSample(pathPos[0] + 0x2FFFD, -100, &pos, &rot);
+                x = st->unk2C;
+                x += (step * (pos.vx - x)) >> 7;
+                y = st->unk30;
+                y += (step * (pos.vy - y)) >> 7;
+                z = st->unk34;
+                z += (step * (pos.vz - z)) >> 7;
+                obj->unk0.vx = x;
+                obj->unk0.vy = y;
+                obj->unk0.vz = z;
+                JetTrackSample(pathPos[0] + 0x3FFFC, -100, &pos, &rot);
+            }
             dx = obj->unk0.vx - pos.vx;
             dy = obj->unk0.vy - pos.vy;
             dz = obj->unk0.vz - pos.vz;
             SquareRoot0(dx * dx + dy * dy + dz * dz);
             if (st->unk14 >= 0x81) {
                 score = &g_JetScore;
-                if (*score < 6) {
-                    *score = 0;
-                } else {
+                if (*score > 5) {
                     *score -= 5;
+                } else {
+                    *score = 0;
                 }
                 st->unkC = 0;
             }
@@ -384,13 +409,18 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 17:
             if (st->unk10 == 1) {
+                SVECTOR* path;
+                s32 pathLen;
+                s32 offset;
+
                 sound = st->unk50[17];
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
                 modelId = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[modelId];
-                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                offset = D_800D1C04[modelId];
+                path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
@@ -412,7 +442,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
                 break;
             }
             if (st->hit != 0) {
@@ -427,13 +457,18 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 0:
             if (st->unk10 == 1) {
+                SVECTOR* path;
+                s32 pathLen;
+                s32 offset;
+
                 sound = st->unk50[17];
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
                 modelId = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[modelId];
-                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                offset = D_800D1C04[modelId];
+                path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
@@ -458,7 +493,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
                 break;
             }
             func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
@@ -471,13 +506,18 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 1:
             if (st->unk10 == 1) {
+                SVECTOR* path;
+                s32 pathLen;
+                s32 offset;
+
                 sound = st->unk50[17];
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
                 modelId = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[modelId];
-                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                offset = D_800D1C04[modelId];
+                path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
@@ -502,7 +542,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
                 break;
             }
             func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
@@ -519,12 +559,17 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 10:
             if (st->unk10 == 1) {
+                SVECTOR* path;
+                s32 pathLen;
+                s32 offset;
+
                 sound = st->unk50[17];
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
-                path = (SVECTOR*)(D_800D1BE4 + D_800D1BE8[0]);
                 pathLen = D_800D1BEC[0];
+                offset = D_800D1BE8[0];
+                path = (SVECTOR*)(D_800D1BE4 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
@@ -549,7 +594,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
                 break;
             }
             JetTrackSample(D_800D1C54 + 0x3FFFC, 10, &obj->unk0, &obj->unk18);
@@ -560,13 +605,18 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 4:
             if (st->unk10 == 1) {
+                SVECTOR* path;
+                s32 pathLen;
+                s32 offset;
+
                 sound = st->unk50[17];
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
                 modelId = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[modelId];
-                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                offset = D_800D1C04[modelId];
+                path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
@@ -584,7 +634,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk2C += 4;
             }
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
                 break;
             }
             obj->unk0.vy += st->unk2C;
@@ -597,13 +647,18 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 5:
             if (st->unk10 == 1) {
+                SVECTOR* path;
+                s32 pathLen;
+                s32 offset;
+
                 sound = st->unk50[17];
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
                 modelId = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[modelId];
-                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                offset = D_800D1C04[modelId];
+                path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
@@ -637,8 +692,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk50[14] = 0;
             }
             if (st->unkC == 0) {
-                release = 1;
-                break;
+                goto release;
             }
             func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
             if (st->hit == 0) {
@@ -653,24 +707,28 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 2:
             if (st->unk10 == 1) {
+                SVECTOR* path;
+                s32 pathLen;
+                s32 offset;
+
                 sound = st->unk50[17];
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
                 modelId = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[modelId];
-                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                offset = D_800D1C04[modelId];
+                path = (SVECTOR*)(D_800D1C00 + offset);
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
+                obj->unkCC = path;
+                obj->unkC8 = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->hit = 0;
-                step = st->unk50[3];
+                st->unk28 = (rand() % st->unk50[3]) * 2 - st->unk50[3] - 1;
                 st->unk2C = 0;
                 st->unk30 = 0;
-                st->unk28 = (rand() % step) * 2 - step - 1;
                 st->unk34 = (obj->unkC8 - 1) << 16;
                 obj->unk18.vx = 0;
                 obj->unk18.vy = 0;
@@ -684,16 +742,16 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
-            if (st->unk28 < st->unk2C) {
+            if (st->unk2C > st->unk28) {
                 st->unk2C -= 5;
             }
-            if (st->unk28 > st->unk2C) {
+            if (st->unk2C < st->unk28) {
                 st->unk2C += 5;
             }
             obj->unk18.vx = st->unk2C;
             obj->unk18.vy += st->unk50[4];
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
                 break;
             }
             func_800A3C04(st->unk30, obj->unkCC, &obj->unk0, 0);
@@ -710,30 +768,35 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
-            if (st->unkC == 0) {
-                release = 1;
-                break;
-            }
-            if (st->hit != 0) {
-                func_800A6B08(obj);
+            if (st->unkC != 0) {
+                if (st->hit != 0) {
+                    func_800A6B08(obj);
+                }
+            } else {
+                JetObjectFree(obj);
             }
             break;
         case 7:
         case 13:
             if (st->unk10 == 1) {
+                SVECTOR* path;
+                s32 pathLen;
+                s32 offset;
+
                 modelId = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[modelId];
-                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                offset = D_800D1C04[modelId];
+                path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->hit = 0;
                 obj->unk18.vx = st->unk50[3];
+                obj->unk18.vy = st->unk50[4];
+                obj->unk18.vz = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                obj->unk18.vz = 0;
-                obj->unk18.vy = st->unk50[4];
                 func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
                 st->unk28 = 0;
             }
@@ -748,12 +811,12 @@ void func_800A46E8(JetBuffer* db) {
                     obj->unk18.vx += st->unk50[6];
                 }
             }
-            if (st->unkC == 0) {
-                release = 1;
-                break;
-            }
-            if (st->hit != 0) {
-                func_800A6B08(obj);
+            if (st->unkC != 0) {
+                if (st->hit != 0) {
+                    func_800A6B08(obj);
+                }
+            } else {
+                JetObjectFree(obj);
             }
             break;
         case 11:
@@ -784,20 +847,25 @@ void func_800A46E8(JetBuffer* db) {
             st->unk2C++;
             obj->unk0.vx += st->unk28;
             obj->unk0.vy += st->unk2C;
+            obj->unk0.vz += st->unk30;
             obj->unk18.vx += 0xA;
             obj->unk18.vy += 0x190;
             obj->unk18.vz += 0xC8;
-            obj->unk0.vz += st->unk30;
             st->unkC--;
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
             }
             break;
         case 8:
             if (st->unk10 == 1) {
+                SVECTOR* path;
+                s32 pathLen;
+                s32 offset;
+
                 modelId = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[modelId];
-                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                offset = D_800D1C04[modelId];
+                path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
@@ -812,7 +880,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
                 break;
             }
             obj->unk0.vy -= st->unk50[3];
@@ -846,21 +914,26 @@ void func_800A46E8(JetBuffer* db) {
             }
             obj->unk0.vx += st->unk28;
             obj->unk0.vy += st->unk2C;
+            obj->unk0.vz += st->unk30;
             obj->unk18.vx += 0xA;
             obj->unk18.vy += 0x190;
             obj->unk18.vz += 0xC8;
-            obj->unk0.vz += st->unk30;
             st->unkC--;
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
             }
             break;
         case 14:
             if (st->unk10 == 1) {
+                SVECTOR* path;
+                s32 pathLen;
+                s32 offset;
+
                 func_800A29AC(0xA);
                 modelId = st->unk18 & 0xFF;
                 pathLen = D_800D1C08[modelId];
-                path = (SVECTOR*)(D_800D1C00 + D_800D1C04[modelId]);
+                offset = D_800D1C04[modelId];
+                path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
                 st->unk10 = 0;
@@ -880,8 +953,8 @@ void func_800A46E8(JetBuffer* db) {
                     s32 y;
                     s32 z;
 
-                    y = obj->unk0.vy + 0x1F4;
                     x = obj->unk0.vx + rand() % 100 - 0x32;
+                    y = obj->unk0.vy + 0x1F4;
                     z = obj->unk0.vz + rand() % 100 - 0x32;
                     func_800A4650(x, y, z, 0xF, 0x2A);
                 }
@@ -907,8 +980,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
-                release = 1;
-                break;
+                goto release;
             }
             if (st->hit != 0) {
                 func_800A6B08(obj);
@@ -928,14 +1000,14 @@ void func_800A46E8(JetBuffer* db) {
             }
             st->unk30++;
             obj->unk18.vx += 0x1E0;
-            obj->unk18.vz += 0x262;
             obj->unk18.vy += 0x28;
+            obj->unk18.vz += 0x262;
             obj->unk0.vx += st->unk28;
             obj->unk0.vy += st->unk30;
             obj->unk0.vz += st->unk2C;
             st->unkC--;
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
             }
             break;
         case 16:
@@ -954,17 +1026,17 @@ void func_800A46E8(JetBuffer* db) {
             }
             st->unkC--;
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
             }
             break;
         case 3:
             obj->unk0.vx = D_800A83B8.vx;
             obj->unk0.vy = D_800A83B8.vy - 0x9C4;
+            obj->unk0.vz = D_800A83B8.vz;
             otIndex = 0x3E8;
             obj->unk18.vx = 0;
             obj->unk18.vy = 0;
             obj->unk18.vz = 0;
-            obj->unk0.vz = D_800A83B8.vz;
             break;
         case 201:
             if (st->unk10 == 1) {
@@ -987,7 +1059,7 @@ void func_800A46E8(JetBuffer* db) {
             }
             st->unkC--;
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
             }
             break;
         case 202:
@@ -1004,13 +1076,13 @@ void func_800A46E8(JetBuffer* db) {
             }
             obj->unk0.vx += st->unk28;
             obj->unk0.vy += st->unk2C;
+            obj->unk0.vz += st->unk30;
             obj->unk18.vx += 0xA;
             obj->unk18.vy += 0x64;
             obj->unk18.vz += 0x14;
-            obj->unk0.vz += st->unk30;
             st->unkC--;
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
             }
             break;
         case 203:
@@ -1028,10 +1100,12 @@ void func_800A46E8(JetBuffer* db) {
             obj->unk0.vx += st->unk28;
             obj->unk0.vy += st->unk2C;
             obj->unk0.vz += st->unk30;
+            obj->unk18.vx += 0;
             obj->unk18.vy += 0x12C;
+            obj->unk18.vz += 0;
             st->unkC--;
             if (st->unkC == 0) {
-                release = 1;
+                JetObjectFree(obj);
             }
             break;
         case 255:
@@ -1041,15 +1115,20 @@ void func_800A46E8(JetBuffer* db) {
             } else {
                 st->unk14++;
             }
-            if (st->unk50[2] < D_800A897C) {
-                D_800A897C -= st->unk50[0];
+            {
+                s32* speed;
+
+                speed = &D_800A897C;
+                if (*speed > st->unk50[2]) {
+                    *speed -= st->unk50[0];
+                }
+                if (*speed < 0) {
+                    *speed = 0;
+                    func_800A4650(0, 0, 0, 0xFD, 0x1D);
+                }
             }
-            if (D_800A897C < 0) {
-                D_800A897C = 0;
-                func_800A4650(0, 0, 0, 0xFD, 0x1D);
-            }
-            if (st->unk50[1] < st->unk14) {
-                release = 1;
+            if (st->unk14 > st->unk50[1]) {
+                JetObjectFree(obj);
             }
             break;
         case 254:
@@ -1066,14 +1145,17 @@ void func_800A46E8(JetBuffer* db) {
                 D_800A897C = 0;
             }
             if (st->unk28 == 1) {
-                D_800A897C += st->unk50[1];
+                s32* speed;
+
+                speed = &D_800A897C;
+                *speed += st->unk50[1];
                 st->unk30++;
             }
             if (st->unk50[0] < VSync(-1) - st->unk2C) {
                 st->unk28 = 1;
             }
-            if (st->unk50[2] < st->unk30) {
-                release = 1;
+            if (st->unk30 > st->unk50[2]) {
+                JetObjectFree(obj);
             }
             break;
         case 252:
@@ -1161,9 +1243,12 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 250:
             if (g_JetScore < st->unk50[0]) {
-                g_JetSpawnTemplate.unk28.unk50[0] = 0x12C;
-                g_JetSpawnTemplate.unk28.unk50[1] = 0x190;
-                g_JetSpawnTemplate.unk28.unk50[2] = 0;
+                Unk800A4390* spawn;
+
+                spawn = &g_JetSpawnTemplate;
+                spawn->unk28.unk50[0] = 0x12C;
+                spawn->unk28.unk50[1] = 0x190;
+                spawn->unk28.unk50[2] = 0;
                 {
                     s32 x;
                     s32 y;
@@ -1175,17 +1260,11 @@ void func_800A46E8(JetBuffer* db) {
                     func_800A4650(x, y, z, 0xFF, 0x1E);
                 }
             }
-            release = 1;
+        release:
+            JetObjectFree(obj);
             break;
         default:
             break;
-        }
-        if (release && obj->unkD8 != -1) {
-            D_800EE42C--;
-            JetNodeFree(obj->unkD4);
-            func_800A442C(obj->unkD8);
-            obj->unkD8 = -1;
-            obj->unkDA = 0;
         }
         obj->unkD4->m.t[0] = obj->unk0.vx;
         obj->unkD4->m.t[1] = obj->unk0.vy;
@@ -1208,7 +1287,6 @@ void func_800A46E8(JetBuffer* db) {
         }
     }
 }
-#endif
 
 void func_800A6B08(Unk800A4390* arg0) {
     Unk800D1CAC* state = &arg0->unk28;

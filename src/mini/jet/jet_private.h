@@ -150,7 +150,7 @@ typedef struct {
 } Unk800A4390; // size: 0x13C
 
 extern RECT D_800A0000;
-extern u8 D_800A0008; // the rotation order the object matrices use
+extern const u8 D_800A0008; // the rotation order the object matrices use
 
 extern u8 D_800A8928;
 extern s32 D_800A8A84;
@@ -162,6 +162,7 @@ extern s32 g_JetLeftPlaneNormalZ;
 extern s32 g_JetRightPlaneNormalX;
 extern s32 g_JetRightPlaneNormalY;
 extern s32 g_JetRightPlaneNormalZ;
+extern VECTOR D_800A83B8;
 extern s32 D_800A894C;
 extern s32 D_800A8950;
 extern s16 D_800A895C;
