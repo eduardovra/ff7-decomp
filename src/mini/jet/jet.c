@@ -134,11 +134,11 @@ static VECTOR D_800A83D8 = {0, 0, 0, 0};
 static s32 D_800A83E8[2] = {0, 0};
 
 u16 MINI_Jet(void) {
-    volatile s32 dummy;
+    s32 unused[2];
     JetBuffer* next;
     JetBuffer* current;
     s32* speed;
-    volatile s32* frame;
+    volatile s32* ptr; // points to D_800E25FC, zeroed every frame, write only - left over debug?
     SVECTOR** path;
 
     JetInitialize();
@@ -196,8 +196,8 @@ u16 MINI_Jet(void) {
         }
         next = g_JetBuffers;
         current = g_JetBufferPtr[0];
-        frame = &D_800E25FC;
-        *frame = 0;
+        ptr = &D_800E25FC;
+        *ptr = 0;
         if (current == next) {
             next++;
         }
