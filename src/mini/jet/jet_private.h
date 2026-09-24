@@ -150,8 +150,7 @@ typedef struct {
 } Unk800A4390; // size: 0x13C
 
 extern RECT D_800A0000;
-extern u8 D_800A0008;          // the rotation order the object matrices use
-extern JetModel* D_800D189C[]; // the models the animated objects switch between
+extern u8 D_800A0008; // the rotation order the object matrices use
 
 extern u8 D_800A8928;
 extern s32 D_800A8A84;

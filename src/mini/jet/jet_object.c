@@ -631,7 +631,7 @@ void func_800A46E8(JetBuffer* db) {
             obj->unk18.vy += st->unk50[7];
             obj->unk18.vz += st->unk50[8];
             if (st->unk50[10] == 5) {
-                obj->unkD4->model = D_800D189C[st->unk50[14]];
+                obj->unkD4->model = g_JetModelTable[91 + st->unk50[14]];
             }
             if (st->unk50[14] == 1) {
                 st->unk50[14] = 0;
