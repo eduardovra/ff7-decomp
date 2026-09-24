@@ -114,7 +114,7 @@ typedef struct {
 
 // The behaviour state an object's type handler drives.
 typedef struct {
-    /* 0x00 */ s32 unk0;
+    /* 0x00 */ s32 type;
     /* 0x04 */ s32 hit;
     /* 0x08 */ s32 unk8;
     /* 0x0C */ s32 unkC;
@@ -149,7 +149,7 @@ typedef struct {
     /* 0x134 */ char pad134[8];
 } Unk800A4390; // size: 0x13C
 
-extern RECT D_800A0000;
+extern const RECT D_800A0000;
 extern const u8 D_800A0008; // the rotation order the object matrices use
 
 extern u8 D_800A8928;
@@ -341,7 +341,7 @@ void func_800A38D4(u16 arg0);
 void func_800A3980(u16 arg0);
 void func_800A3A20(u16 arg0);
 void func_800A372C(s32 arg0);
-void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4);
+void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 type, s16 arg4);
 void func_800A46E8(JetBuffer* db);
 void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4390* obj);
 JetNode* JetNodeAlloc(

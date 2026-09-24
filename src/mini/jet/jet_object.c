@@ -263,22 +263,22 @@ void func_800A4458(void) {
     g_JetNextSpawnSegment = g_JetTrackSegment;
 }
 
-void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
+void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 type, s16 arg4) {
     g_JetSpawnTemplate.unk0.vx = arg0;
     g_JetSpawnTemplate.unk0.vy = arg1;
     g_JetSpawnTemplate.unk0.vz = arg2;
-    g_JetSpawnTemplate.unk28.unk0 = arg3;
+    g_JetSpawnTemplate.unk28.type = type;
     g_JetSpawnTemplate.unk28.unk10 = 1;
     g_JetSpawnTemplate.unk28.unk8 = arg4;
     g_JetSpawnTemplate.unk28.hit = 0;
     func_800A40F4(&g_JetSpawnTemplate, 0);
 }
 
-inline void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
+inline void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 type, s16 arg4) {
     g_JetSpawnTemplate.unk0.vx = arg0;
     g_JetSpawnTemplate.unk0.vy = arg1;
     g_JetSpawnTemplate.unk0.vz = arg2;
-    g_JetSpawnTemplate.unk28.unk0 = arg3;
+    g_JetSpawnTemplate.unk28.type = type;
     g_JetSpawnTemplate.unk28.unk10 = 1;
     g_JetSpawnTemplate.unk28.unk8 = arg4;
     g_JetSpawnTemplate.unk28.hit = 0;
@@ -336,7 +336,7 @@ void func_800A46E8(JetBuffer* db) {
         drawMode = 0;
         do {
         } while (0);
-        switch (obj->unk28.unk0) {
+        switch (obj->unk28.type) {
         case 100:
             if (st->unk10 == 1) {
                 SVECTOR* path;

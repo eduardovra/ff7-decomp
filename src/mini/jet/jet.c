@@ -3,6 +3,8 @@
 #include "jet_private.h"
 #include <libc.h>
 
+const RECT D_800A0000 = {0, 0, 320, 200};
+
 // .data in ROM order, the sector and size pairs feeding func_800A2420's loads.
 s32 D_800A8310 = 0x9D8;
 u32 D_800A8314 = 0x28;

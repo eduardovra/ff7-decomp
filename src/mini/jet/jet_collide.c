@@ -3,10 +3,10 @@
 #include "jet_private.h"
 
 // The four view frustum corner rays at the projection distance, screen order.
-extern VECTOR D_800A0410; // bottom left
-extern VECTOR D_800A0420; // bottom right
-extern VECTOR D_800A0430; // top left
-extern VECTOR D_800A0440; // top right
+const VECTOR D_800A0410 = {-160, 120, 256, 0};  // bottom left
+const VECTOR D_800A0420 = {160, 120, 256, 0};   // bottom right
+const VECTOR D_800A0430 = {-160, -120, 256, 0}; // top left
+const VECTOR D_800A0440 = {160, -120, 256, 0};  // top right
 
 // Build the left and right frustum planes from the four corner rays.
 void func_800A70D4(void) {
