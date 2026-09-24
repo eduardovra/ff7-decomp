@@ -8,19 +8,19 @@ void func_800A3AAC(void) {
     s32 i;
 
     obj = D_800D1DC0;
-    for (i = 0; i < 0x64; i++) {
+    for (i = 0; i < LEN(D_800D1DC0); i++) {
         obj[i].unkD8 = -1;
         obj[i].unkDA = 0;
     }
     D_800D9940 = 0;
-    for (i = 0; i < 0x64; i++) {
+    for (i = 0; i < LEN(D_800D1970); i++) {
         D_800D1970[i] = i + 1;
     }
-    g_JetShotPower = 0x80;
+    g_JetShotPower = 128;
     g_JetFiring = 0;
     D_800D1C7C = 0;
-    g_JetCursorX = 0xA0;
-    g_JetCursorY = 0x78;
+    g_JetCursorX = 160;
+    g_JetCursorY = 120;
     D_800A898C = 0;
     D_800A89E0 = 0;
     D_800EE42C = 0;
@@ -91,17 +91,10 @@ void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
 // Draw the aiming cursor sprite.
 void func_800A3D50(JetBuffer* arg0) {
     POLY_FT4* poly;
-    s32 left;
-    s32 top;
-    s32 right;
-    s32 bottom;
 
     poly = arg0->prims.ft4Cursor;
-    left = g_JetCursorX - 0x10;
-    top = g_JetCursorY - 0x10;
-    right = g_JetCursorX + 0x10;
-    bottom = g_JetCursorY + 0x10;
-    setXY4(poly, left, top, right, top, left, bottom, right, bottom);
+    setXY4(poly, g_JetCursorX - 16, g_JetCursorY - 16, g_JetCursorX + 16, g_JetCursorY - 16, g_JetCursorX - 16,
+           g_JetCursorY + 16, g_JetCursorX + 16, g_JetCursorY + 16);
     setRGB0(poly, 0x80, 0x80, 0x80);
     setUV4(poly, 0, 0, 0x40, 0, 0, 0x40, 0x40, 0x40);
     poly->tpage = g_JetSpriteTPage[0];
@@ -117,17 +110,19 @@ void func_800A3E58(void) {
     JetBuffer** db;
     POLY_FT4* poly;
     u8* scroll;
-    s16 power;
     s32 spread;
+    s16* cursorX;
+    s16* cursorY;
 
     if (g_JetFiring == 1) {
+        cursorX = &g_JetCursorX;
+        cursorY = &g_JetCursorY;
         db = g_JetBufferPtr;
-        scroll = &D_800D1720;
-        power = g_JetShotPower;
-        spread = power >> 3;
+        scroll = &g_JetBeamScroll;
+        spread = g_JetShotPower >> 3;
         poly = db[0]->prims.ft4Cursor;
-        setXY4(poly, D_800A895C + spread, D_800A8964, *(s16*)&g_JetCursorX, *(s16*)&g_JetCursorY, D_800A895C - spread,
-               D_800A8964, *(s16*)&g_JetCursorX, *(s16*)&g_JetCursorY);
+        setXY4(poly, D_800A895C + spread, D_800A8964, *cursorX, *cursorY, D_800A895C - spread, D_800A8964, *cursorX,
+               *cursorY);
         setRGB0(poly, 0x80, 0x80, 0x80);
         setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
         poly->tpage = g_JetSpriteTPage[1];
@@ -135,8 +130,8 @@ void func_800A3E58(void) {
         SetSemiTrans(poly, 1);
         addPrim(&db[0]->ot[1], poly);
         poly++;
-        setXY4(poly, D_800A8970 + spread, D_800A8978, *(s16*)&g_JetCursorX, *(s16*)&g_JetCursorY, D_800A8970 - spread,
-               D_800A8978, *(s16*)&g_JetCursorX, *(s16*)&g_JetCursorY);
+        setXY4(poly, D_800A8970 + spread, D_800A8978, *cursorX, *cursorY, D_800A8970 - spread, D_800A8978, *cursorX,
+               *cursorY);
         setRGB0(poly, 0x80, 0x80, 0x80);
         setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
         poly->tpage = g_JetSpriteTPage[1];
@@ -204,11 +199,11 @@ s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
 }
 
 void func_800A4390(Unk800A4390* arg0) {
-    s16* temp;
+    s16* count;
 
     if (arg0->unkD8 != -1) {
-        temp = &D_800EE42C;
-        *temp -= 1;
+        count = &D_800EE42C;
+        *count -= 1;
         JetNodeFree(arg0->unkD4);
         func_800A442C(arg0->unkD8);
         arg0->unkD8 = -1;
@@ -217,24 +212,24 @@ void func_800A4390(Unk800A4390* arg0) {
 }
 
 s16 func_800A4400(void) {
-    u16* temp;
-    s16 result;
+    u16* head;
+    s16 index;
 
-    temp = &D_800D9940;
-    result = *temp;
-    *temp = D_800D1970[result];
+    head = &D_800D9940;
+    index = *head;
+    *head = D_800D1970[index];
 
-    return result;
+    return index;
 }
 
 void func_800A442C(s16 arg0) {
-    u16* temp;
-    u16* temp2;
+    u16* head;
+    u16* slot;
 
-    temp2 = &D_800D1970[arg0];
-    temp = &D_800D9940;
-    *temp2 = *temp;
-    *temp = arg0;
+    slot = &D_800D1970[arg0];
+    head = &D_800D9940;
+    *slot = *head;
+    *head = arg0;
 }
 
 #ifndef NON_MATCHINGS
@@ -257,7 +252,7 @@ void func_800A4458(void) {
         count = counts + segment;
         for (i = 0; i < *count; i++) {
             spawns = D_800D1C0C;
-            for (j = 0; j < 0x14; j++) {
+            for (j = 0; j < LEN(D_800D1C84.unk28.unk50); j++) {
                 D_800D1C84.unk28.unk50[j] = spawns[*streamIndex].unk10[j];
             }
             spawn = &spawns[*streamIndex];
@@ -332,7 +327,7 @@ void func_800A46E8(JetBuffer* db) {
     func_800A4458();
     func_800A3D50(db);
     func_800A3E58();
-    for (i = 0; i < 100; i++) {
+    for (i = 0; i < LEN(D_800D1DC0); i++) {
         otIndex = 0;
         obj = &D_800D1DC0[i];
         st = &obj->unk28;
@@ -1349,7 +1344,7 @@ void func_800A6BD8(Unk800A4390* obj) {
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
     score = &g_JetScore;
-    if (*score > 0x270F) {
-        *score = 0x270F;
+    if (*score > 9999) {
+        *score = 9999;
     }
 }

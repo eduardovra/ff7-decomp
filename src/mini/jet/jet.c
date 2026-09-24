@@ -27,7 +27,7 @@ s32 D_800A83E8[2] = {0, 0};
 
 u16 MINI_Jet(void) {
     volatile s32 dummy;
-    JetBuffer* var_a2;
+    JetBuffer* next;
     JetBuffer* current;
     s32* speed;
     volatile s32* frame;
@@ -86,15 +86,15 @@ u16 MINI_Jet(void) {
             DrawOTag(&g_JetBufferPtr[0]->ot[0xFFF]);
             DrawOTag(&g_JetBufferPtr[0]->ot2[0xB3]);
         }
-        var_a2 = g_JetBuffers;
+        next = g_JetBuffers;
         current = g_JetBufferPtr[0];
         frame = &D_800E25FC;
         *frame = 0;
-        if (current == var_a2) {
-            var_a2++;
+        if (current == next) {
+            next++;
         }
-        g_JetBufferPtr[0] = var_a2;
-        ClearOTagR(var_a2->ot, 0x1000);
+        g_JetBufferPtr[0] = next;
+        ClearOTagR(next->ot, 0x1000);
         ClearOTagR(g_JetBufferPtr[0]->ot2, 0xB4);
         JetPrimCursorsReset(&g_JetBufferPtr[0]->prims);
     }
@@ -171,7 +171,7 @@ void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     xs[0] = obj->unk11C[0];
     minX = xs[0];
     maxX = minX;
-    for (i = 1; i < 6; i++) {
+    for (i = 1; i < LEN(obj->unk11C); i++) {
         ys[i] = (obj->unk11C[i] & 0xFFFF0000) >> 16;
         xs[i] = obj->unk11C[i];
         if (minX > xs[i]) {
@@ -189,8 +189,8 @@ void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     }
     if (JetVectorInsidePlanes((VECTOR*)g_JetWorldMatrix->t)) {
         obj->unk28.hit = 0;
-        if ((s16)g_JetCursorX < maxX && minX < (s16)g_JetCursorX && (s16)g_JetCursorY < maxY &&
-            minY < (s16)g_JetCursorY && g_JetFiring == 1) {
+        if (g_JetCursorX < maxX && minX < g_JetCursorX && g_JetCursorY < maxY && minY < g_JetCursorY &&
+            g_JetFiring == 1) {
             obj->unk28.hit = g_JetFiring;
         }
     }
@@ -253,7 +253,7 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     args.ot = &db->ot2[otIndex];
     args.model = node->model;
     db->prims.g3Cursor = JetDrawModelTris(&args);
-    shadow = &D_800D186C;
+    shadow = &g_JetModelTable[79];
     JetProject3Points(&shadow[index]->tris[0].v0, screen);
     D_800A8964 = screen[1] >> 16;
     D_800A895C = screen[1];
@@ -308,7 +308,7 @@ void JetDrawTriangleList(void) {
     tris = g_JetTrianglesBase;
     if (g_JetTriangleListCount) {
         triId = g_JetTriangleListHead;
-        list = &g_JetTriangleLinks;
+        list = g_JetTriangleLinks;
         do {
             prim = JetDrawTriangle(&tris[triId], prim, g_JetBufferPtr[0]->ot, &tris[triId]);
             triId = list[triId].next;
@@ -661,7 +661,7 @@ void func_800A2214(void) {
     func_800A2BE0();
     func_800A3AAC();
     func_800A70D4();
-    for (i = 0; i < 0x64; i++) {
+    for (i = 0; i < LEN(g_JetModelTable); i++) {
         g_JetModelTable[i] = JetModelBuild(i);
     }
     D_800A897C = 0x2710;
@@ -828,11 +828,11 @@ void func_800A29AC(s16 arg0) {
 }
 
 void func_800A2AA0(s32 arg0) {
-    s32* temp;
-    s32 temp_s0;
+    s32* lastParam;
+    s32 param;
 
-    temp = &D_800A8958;
-    if (*temp == 0) {
+    lastParam = &D_800A8958;
+    if (*lastParam == 0) {
         if (arg0 & 0xFF) {
             g_AkaoCmd.opcode = 0x2B;
             g_AkaoCmd.params[0] = 0x40;
@@ -847,13 +847,13 @@ void func_800A2AA0(s32 arg0) {
             return;
         }
     }
-    temp_s0 = arg0 & 0xFF;
-    if (temp_s0) {
-        D_800A833C = temp_s0;
+    param = arg0 & 0xFF;
+    if (param) {
+        D_800A833C = param;
         g_AkaoCmd.opcode = 0xB3;
-        g_AkaoCmd.params[0] = temp_s0;
+        g_AkaoCmd.params[0] = param;
         AkaoExec();
-        *temp = temp_s0;
+        *lastParam = param;
     } else {
         g_AkaoCmd.opcode = 0x2B;
         g_AkaoCmd.params[0] = 0x40;
@@ -927,12 +927,12 @@ void func_800A2C50(void) {
 }
 
 void func_800A2DE4(s32 arg0, s32 arg1) {
-    s32 elem;
+    s32 offset;
     u8* base;
 
-    elem = D_800A8CC0[arg0 & 0xFF];
+    offset = D_800A8CC0[arg0 & 0xFF];
     base = D_800D1BE4;
-    D_800A8988 = (SVECTOR*)(base + elem);
+    D_800A8988 = (SVECTOR*)(base + offset);
     D_800D1724 = *D_800E2604;
 }
 
@@ -942,11 +942,11 @@ void func_800A2E30(void) {}
 void func_800A2E38(void) {
     u32 pad;
     s32* dir;
-    u16* cursorX;
-    u16* cursorY;
+    s16* cursorX;
+    s16* cursorY;
     u8* shoot;
-    u16* power;
-    u16* powerRegen;
+    s16* power;
+    s16* powerRegen;
     u8* repeat;
     u8* scroll;
     s32* fogFar;
@@ -1011,13 +1011,13 @@ void func_800A2E38(void) {
             if (pad & 0x20) {
                 power = &g_JetShotPower;
                 func_800A2AA0(*power & 0xFF);
-                if ((s16)*power >= 9) {
+                if (*power >= 9) {
                     (*power)--;
                 }
                 repeat = &D_800D1C7C;
                 count = *repeat;
                 if (count == 0) {
-                    scroll = &D_800D1720;
+                    scroll = &g_JetBeamScroll;
                     next = *scroll + 3;
                     *repeat = 1;
                     *shoot = 1;
@@ -1028,22 +1028,22 @@ void func_800A2E38(void) {
             } else {
                 func_800A2AA0(0);
                 powerRegen = &g_JetShotPower;
-                if ((s16)*powerRegen < 0x80) {
+                if (*powerRegen < 128) {
                     (*powerRegen)++;
                 }
             }
             cursorX = &g_JetCursorX;
-            if ((s16)*cursorX > 320) {
+            if (*cursorX > 320) {
                 *cursorX = 320;
             }
-            if ((s16)*cursorX < 0) {
+            if (*cursorX < 0) {
                 *cursorX = 0;
             }
             cursorY = &g_JetCursorY;
-            if ((s16)*cursorY > 240) {
+            if (*cursorY > 240) {
                 *cursorY = 240;
             }
-            if ((s16)*cursorY < 0) {
+            if (*cursorY < 0) {
                 *cursorY = 0;
             }
         }
@@ -1129,14 +1129,14 @@ void func_800A334C(void) {
     D_800EE428 = D_800D1BF8;
     D_800D196C = D_800D1BDC;
     D_800EE188 = D_800D1BE0;
-    list = &g_JetTriangleLinks;
-    for (i = 0; i < 0x2EE0; i++) {
+    list = g_JetTriangleLinks;
+    for (i = 0; i < LEN(g_JetTriangleLinks); i++) {
         list[i].prev = 0xFFFF;
         list[i].next = 0xFFFF;
     }
     g_JetTriangleListCount = 0;
     list = g_JetTrackLinks;
-    for (i = 0; i < 0x2328; i++) {
+    for (i = 0; i < LEN(g_JetTrackLinks); i++) {
         list[i].prev = 0xFFFF;
         list[i].next = 0xFFFF;
     }
@@ -1290,14 +1290,14 @@ void func_800A372C(s32 advance) {
 }
 
 void func_800A385C(u16 arg0) {
-    JetListLink* elem;
+    JetListLink* node;
     u16* pCount;
     u16* pTail;
     u16 newCount;
     u16 count;
     u16 tail;
 
-    elem = (&g_JetTriangleLinks) + arg0;
+    node = &g_JetTriangleLinks[arg0];
     pCount = &g_JetTriangleListCount;
     count = *pCount;
     if (count == 0) {
@@ -1308,8 +1308,8 @@ void func_800A385C(u16 arg0) {
         pTail = &D_800D9930;
         tail = *pTail;
         newCount = count + 1;
-        elem->prev = tail;
-        (&g_JetTriangleLinks)[tail].next = arg0;
+        node->prev = tail;
+        (g_JetTriangleLinks + tail)->next = arg0;
         *pTail = arg0;
         *pCount = newCount;
     }
@@ -1322,26 +1322,26 @@ void func_800A38D4(u16 arg0) {
     u16 prev;
     u16 next;
 
-    node = (&g_JetTriangleLinks) + arg0;
+    node = &g_JetTriangleLinks[arg0];
     prev = node->prev;
     next = node->next;
-    list = &g_JetTriangleLinks;
+    list = g_JetTriangleLinks;
     if (prev != 0xFFFF) {
         list[prev].next = next;
     } else {
         g_JetTriangleListHead = next;
     }
     if (next != 0xFFFF) {
-        (&g_JetTriangleLinks)[next].prev = prev;
+        g_JetTriangleLinks[next].prev = prev;
     } else {
         D_800D9930 = prev;
     }
     {
-        JetListLink* self;
+        JetListLink* links;
 
-        self = &g_JetTriangleLinks;
-        self[arg0].prev = 0xFFFF;
-        self[arg0].next = 0xFFFF;
+        links = g_JetTriangleLinks;
+        links[arg0].prev = 0xFFFF;
+        links[arg0].next = 0xFFFF;
     }
     pCount = &g_JetTriangleListCount;
     *pCount = *pCount - 1;

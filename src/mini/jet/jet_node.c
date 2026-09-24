@@ -70,13 +70,13 @@ void JetNodeFree(JetNode* node) {
 
 s16 JetNodeIndexAlloc(void) {
     s16* head;
-    s16 result;
+    s16 index;
 
     head = &g_JetNextFreeNode;
-    result = *head;
-    *head = g_JetNodeFreeList[result];
+    index = *head;
+    *head = g_JetNodeFreeList[index];
 
-    return result;
+    return index;
 }
 
 void JetNodeIndexFree(s16 index) {
