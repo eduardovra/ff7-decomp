@@ -5,16 +5,16 @@
 
 // One scheduled object spawn, read from xbin stream 0xE.
 typedef struct {
-    /* 0x00 */ s16 unk0;
+    /* 0x00 */ s16 type;
     /* 0x02 */ s16 : 16;
-    /* 0x04 */ s16 unk4;
+    /* 0x04 */ s16 modelId;
     /* 0x06 */ s16 : 16;
-    /* 0x08 */ s32 unk8;
-    /* 0x0C */ s32 unkC;
-    /* 0x10 */ s32 unk10[0x14];
-} Unk800D1C0C; // size: 0x60
+    /* 0x08 */ s32 pathIndex;
+    /* 0x0C */ s32 speed;
+    /* 0x10 */ s32 params[0x14];
+} JetObjectSpawn; // size: 0x60
 
-// Unk800D1CAC.type: the behaviour func_800A46E8 runs; the model sets the look.
+// JetObjectState.type selects behaviour; the model sets the look.
 enum JetObjectType {
     JET_OBJ_FLYER = 1,          // follows its path, turned to face along it
     JET_OBJ_SPINNER = 5,        // follows its path, spinning at a fixed rate
@@ -32,28 +32,28 @@ extern SVECTOR* D_800A8954;
 extern s32 D_800A8984;
 extern s32 g_JetNextSpawnSegment;
 extern s32 g_JetSpawnIndex;
-extern u16 D_800D1970[100];
+extern u16 g_JetNextFreeObject;
+extern u16 g_JetObjectFreeList[100];
 extern u8* D_800D1C00;
 extern s32* D_800D1C04;
 extern s32* D_800D1C08;
-extern Unk800D1C0C* g_JetSpawns;
+extern JetObjectSpawn* g_JetSpawns;
 extern u8* g_JetSpawnCounts;
-extern Unk800A4390 g_JetSpawnTemplate;
-extern Unk800A4390 g_JetObjects[0x64];
-extern u16 D_800D9940;
+extern JetObject g_JetSpawnTemplate;
+extern JetObject g_JetObjects[0x64];
 extern s16 g_JetObjectCount;
 
-static s16 func_800A4400(void);
-static void func_800A442C(s16 arg0);
-static void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 type, s16 arg4);
-static void JetObjectDamage(Unk800A4390* arg0);
-static void JetObjectAwardPoints(Unk800A4390* arg0);
+static s16 JetObjectIndexAlloc(void);
+static void JetObjectIndexFree(s16 index);
+static void JetObjectCreate(s16 x, s16 y, s16 z, s16 type, s16 modelId);
+static void JetObjectDamage(JetObject* object);
+static void JetObjectAwardPoints(JetObject* arg0);
 
 const u8 D_800A0008 = 0; // the rotation order the object matrices use
 
-void func_800A3AAC(void) {
-    Unk800A4390* obj;
-    Unk800A4390* pool;
+void JetObjectsInit(void) {
+    JetObject* obj;
+    JetObject* pool;
     s32 i;
 
     obj = g_JetObjects;
@@ -61,13 +61,13 @@ void func_800A3AAC(void) {
         obj[i].unkD8 = -1;
         obj[i].unkDA = 0;
     }
-    D_800D9940 = 0;
-    for (i = 0; i < LEN(D_800D1970); i++) {
-        D_800D1970[i] = i + 1;
+    g_JetNextFreeObject = 0;
+    for (i = 0; i < LEN(g_JetObjectFreeList); i++) {
+        g_JetObjectFreeList[i] = i + 1;
     }
     g_JetShotPower = 128;
     g_JetFiring = 0;
-    D_800D1C7C = 0;
+    g_JetShotRepeatCounter = 0;
     g_JetCursorX = 160;
     g_JetCursorY = 120;
     g_JetNextSpawnSegment = 0;
@@ -75,7 +75,7 @@ void func_800A3AAC(void) {
     g_JetObjectCount = 0;
 }
 
-static void func_800A3B58(u8 pathIndex, u8 mode) {
+static void JetObjectPathLoad(u8 pathIndex, u8 mode) {
     s32* lengths;
     s32* offsets;
     s32 offset;
@@ -97,7 +97,7 @@ static void func_800A3B58(u8 pathIndex, u8 mode) {
 }
 
 // Sample a path at a 16.16 position, mirroring y and z when flag is zero.
-static void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
+static void JetPathSample(u32 pathPosition, SVECTOR* path, VECTOR* position, u8 flag) {
     SVECTOR seg[2];
     VECTOR delta;
     s32 idx;
@@ -106,8 +106,8 @@ static void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
     s32 dz;
     s32 frac;
 
-    idx = pos >> 16;
-    frac = pos & 0xFFFF;
+    idx = pathPosition >> 16;
+    frac = pathPosition & 0xFFFF;
     seg[0].vx = path[idx].vx;
     seg[0].vy = path[idx].vy;
     seg[0].vz = path[idx].vz;
@@ -127,21 +127,21 @@ static void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
     delta.vy = delta.vy >> 16;
     delta.vz = delta.vz >> 16;
     if (flag == 0) {
-        out->vx = path[idx].vx + delta.vx;
-        out->vy = -path[idx].vy - delta.vy;
-        out->vz = -path[idx].vz - delta.vz;
+        position->vx = path[idx].vx + delta.vx;
+        position->vy = -path[idx].vy - delta.vy;
+        position->vz = -path[idx].vz - delta.vz;
     } else {
-        out->vx = path[idx].vx + delta.vx;
-        out->vy = path[idx].vy + delta.vy;
-        out->vz = path[idx].vz + delta.vz;
+        position->vx = path[idx].vx + delta.vx;
+        position->vy = path[idx].vy + delta.vy;
+        position->vz = path[idx].vz + delta.vz;
     }
 }
 
 // Draw the aiming cursor sprite.
-static void func_800A3D50(JetBuffer* arg0) {
+static void JetDrawCursor(JetBuffer* buffer) {
     POLY_FT4* poly;
 
-    poly = arg0->prims.ft4Cursor;
+    poly = buffer->prims.ft4Cursor;
     setXY4(poly, g_JetCursorX - 16, g_JetCursorY - 16, g_JetCursorX + 16, g_JetCursorY - 16, g_JetCursorX - 16,
            g_JetCursorY + 16, g_JetCursorX + 16, g_JetCursorY + 16);
     setRGB0(poly, 0x80, 0x80, 0x80);
@@ -149,13 +149,13 @@ static void func_800A3D50(JetBuffer* arg0) {
     poly->tpage = g_JetSpriteTPage[0];
     poly->clut = g_JetSpriteClut[0];
     SetSemiTrans(poly, 0);
-    addPrim(&arg0->ot[1], poly);
+    addPrim(&buffer->ot[1], poly);
     poly++;
-    arg0->prims.ft4Cursor = poly;
+    buffer->prims.ft4Cursor = poly;
 }
 
 // Draw the two laser beams, from each gun muzzle to the aiming cursor.
-static void func_800A3E58(void) {
+static void JetDrawBeams(void) {
     JetBuffer** db;
     POLY_FT4* poly;
     u8* scroll;
@@ -193,13 +193,13 @@ static void func_800A3E58(void) {
 }
 
 // Allocate an object and its scene node, then initialise its six bounding box face centres.
-static s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
+static s16 JetObjectAlloc(JetObject* spawn, s16 parentIndex) {
     s16* count;
-    Unk800A4390* obj;
-    Unk800A4390* pool;
-    Unk800A4390* parentObj;
-    Unk800A4390* box;
-    Unk800A4390* boxPool;
+    JetObject* obj;
+    JetObject* pool;
+    JetObject* parentObj;
+    JetObject* box;
+    JetObject* boxPool;
     s16 index;
     s32 rawId;
     s16 modelId;
@@ -213,28 +213,28 @@ static s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
     count = &g_JetObjectCount;
     if (*count < 0x63) {
         *count = *count + 1;
-        index = func_800A4400();
-        g_JetObjects[index] = *src;
+        index = JetObjectIndexAlloc();
+        g_JetObjects[index] = *spawn;
         pool = g_JetObjects;
         obj = &pool[index];
-        rawId = src->unk28.unk8;
+        rawId = spawn->unk28.unk8;
         modelId = rawId;
         obj->unkDA = 1;
         obj->unkD8 = index;
         if (parentIndex == 0) {
-            obj->unkD4 = JetNodeAlloc(rawId, 0, 0, 1, &g_JetRootNode, src->unk0.vx, src->unk0.vy, src->unk0.vz,
-                                      src->unk18.vx, src->unk18.vy, src->unk18.vz);
+            obj->unkD4 = JetNodeAlloc(rawId, 0, 0, 1, &g_JetRootNode, spawn->unk0.vx, spawn->unk0.vy, spawn->unk0.vz,
+                                      spawn->unk18.vx, spawn->unk18.vy, spawn->unk18.vz);
         } else {
             parentObj = &pool[parentIndex];
-            obj->unkD4 = JetNodeAlloc(rawId, 0, 0, 1, parentObj->unkD4, src->unk0.vx, src->unk0.vy, src->unk0.vz,
-                                      src->unk18.vx, src->unk18.vy, src->unk18.vz);
+            obj->unkD4 = JetNodeAlloc(rawId, 0, 0, 1, parentObj->unkD4, spawn->unk0.vx, spawn->unk0.vy, spawn->unk0.vz,
+                                      spawn->unk18.vx, spawn->unk18.vy, spawn->unk18.vz);
         }
-        minX = g_JetModelInfo[modelId].unk4.vx;
-        maxX = g_JetModelInfo[modelId].unkC.vx;
-        minY = g_JetModelInfo[modelId].unk4.vy;
-        maxY = g_JetModelInfo[modelId].unkC.vy;
-        minZ = g_JetModelInfo[modelId].unk4.vz;
-        maxZ = g_JetModelInfo[modelId].unkC.vz;
+        minX = g_JetModelInfo[modelId].boundsMin.vx;
+        maxX = g_JetModelInfo[modelId].boundsMax.vx;
+        minY = g_JetModelInfo[modelId].boundsMin.vy;
+        maxY = g_JetModelInfo[modelId].boundsMax.vy;
+        minZ = g_JetModelInfo[modelId].boundsMin.vz;
+        maxZ = g_JetModelInfo[modelId].boundsMax.vz;
         boxPool = g_JetObjects;
         box = &boxPool[index];
         setVector(&box->unkDC[0], (maxX + minX) >> 1, (maxY + minY) >> 1, maxZ);
@@ -247,43 +247,43 @@ static s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
     return index;
 }
 
-static void func_800A4390(Unk800A4390* arg0) {
+static void JetObjectRelease(JetObject* object) {
     s16* count;
 
-    if (arg0->unkD8 != -1) {
+    if (object->unkD8 != -1) {
         count = &g_JetObjectCount;
         *count -= 1;
-        JetNodeFree(arg0->unkD4);
-        func_800A442C(arg0->unkD8);
-        arg0->unkD8 = -1;
-        arg0->unkDA = 0;
+        JetNodeFree(object->unkD4);
+        JetObjectIndexFree(object->unkD8);
+        object->unkD8 = -1;
+        object->unkDA = 0;
     }
 }
 
-static s16 func_800A4400(void) {
+static s16 JetObjectIndexAlloc(void) {
     u16* head;
     s16 index;
 
-    head = &D_800D9940;
+    head = &g_JetNextFreeObject;
     index = *head;
-    *head = D_800D1970[index];
+    *head = g_JetObjectFreeList[index];
 
     return index;
 }
 
-static void func_800A442C(s16 arg0) {
+static void JetObjectIndexFree(s16 index) {
     u16* head;
     u16* slot;
 
-    slot = &D_800D1970[arg0];
-    head = &D_800D9940;
+    slot = &g_JetObjectFreeList[index];
+    head = &g_JetNextFreeObject;
     *slot = *head;
-    *head = arg0;
+    *head = index;
 }
 
 // Spawn the objects scheduled for every track segment reached this frame.
-static void func_800A4458(void) {
-    Unk800D1C0C* spawns;
+static void JetObjectsSpawnScheduled(void) {
+    JetObjectSpawn* spawns;
     u8* counts;
     u8* count;
     s32 segment;
@@ -297,60 +297,60 @@ static void func_800A4458(void) {
         for (i = 0; i < *count; i++) {
             spawns = g_JetSpawns;
             for (j = 0; j < LEN(g_JetSpawnTemplate.unk28.unk50); j++) {
-                g_JetSpawnTemplate.unk28.unk50[j] = spawns[*(s32*)(u32)&g_JetSpawnIndex].unk10[j];
+                g_JetSpawnTemplate.unk28.unk50[j] = spawns[*(s32*)(u32)&g_JetSpawnIndex].params[j];
             }
             index = *(s32*)(u32)&g_JetSpawnIndex;
-            g_JetSpawnTemplate.unk28.unk18 = spawns[index].unk8;
-            g_JetSpawnTemplate.unk28.unk1C = spawns[index].unkC;
-            func_800A45C0(0, 0, 0, spawns[index].unk0, spawns[index].unk4);
+            g_JetSpawnTemplate.unk28.unk18 = spawns[index].pathIndex;
+            g_JetSpawnTemplate.unk28.unk1C = spawns[index].speed;
+            JetObjectCreate(0, 0, 0, spawns[index].type, spawns[index].modelId);
             (*(s32*)(u32)&g_JetSpawnIndex)++;
         }
     }
     g_JetNextSpawnSegment = g_JetTrackSegment;
 }
 
-static void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 type, s16 arg4) {
-    g_JetSpawnTemplate.unk0.vx = arg0;
-    g_JetSpawnTemplate.unk0.vy = arg1;
-    g_JetSpawnTemplate.unk0.vz = arg2;
+static void JetObjectCreate(s16 x, s16 y, s16 z, s16 type, s16 modelId) {
+    g_JetSpawnTemplate.unk0.vx = x;
+    g_JetSpawnTemplate.unk0.vy = y;
+    g_JetSpawnTemplate.unk0.vz = z;
     g_JetSpawnTemplate.unk28.type = type;
     g_JetSpawnTemplate.unk28.unk10 = 1;
-    g_JetSpawnTemplate.unk28.unk8 = arg4;
+    g_JetSpawnTemplate.unk28.unk8 = modelId;
     g_JetSpawnTemplate.unk28.hit = 0;
-    func_800A40F4(&g_JetSpawnTemplate, 0);
+    JetObjectAlloc(&g_JetSpawnTemplate, 0);
 }
 
-inline void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 type, s16 arg4) {
-    g_JetSpawnTemplate.unk0.vx = arg0;
-    g_JetSpawnTemplate.unk0.vy = arg1;
-    g_JetSpawnTemplate.unk0.vz = arg2;
+inline void func_800A4650(s16 x, s16 y, s16 z, s16 type, s16 modelId) {
+    g_JetSpawnTemplate.unk0.vx = x;
+    g_JetSpawnTemplate.unk0.vy = y;
+    g_JetSpawnTemplate.unk0.vz = z;
     g_JetSpawnTemplate.unk28.type = type;
     g_JetSpawnTemplate.unk28.unk10 = 1;
-    g_JetSpawnTemplate.unk28.unk8 = arg4;
+    g_JetSpawnTemplate.unk28.unk8 = modelId;
     g_JetSpawnTemplate.unk28.hit = 0;
     g_JetSpawnTemplate.unk28.unk50[0xC] = 0;
-    func_800A40F4(&g_JetSpawnTemplate, 0);
+    JetObjectAlloc(&g_JetSpawnTemplate, 0);
 }
 
-static inline void JetObjectFree(Unk800A4390* obj) {
-    if (obj->unkD8 != -1) {
+static inline void JetObjectFree(JetObject* object) {
+    if (object->unkD8 != -1) {
         g_JetObjectCount--;
-        JetNodeFree(obj->unkD4);
-        func_800A442C(obj->unkD8);
-        obj->unkD8 = -1;
-        obj->unkDA = 0;
+        JetNodeFree(object->unkD4);
+        JetObjectIndexFree(object->unkD8);
+        object->unkD8 = -1;
+        object->unkDA = 0;
     }
 }
 
 // Step every live object through its behaviour, then queue its model.
-void func_800A46E8(JetBuffer* db) {
+void JetObjectsUpdate(JetBuffer* db) {
     VECTOR next;
     VECTOR unused[2];
     VECTOR pos;
     SVECTOR rot;
-    Unk800A4390* obj;
-    Unk800A4390* pool;
-    Unk800D1CAC* st;
+    JetObject* obj;
+    JetObject* pool;
+    JetObjectState* st;
     POLY_G4* fade;
     POLY_FT4* tpagePrim;
     s16 pathIndex;
@@ -368,9 +368,9 @@ void func_800A46E8(JetBuffer* db) {
     u8 drawMode;
     u16 otIndex;
 
-    func_800A4458();
-    func_800A3D50(db);
-    func_800A3E58();
+    JetObjectsSpawnScheduled();
+    JetDrawCursor(db);
+    JetDrawBeams();
     for (i = 0; i < LEN(g_JetObjects); i++) {
         otIndex = 0;
         pool = g_JetObjects;
@@ -495,7 +495,7 @@ void func_800A46E8(JetBuffer* db) {
                 JetObjectDamage(obj);
             }
             if (st->unk28 < st->unk2C) {
-                func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(st->unk28, obj->unkCC, &obj->unk0, 0);
                 obj->unk18.vx = 0;
                 obj->unk18.vy = 0;
                 obj->unk18.vz = 0;
@@ -542,7 +542,7 @@ void func_800A46E8(JetBuffer* db) {
                 JetObjectFree(obj);
                 break;
             }
-            func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
+            JetPathSample(st->unk28, obj->unkCC, &obj->unk0, 0);
             obj->unk18.vx += st->unk50[3];
             obj->unk18.vy += st->unk50[4];
             obj->unk18.vz += st->unk50[5];
@@ -591,8 +591,8 @@ void func_800A46E8(JetBuffer* db) {
                 JetObjectFree(obj);
                 break;
             }
-            func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
-            func_800A3C04((st->unk28 + 0x10000) % ((obj->unkC8 - 1) << 16), obj->unkCC, &next, 0);
+            JetPathSample(st->unk28, obj->unkCC, &obj->unk0, 0);
+            JetPathSample((st->unk28 + 0x10000) % ((obj->unkC8 - 1) << 16), obj->unkCC, &next, 0);
             dx = next.vx - obj->unk0.vx;
             dy = next.vy - obj->unk0.vy;
             dz = next.vz - obj->unk0.vz;
@@ -670,7 +670,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->hit = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(0, obj->unkCC, &obj->unk0, 0);
             }
             segment = &g_JetTrackSegment;
             if (st->unk50[2] < *segment) {
@@ -738,7 +738,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk50[14] = 0;
             }
             if (st->unkC != 0) {
-                func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(st->unk28, obj->unkCC, &obj->unk0, 0);
                 if (st->hit != 0) {
                     if (st->unk50[10] != 5 || g_JetSpeed < 0x4015) {
                         JetObjectDamage(obj);
@@ -779,7 +779,7 @@ void func_800A46E8(JetBuffer* db) {
                 obj->unk18.vx = 0;
                 obj->unk18.vy = 0;
                 obj->unk18.vz = 0;
-                func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(0, obj->unkCC, &obj->unk0, 0);
             }
             st->unk30 += st->unk1C;
             if (st->unk34 < st->unk30) {
@@ -800,7 +800,7 @@ void func_800A46E8(JetBuffer* db) {
                 JetObjectFree(obj);
                 break;
             }
-            func_800A3C04(st->unk30, obj->unkCC, &obj->unk0, 0);
+            JetPathSample(st->unk30, obj->unkCC, &obj->unk0, 0);
             if (st->hit != 0) {
                 JetObjectDamage(obj);
             }
@@ -843,7 +843,7 @@ void func_800A46E8(JetBuffer* db) {
                 obj->unk18.vz = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(0, obj->unkCC, &obj->unk0, 0);
                 st->unk28 = 0;
             }
             segment = &g_JetTrackSegment;
@@ -914,7 +914,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk28 = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(0, obj->unkCC, &obj->unk0, 0);
             }
             if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
@@ -983,7 +983,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk28 = -0x46;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(0, obj->unkCC, &obj->unk0, 0);
             }
             st->unk28++;
             st->unk14++;
@@ -1204,7 +1204,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk10 = 0;
                 st->unk14 = 0;
                 g_JetSpeed = 0;
-                D_800E25F4 = 1;
+                g_JetTransitionDrawEnabled = 1;
                 func_800A4650(0, 0, 0, 3, 0x3B);
             } else {
                 st->unk14++;
@@ -1239,7 +1239,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unk10 = 0;
                 st->unk14 = 0;
                 g_JetSpeed = 0;
-                func_800A2938();
+                JetAudioFadeOut();
             } else {
                 st->unk14++;
             }
@@ -1266,13 +1266,13 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk14 >= 0x80) {
                 JetObjectFree(obj);
                 g_JetSpeed = 0x4000;
-                D_800E25F4 = 0;
+                g_JetTransitionDrawEnabled = 0;
                 g_JetExit = 1;
             }
             break;
         case 250:
             if (g_JetScore < st->unk50[0]) {
-                Unk800A4390* spawn;
+                JetObject* spawn;
 
                 spawn = &g_JetSpawnTemplate;
                 spawn->unk28.unk50[0] = 0x12C;
@@ -1308,16 +1308,16 @@ void func_800A46E8(JetBuffer* db) {
             RotMatrix(&obj->unk18, &obj->unkD4->m);
         }
         if (drawMode == 0) {
-            func_800A0874(db, obj->unkD4, otIndex, 0, obj);
+            JetDrawObjectAndCheckHit(db, obj->unkD4, otIndex, 0, obj);
         }
         if (drawMode == 1) {
-            func_800A0D78(db, obj->unkD4, otIndex, 0, obj);
+            JetDrawCartAndProjectBeams(db, obj->unkD4, otIndex, 0, obj);
         }
     }
 }
 
-static void JetObjectDamage(Unk800A4390* arg0) {
-    Unk800D1CAC* state = &arg0->unk28;
+static void JetObjectDamage(JetObject* object) {
+    JetObjectState* state = &object->unk28;
     u8 amount;
     s32 x;
     s32 y;
@@ -1329,18 +1329,18 @@ static void JetObjectDamage(Unk800A4390* arg0) {
     }
     state->unk50[0xD] -= amount;
     if (state->unk50[0xD] < 0) {
-        JetObjectAwardPoints(arg0);
+        JetObjectAwardPoints(object);
     } else {
-        x = arg0->unk0.vx;
-        y = arg0->unk0.vy;
-        z = arg0->unk0.vz;
+        x = object->unk0.vx;
+        y = object->unk0.vy;
+        z = object->unk0.vz;
         func_800A4650(x, y, z, JET_OBJ_IMPACT, 0x3F);
     }
 }
 
 // Award the score for a hit object and scatter its debris.
-static void JetObjectAwardPoints(Unk800A4390* obj) {
-    Unk800D1CAC* st = &obj->unk28;
+static void JetObjectAwardPoints(JetObject* obj) {
+    JetObjectState* st = &obj->unk28;
     s32* score;
     s32* frame;
     SVECTOR* path;
@@ -1370,7 +1370,7 @@ static void JetObjectAwardPoints(Unk800A4390* obj) {
         points = st->unk50[0];
         g_JetPopupPoints = points;
         g_JetPopupTimer = 100;
-        D_800E25E8 = 1;
+        g_JetScorePopupAlternate = 1;
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
     if (st->unk50[10] == 2) {
@@ -1394,7 +1394,7 @@ static void JetObjectAwardPoints(Unk800A4390* obj) {
         points = st->unk50[0];
         g_JetPopupPoints = points;
         g_JetPopupTimer = 100;
-        D_800E25E8 = 1;
+        g_JetScorePopupAlternate = 1;
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
     if (st->unk50[10] == 3) {
@@ -1417,7 +1417,7 @@ static void JetObjectAwardPoints(Unk800A4390* obj) {
         points = st->unk50[0];
         g_JetPopupPoints = points;
         g_JetPopupTimer = 100;
-        D_800E25E8 = 1;
+        g_JetScorePopupAlternate = 1;
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
     if (st->unk50[10] == 5) {
@@ -1441,7 +1441,7 @@ static void JetObjectAwardPoints(Unk800A4390* obj) {
         points = st->unk50[0];
         g_JetPopupPoints = points;
         g_JetPopupTimer = 100;
-        D_800E25E8 = 1;
+        g_JetScorePopupAlternate = 1;
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
     score = &g_JetScore;

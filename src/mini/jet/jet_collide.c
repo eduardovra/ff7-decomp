@@ -22,7 +22,7 @@ const VECTOR D_800A0430 = {-160, -120, 256, 0}; // top left
 const VECTOR D_800A0440 = {160, -120, 256, 0};  // top right
 
 // Build the left and right frustum planes from the four corner rays.
-void func_800A70D4(void) {
+void JetFrustumInit(void) {
     VECTOR tl;
     VECTOR bl;
     VECTOR tr;

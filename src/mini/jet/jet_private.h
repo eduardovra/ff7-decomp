@@ -40,8 +40,8 @@ typedef struct {
 typedef struct {
     /* 0x00 */ s16 triCount;
     /* 0x02 */ s16 quadCount;
-    /* 0x04 */ SVECTOR unk4;
-    /* 0x0C */ SVECTOR unkC;
+    /* 0x04 */ SVECTOR boundsMin;
+    /* 0x0C */ SVECTOR boundsMax;
 } JetModelInfo; // size: 0x14
 
 typedef struct {
@@ -66,10 +66,10 @@ typedef struct {
     /* 0x0A */ s16 : 16;
     /* 0x0C */ JetTriangle* tris;
     /* 0x10 */ JetQuad* quads;
-    /* 0x14 */ s16 unk14;
-    /* 0x16 */ s16 unk16;
-    /* 0x18 */ s16 unk18;
-    /* 0x1A */ s16 unk1A;
+    /* 0x14 */ s16 boundsMaxX;
+    /* 0x16 */ s16 boundsMinX;
+    /* 0x18 */ s16 boundsMaxZ;
+    /* 0x1A */ s16 boundsMinZ;
     /* 0x1C */ s32 : 32;
 } JetModel; // size: 0x20
 
@@ -81,7 +81,7 @@ typedef struct JetNode {
     /* 0x28 */ s16 modelId;
     /* 0x2A */ s16 index;
     /* 0x2C */ u16 depth;
-    /* 0x2E */ s16 unk2E;
+    /* 0x2E */ char pad2E[2];
     /* 0x30 */ struct JetNode* prev;
     /* 0x34 */ struct JetNode* next;
 } JetNode; // size: 0x38
@@ -103,14 +103,14 @@ typedef struct {
     /* 0x34 */ s32 unk34;
     /* 0x38 */ char pad38[0x18];
     /* 0x50 */ s32 unk50[0x14]; // shootable types: [0] points, [0xD] hit points, [18] death sfx
-} Unk800D1CAC;                  // size: 0xA0
+} JetObjectState;               // size: 0xA0
 
 typedef struct {
     /* 0x00 */ VECTOR unk0;
     /* 0x10 */ char pad10[8];
     /* 0x18 */ SVECTOR unk18; // spawn rotation
     /* 0x20 */ char pad20[8];
-    /* 0x28 */ Unk800D1CAC unk28;
+    /* 0x28 */ JetObjectState unk28;
     /* 0xC8 */ s32 unkC8;      // the object path's length
     /* 0xCC */ SVECTOR* unkCC; // the object path itself
     /* 0xD0 */ s32 : 32;
@@ -121,7 +121,7 @@ typedef struct {
     /* 0x10C */ char pad10C[0x10];
     /* 0x11C */ u_long unk11C[6]; // the same six points projected to the screen
     /* 0x134 */ char pad134[8];
-} Unk800A4390; // size: 0x13C
+} JetObject; // size: 0x13C
 
 extern VECTOR D_800A83B8;
 extern s16 D_800A895C;
@@ -150,30 +150,30 @@ extern JetTriangle* g_JetTrianglesBase;
 extern u8 g_JetFiring;
 extern s32 D_800D1C54;
 extern s16 g_JetShotPower;
-extern u8 D_800D1C7C;
+extern u8 g_JetShotRepeatCounter;
 extern s16 g_JetCursorX;
 extern s16 g_JetCursorY;
-extern u8 D_800E25E8;
-extern u8 D_800E25F4;
+extern u8 g_JetScorePopupAlternate;
+extern u8 g_JetTransitionDrawEnabled;
 extern u8 g_JetExit;
 extern SVECTOR g_JetPopupRot;
 extern u16 g_JetSpriteClut[];
 
 void JetPrimCursorsReset(JetPrimBuffer* prims);
 void JetNodeFree(JetNode* node);
-void JetPlaySfx(s16 arg0);
-void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4390* obj);
+void JetPlaySfx(s16 soundId);
+void JetDrawObjectAndCheckHit(JetBuffer* drawBuffer, JetNode* node, s16 otIndex, s32 unusedArg, JetObject* object);
 s32 JetVectorInsidePlanes(VECTOR* arg0);
-void func_800A3AAC(void);
-void func_800A70D4(void);
+void JetObjectsInit(void);
+void JetFrustumInit(void);
 void JetModelsReset(void);
 JetModel* JetModelBuild(s32 infoIndex);
 void JetBuffersInit(void);
 void JetNodesInit(void);
-void JetTrackSample(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot);
-void func_800A2938(void);
-void func_800A46E8(JetBuffer* db);
-void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4390* obj);
+void JetTrackSample(u32 trackPosition, s32 heightOffset, VECTOR* position, SVECTOR* rotation);
+void JetAudioFadeOut(void);
+void JetObjectsUpdate(JetBuffer* db);
+void JetDrawCartAndProjectBeams(JetBuffer* drawBuffer, JetNode* node, s16 otIndex, s32 unusedArg, JetObject* object);
 JetNode* JetNodeAlloc(
     s16 modelId, s32 arg1, s32 arg2, s32 arg3, JetNode* parent, s32 x, s32 y, s32 z, s16 rotX, s16 rotY, s16 rotZ);
 

@@ -32,10 +32,10 @@ JetModel* JetModelBuild(s32 infoIndex) {
     model = JetModelAlloc();
     numTri = g_JetModelInfo[infoIndex].triCount;
     numQua = g_JetModelInfo[infoIndex].quadCount;
-    model->unk16 = g_JetModelInfo[infoIndex].unk4.vx;
-    model->unk14 = g_JetModelInfo[infoIndex].unkC.vx;
-    model->unk1A = g_JetModelInfo[infoIndex].unk4.vz;
-    model->unk18 = g_JetModelInfo[infoIndex].unkC.vz;
+    model->boundsMinX = g_JetModelInfo[infoIndex].boundsMin.vx;
+    model->boundsMaxX = g_JetModelInfo[infoIndex].boundsMax.vx;
+    model->boundsMinZ = g_JetModelInfo[infoIndex].boundsMin.vz;
+    model->boundsMaxZ = g_JetModelInfo[infoIndex].boundsMax.vz;
     model->unk2 = 0;
     model->triCount = numTri;
     model->quadCount = numQua;
