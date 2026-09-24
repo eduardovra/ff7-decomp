@@ -25,7 +25,6 @@ VECTOR D_800A83C8 = {0, 0, 0, 0};
 VECTOR D_800A83D8 = {0, 0, 0, 0};
 s32 D_800A83E8[2] = {0, 0};
 
-// The dummy local reproduces the target stack frame.
 u16 MINI_Jet(void) {
     volatile s32 dummy;
     JetBuffer* var_a2;
@@ -60,7 +59,7 @@ u16 MINI_Jet(void) {
             JetDrawScorePopup(g_JetBufferPtr[0], g_JetPopupModelId, 5, 40, 0);
             func_800A372C(*speed);
             func_800A46E8(g_JetBufferPtr[0]);
-            func_800A1CD8(g_JetScore, 244, 200, 0, 0);
+            JetDrawNumber(g_JetScore, 244, 200, 0, 0);
             JetDrawSprite(7, 204, 200, 39, 17, 0, 0, 0x27, 0x11, 0);
             JetDrawSprite(11, 18, 86, 12, 140, 0, 0x70, 0xC, 0x8C, 0);
             JetDrawEnergyGauge();
@@ -197,7 +196,6 @@ void func_800A0874(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     }
 }
 
-// The two locals before screen exist only to reproduce the target stack frame.
 void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4390* obj) {
     Unk800A8604 args;
     MATRIX unused;
@@ -256,12 +254,12 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
     args.model = node->model;
     db->prims.g3Cursor = JetDrawModelTris(&args);
     shadow = &D_800D186C;
-    func_800A84A4((s32*)shadow[index]->tris, screen);
+    JetProject3Points(&shadow[index]->tris[0].v0, screen);
     D_800A8964 = screen[1] >> 16;
     D_800A895C = screen[1];
     D_800A896C = screen[2] >> 16;
     D_800A8960 = screen[2];
-    func_800A84A4((s32*)shadow[index]->tris + 9, screen);
+    JetProject3Points(&shadow[index]->tris[1].v0, screen);
     xy1 = screen[1];
     xy2 = screen[2];
     D_800A8978 = xy1 >> 16;
@@ -522,7 +520,7 @@ void JetDrawScorePopup(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) 
     if (alternate[0] == 1) {
         RotMatrix(&g_JetPopupRot, &D_800A8A74[index]->m);
         JetDrawNodeUI(arg0, D_800A8A74[index], 0, 0, unused);
-        func_800A1CD8(g_JetPopupPoints, 220, 160, 0, 0x18);
+        JetDrawNumber(g_JetPopupPoints, 220, 160, 0, 0x18);
     }
     counter = &g_JetPopupTimer;
     (*counter)--;
@@ -538,7 +536,7 @@ void JetDrawScorePopup(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) 
     }
 }
 
-void func_800A1CD8(s32 value, s32 x, s32 y, s16 padWithZero, u16 v) {
+void JetDrawNumber(s32 value, s32 x, s32 y, s16 padWithZero, u16 v) {
     POLY_FT4* poly;
     JetBuffer* db;
     s32 digit;
@@ -568,9 +566,9 @@ void func_800A1CD8(s32 value, s32 x, s32 y, s16 padWithZero, u16 v) {
             leading = 0;
         }
         if (padWithZero == 1 || digit || leading == 0) {
-            left = x + i * 0xE;
-            w = i * 0xE + 0x10;
-            setXY4(poly, left, y, startX + w, y, left, y + 0x10, startX + w, y + 0x10);
+            left = x + i * 14;
+            w = i * 14 + 16;
+            setXY4(poly, left, y, startX + w, y, left, y + 16, startX + w, y + 16);
             setRGB0(poly, 0x80, 0x80, 0x80);
             setUVWH(poly, digit * 0x10 + 0x30, v, 0x10, 0x12);
             poly->tpage = g_JetSpriteTPage[8];
@@ -948,7 +946,7 @@ void func_800A2E38(void) {
     u16* cursorY;
     u8* shoot;
     u16* power;
-    u16* powerRegen; // a second pointer keeps this branch's address out of a saved register
+    u16* powerRegen;
     u8* repeat;
     u8* scroll;
     s32* fogFar;

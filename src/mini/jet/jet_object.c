@@ -59,8 +59,6 @@ void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
 
     idx = pos >> 16;
     frac = pos & 0xFFFF;
-    // seg is dead and the scale/shift are split on purpose: both are needed
-    // for the stack frame and the codegen to match.
     seg[0].vx = path[idx].vx;
     seg[0].vy = path[idx].vy;
     seg[0].vz = path[idx].vz;
@@ -128,7 +126,6 @@ void func_800A3E58(void) {
         power = g_JetShotPower;
         spread = power >> 3;
         poly = db[0]->prims.ft4Cursor;
-        // Signed cursor reads preserve the original load/store ordering.
         setXY4(poly, D_800A895C + spread, D_800A8964, *(s16*)&g_JetCursorX, *(s16*)&g_JetCursorY, D_800A895C - spread,
                D_800A8964, *(s16*)&g_JetCursorX, *(s16*)&g_JetCursorY);
         setRGB0(poly, 0x80, 0x80, 0x80);
@@ -169,7 +166,7 @@ s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
     s16 minZ;
     s16 maxZ;
 
-    count = (s16*)&D_800EE42C;
+    count = &D_800EE42C;
     if (*count < 0x63) {
         *count = *count + 1;
         index = func_800A4400();
@@ -207,7 +204,7 @@ s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
 }
 
 void func_800A4390(Unk800A4390* arg0) {
-    u16* temp;
+    s16* temp;
 
     if (arg0->unkD8 != -1) {
         temp = &D_800EE42C;
@@ -303,7 +300,7 @@ INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet_object", func_800A46E8);
 // Step every live object through its behaviour, then queue its model.
 void func_800A46E8(JetBuffer* db) {
     VECTOR next;
-    VECTOR unusedA; // the two unused vectors reproduce the target stack frame
+    VECTOR unusedA;
     VECTOR unusedB;
     VECTOR pos;
     SVECTOR rot;

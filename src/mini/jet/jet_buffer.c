@@ -1,7 +1,6 @@
 //! PSYQ=3.3 FORCE_MEM=true
 #include "jet_private.h"
 
-// No PC counterpart; the port replaced the PSX double buffer with the DirectX driver
 void JetBuffersInit(void) {
     JetPrimBuffer* prims;
     JetBuffer* db;
