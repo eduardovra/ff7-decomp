@@ -331,6 +331,7 @@ void JetDrawSprite(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, 
 void func_800A2058();
 void func_800A2214();
 void func_800A2860(void);
+void func_800A2938(void);
 void func_800A2B78(void);
 void func_800A2C50(void);
 void func_800A2E38();

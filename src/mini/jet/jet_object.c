@@ -306,8 +306,8 @@ void func_800A46E8(JetBuffer* db) {
     Unk800A4390* pool;
     Unk800D1CAC* st;
     POLY_G4* fade;
-    POLY_FT4* flash;
-    s16 modelId;
+    POLY_FT4* tpagePrim;
+    s16 pathIndex;
     s32 shade;
     s32 count;
     s32 i;
@@ -343,9 +343,9 @@ void func_800A46E8(JetBuffer* db) {
                 s32 pathLen;
                 s32 offset;
 
-                modelId = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[modelId];
-                offset = D_800D1C04[modelId];
+                pathIndex = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[pathIndex];
+                offset = D_800D1C04[pathIndex];
                 path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
@@ -417,9 +417,9 @@ void func_800A46E8(JetBuffer* db) {
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
-                modelId = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[modelId];
-                offset = D_800D1C04[modelId];
+                pathIndex = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[pathIndex];
+                offset = D_800D1C04[pathIndex];
                 path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
@@ -465,9 +465,9 @@ void func_800A46E8(JetBuffer* db) {
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
-                modelId = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[modelId];
-                offset = D_800D1C04[modelId];
+                pathIndex = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[pathIndex];
+                offset = D_800D1C04[pathIndex];
                 path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
@@ -514,9 +514,9 @@ void func_800A46E8(JetBuffer* db) {
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
-                modelId = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[modelId];
-                offset = D_800D1C04[modelId];
+                pathIndex = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[pathIndex];
+                offset = D_800D1C04[pathIndex];
                 path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
@@ -613,9 +613,9 @@ void func_800A46E8(JetBuffer* db) {
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
-                modelId = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[modelId];
-                offset = D_800D1C04[modelId];
+                pathIndex = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[pathIndex];
+                offset = D_800D1C04[pathIndex];
                 path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
@@ -655,9 +655,9 @@ void func_800A46E8(JetBuffer* db) {
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
-                modelId = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[modelId];
-                offset = D_800D1C04[modelId];
+                pathIndex = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[pathIndex];
+                offset = D_800D1C04[pathIndex];
                 path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
@@ -691,18 +691,18 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk50[14] == 1) {
                 st->unk50[14] = 0;
             }
-            if (st->unkC == 0) {
-                goto release;
-            }
-            func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
-            if (st->hit == 0) {
-                break;
-            }
-            if (st->unk50[10] != 5 || D_800A897C < 0x4015) {
-                func_800A6B08(obj);
-            }
-            if (st->unk50[10] == 5) {
-                st->unk50[14] = 1;
+            if (st->unkC != 0) {
+                func_800A3C04(st->unk28, obj->unkCC, &obj->unk0, 0);
+                if (st->hit != 0) {
+                    if (st->unk50[10] != 5 || D_800A897C < 0x4015) {
+                        func_800A6B08(obj);
+                    }
+                    if (st->unk50[10] == 5) {
+                        st->unk50[14] = 1;
+                    }
+                }
+            } else {
+                JetObjectFree(obj);
             }
             break;
         case 2:
@@ -715,9 +715,9 @@ void func_800A46E8(JetBuffer* db) {
                 if (sound != 0) {
                     func_800A29AC(sound);
                 }
-                modelId = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[modelId];
-                offset = D_800D1C04[modelId];
+                pathIndex = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[pathIndex];
+                offset = D_800D1C04[pathIndex];
                 path = (SVECTOR*)(D_800D1C00 + offset);
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
@@ -783,9 +783,9 @@ void func_800A46E8(JetBuffer* db) {
                 s32 pathLen;
                 s32 offset;
 
-                modelId = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[modelId];
-                offset = D_800D1C04[modelId];
+                pathIndex = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[pathIndex];
+                offset = D_800D1C04[pathIndex];
                 path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
@@ -824,13 +824,7 @@ void func_800A46E8(JetBuffer* db) {
             for (j = 0; j < st->unk50[3]; j++) {
                 func_800A4650(0x3446, -0x2710, 0x20CB, 0xC, 0x2A);
             }
-            if (obj->unkD8 != -1) {
-                D_800EE42C--;
-                JetNodeFree(obj->unkD4);
-                func_800A442C(obj->unkD8);
-                obj->unkD8 = -1;
-                obj->unkDA = 0;
-            }
+            JetObjectFree(obj);
             // falls through into the debris behaviour below
         case 12:
             if (st->unk10 == 1) {
@@ -862,9 +856,9 @@ void func_800A46E8(JetBuffer* db) {
                 s32 pathLen;
                 s32 offset;
 
-                modelId = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[modelId];
-                offset = D_800D1C04[modelId];
+                pathIndex = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[pathIndex];
+                offset = D_800D1C04[pathIndex];
                 path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
@@ -930,9 +924,9 @@ void func_800A46E8(JetBuffer* db) {
                 s32 offset;
 
                 func_800A29AC(0xA);
-                modelId = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[modelId];
-                offset = D_800D1C04[modelId];
+                pathIndex = st->unk18 & 0xFF;
+                pathLen = D_800D1C08[pathIndex];
+                offset = D_800D1C04[pathIndex];
                 path = (SVECTOR*)(D_800D1C00 + offset);
                 obj->unkCC = path;
                 obj->unkC8 = pathLen;
@@ -979,11 +973,12 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
-            if (st->unkC == 0) {
-                goto release;
-            }
-            if (st->hit != 0) {
-                func_800A6B08(obj);
+            if (st->unkC != 0) {
+                if (st->hit != 0) {
+                    func_800A6B08(obj);
+                }
+            } else {
+                JetObjectFree(obj);
             }
             break;
         case 15:
@@ -1179,23 +1174,17 @@ void func_800A46E8(JetBuffer* db) {
             addPrim(&db->ot2[0], fade);
             fade++;
             db->prims.g4Cursor = fade;
-            flash = db->prims.ft4Cursor;
-            setRGB0(flash, 0, 0, 0);
-            setXY4(flash, 0, 0, 0, 0, 0, 0, 0, 0);
-            flash->tpage = D_800AB894;
-            flash->clut = D_800A8A68;
-            SetSemiTrans(flash, 0);
-            addPrim(&db->ot2[1], flash);
-            flash++;
-            db->prims.ft4Cursor = flash;
+            tpagePrim = db->prims.ft4Cursor;
+            setRGB0(tpagePrim, 0, 0, 0);
+            setXY4(tpagePrim, 0, 0, 0, 0, 0, 0, 0, 0);
+            tpagePrim->tpage = D_800AB894;
+            tpagePrim->clut = D_800A8A68;
+            SetSemiTrans(tpagePrim, 0);
+            addPrim(&db->ot2[1], tpagePrim);
+            tpagePrim++;
+            db->prims.ft4Cursor = tpagePrim;
             if (st->unk14 >= 0x7E) {
-                if (obj->unkD8 != -1) {
-                    D_800EE42C--;
-                    JetNodeFree(obj->unkD4);
-                    func_800A442C(obj->unkD8);
-                    obj->unkD8 = -1;
-                    obj->unkDA = 0;
-                }
+                JetObjectFree(obj);
                 D_800A897C = 0x4000;
             }
             break;
@@ -1219,23 +1208,17 @@ void func_800A46E8(JetBuffer* db) {
             addPrim(&db->ot2[0], fade);
             fade++;
             db->prims.g4Cursor = fade;
-            flash = db->prims.ft4Cursor;
-            setRGB0(flash, 0, 0, 0);
-            setXY4(flash, 0, 0, 0, 0, 0, 0, 0, 0);
-            flash->tpage = D_800AB894;
-            flash->clut = D_800A8A68;
-            SetSemiTrans(flash, 0);
-            addPrim(&db->ot2[1], flash);
-            flash++;
-            db->prims.ft4Cursor = flash;
+            tpagePrim = db->prims.ft4Cursor;
+            setRGB0(tpagePrim, 0, 0, 0);
+            setXY4(tpagePrim, 0, 0, 0, 0, 0, 0, 0, 0);
+            tpagePrim->tpage = D_800AB894;
+            tpagePrim->clut = D_800A8A68;
+            SetSemiTrans(tpagePrim, 0);
+            addPrim(&db->ot2[1], tpagePrim);
+            tpagePrim++;
+            db->prims.ft4Cursor = tpagePrim;
             if (st->unk14 >= 0x80) {
-                if (obj->unkD8 != -1) {
-                    D_800EE42C--;
-                    JetNodeFree(obj->unkD4);
-                    func_800A442C(obj->unkD8);
-                    obj->unkD8 = -1;
-                    obj->unkDA = 0;
-                }
+                JetObjectFree(obj);
                 D_800A897C = 0x4000;
                 D_800E25F4 = 0;
                 D_800E2600 = 1;
@@ -1260,7 +1243,6 @@ void func_800A46E8(JetBuffer* db) {
                     func_800A4650(x, y, z, 0xFF, 0x1E);
                 }
             }
-        release:
             JetObjectFree(obj);
             break;
         default:
