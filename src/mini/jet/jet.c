@@ -3,30 +3,134 @@
 #include "jet_private.h"
 #include <libc.h>
 
-const RECT D_800A0000 = {0, 0, 320, 200};
+// Argument block for the GTE renderers in jet_gte.s.
+typedef struct {
+    /* 0x0 */ JetTriangle* tris;
+    /* 0x4 */ POLY_G3* prim;
+    /* 0x8 */ OT_TYPE* ot;
+    /* 0xC */ JetModel* model;
+} Unk800A8604; // size: 0x10
+
+// A doubly-linked draw-list entry, parallel to the array it orders. Both
+// links are indices into that array, with 0xFFFF for the ends.
+typedef struct {
+    /* 0x0 */ u16 prev;
+    /* 0x2 */ u16 next;
+} JetListLink; // size: 0x4
+
+extern u8 D_800A8928;
+extern s32 D_800A8A84;
+extern void* D_800A891C;
+extern void* D_800A8920;
+extern s32 D_800A894C;
+extern s16 D_800A8960;
+extern s16 D_800A896C;
+extern s16 D_800A8974;
+extern s16 D_800A8980;
+extern SVECTOR* D_800A8988;
+extern s32 D_800A89D0; // fog near
+extern s32 D_800A89D4; // fog far
+extern u16 g_JetTrackListHead;
+extern s32 D_800A8958;
+extern u_long D_800A89E4; // loaded TIM address table
+extern u16 g_JetTriangleListHead;
+extern s32 D_800A8A6C; // pad direction code, 1..9 keypad layout
+extern s32 D_800A8A7C;
+extern s32 D_800A8A80; // frames R1 has been held
+extern JetNode* D_800A8A74[1];
+extern s32* D_800A8CC0;
+extern u32 D_800A8CC8;
+extern u8 D_800D16DC;
+extern void* D_800D16D4;
+extern s32 D_800D1724;
+extern u32 D_800D172C;
+extern u8 D_800D1960;
+extern u16* D_800D196C;
+extern void* D_800D1A38;
+extern void* D_800D1A3C;
+extern MATRIX* g_JetViewMatrix;
+extern MATRIX* g_JetWorldMatrix;
+extern u_long D_800D1BD4;
+extern void* D_800D1BDC;
+extern void* D_800D1BE0;
+extern void* D_800D1BF0;
+extern void* D_800D1BF4;
+extern void* D_800D1BF8;
+extern u16 D_800D1C50;
+extern SVECTOR* g_JetTrackLeft;
+extern u16* D_800D1C60;
+extern u16 g_JetTriangleListCount;
+extern u16 D_800D1C80;
+extern u16 D_800D9930;
+extern DR_MODE D_800D9934;
+extern JetListLink g_JetTrackLinks[9000];
+extern u8 D_800E25F8;
+extern s32 D_800E25FC;
+extern s32* D_800E2604;
+extern JetListLink g_JetTriangleLinks[12000];
+extern u16* D_800EE188;
+extern SVECTOR* g_JetTrackRight;
+extern MATRIX g_JetCameraRot;
+extern SVECTOR* g_JetTrackRot;
+extern u16* D_800EE428;
+extern void* D_80110BB8;
+void* JetDrawModelTris(Unk800A8604* arg0);
+void JetProject3Points(SVECTOR* arg0, u_long* arg1);
+void JetProject6Points(SVECTOR* arg0, u_long* arg1);
+void* JetDrawModelTrisUI(Unk800A8604* arg0);
+POLY_G3* JetDrawTriangle(JetTriangle* arg0, POLY_G3* arg1, OT_TYPE* arg2, JetTriangle* arg3);
+POLY_FT4* JetDrawTrackQuad(SVECTOR* arg0, POLY_FT4* arg1, OT_TYPE* arg2, SVECTOR* arg3);
+
+static void JetDrawEnergyGauge();
+static void JetDrawNumber(s32 value, s32 x, s32 y, s16 padWithZero, u16 v);
+static void JetDrawScorePopup(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4);
+static void JetDrawSprite(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans);
+static void JetDrawTrack(void);
+static void JetDrawTriangleList(void);
+static void JetSetWorldMatrix();
+static void func_800A2058();
+static void func_800A2214();
+static void func_800A2518(void);
+static void func_800A27F0(u_long* addr);
+static void func_800A2860(void);
+static void func_800A2B78(void);
+static void func_800A2BE0(void);
+static void func_800A2C50(void);
+static void func_800A2DE4(s32 arg0, s32 arg1);
+static void func_800A2E38();
+static void func_800A334C(void);
+static void func_800A35DC(s32 arg0);
+static void func_800A372C(s32 arg0);
+static void func_800A385C(u16 arg0);
+static void func_800A38D4(u16 arg0);
+static void func_800A3980(u16 arg0);
+static void func_800A3A20(u16 arg0);
+static void func_800A2420(void);
+
+static const RECT D_800A0000 = {0, 0, 320, 200};
 
 // .data in ROM order, the sector and size pairs feeding func_800A2420's loads.
-s32 D_800A8310 = 0x9D8;
-u32 D_800A8314 = 0x28;
-s32 D_800A8318 = 0x9D9;
-u32 D_800A831C = 0x4DE8;
-s32 D_800A8320 = 0x9E3;
-u32 D_800A8324 = 0x44;
-s32 D_800A8328 = 0x9E4;
-u32 D_800A832C = 0xA7958;
-s32 D_800A8330 = 0x7F;
-s32 D_800A8334 = 0x7F;
-s32 D_800A8338 = 0;
-s32 D_800A833C = 0;
-MATRIX D_800A8340 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
-MATRIX D_800A8360 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
-MATRIX D_800A8380 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
-SVECTOR D_800A83A0 = {0, 0, 0, 0}; // world rotation
-VECTOR g_JetCameraPos = {0, 0, 0, 0};
+static s32 D_800A8310 = 0x9D8;
+static u32 D_800A8314 = 0x28;
+static s32 D_800A8318 = 0x9D9;
+static u32 D_800A831C = 0x4DE8;
+static s32 D_800A8320 = 0x9E3;
+static u32 D_800A8324 = 0x44;
+static s32 D_800A8328 = 0x9E4;
+static u32 D_800A832C = 0xA7958;
+static s32 D_800A8330 = 0x7F;
+static s32 D_800A8334 = 0x7F;
+static s32 D_800A8338 = 0;
+static s32 D_800A833C = 0;
+static MATRIX D_800A8340 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+static MATRIX D_800A8360 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+static MATRIX D_800A8380 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+static SVECTOR D_800A83A0 = {0, 0, 0, 0}; // world rotation
+static VECTOR g_JetCameraPos = {0, 0, 0, 0};
 VECTOR D_800A83B8 = {0, 0, 0, 0};
-VECTOR D_800A83C8 = {0, 0, 0, 0};
-VECTOR D_800A83D8 = {0, 0, 0, 0};
-s32 D_800A83E8[2] = {0, 0};
+static VECTOR D_800A83C8 = {0, 0, 0, 0};
+static VECTOR D_800A83D8 = {0, 0, 0, 0};
+static s32 D_800A83E8[2] = {0, 0};
 
 u16 MINI_Jet(void) {
     volatile s32 dummy;
@@ -272,7 +376,7 @@ void func_800A0D78(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, Unk800A4
 }
 
 // Load a node's matrix into the GTE and draw its model's triangles.
-void JetDrawNodeUI(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, s32 arg4) {
+static void JetDrawNodeUI(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, s32 arg4) {
     Unk800A8604 args;
     MATRIX** world;
     MATRIX* m;
@@ -301,7 +405,7 @@ void JetDrawNodeUI(JetBuffer* db, JetNode* node, s16 otIndex, s32 arg3, s32 arg4
 }
 
 // Draw every background triangle on the draw list, front to back.
-void JetDrawTriangleList(void) {
+static void JetDrawTriangleList(void) {
     JetListLink* list;
     JetTriangle* tris;
     u16 triId;
@@ -321,7 +425,7 @@ void JetDrawTriangleList(void) {
 }
 
 // Draw every track element on the draw list, front to back.
-void JetDrawTrack(void) {
+static void JetDrawTrack(void) {
     JetListLink* list;
     SVECTOR* left;
     SVECTOR* right;
@@ -344,7 +448,7 @@ loop:
 }
 
 // Build the world matrix from the camera rotation and the view position.
-void JetSetWorldMatrix(void) {
+static void JetSetWorldMatrix(void) {
     MATRIX** view;
     MATRIX** world;
     MATRIX* cam;
@@ -481,7 +585,7 @@ void JetTrackSample(u32 at, s32 lift, VECTOR* pos, SVECTOR* rot) {
     rot->vz = rotCur->vz + dz;
 }
 
-void JetDrawEnergyGauge(void) {
+static void JetDrawEnergyGauge(void) {
     JetBuffer** db;
     POLY_G4* poly;
     s16 power;
@@ -503,7 +607,7 @@ void JetDrawEnergyGauge(void) {
 }
 
 // Spin and draw the score model, alternating it with the title every so often.
-void JetDrawScorePopup(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) {
+static void JetDrawScorePopup(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) {
     JetNode* node;
     u8* alternate;
     s16* counter;
@@ -539,7 +643,7 @@ void JetDrawScorePopup(JetBuffer* arg0, s16 arg1, s32 arg2, s32 arg3, s32 arg4) 
     }
 }
 
-void JetDrawNumber(s32 value, s32 x, s32 y, s16 padWithZero, u16 v) {
+static void JetDrawNumber(s32 value, s32 x, s32 y, s16 padWithZero, u16 v) {
     POLY_FT4* poly;
     JetBuffer* db;
     s32 digit;
@@ -587,7 +691,7 @@ void JetDrawNumber(s32 value, s32 x, s32 y, s16 padWithZero, u16 v) {
 }
 
 // Draw one sprite from the HUD sprite table.
-void JetDrawSprite(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans) {
+static void JetDrawSprite(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, u8 vh, u8 semiTrans) {
     JetBuffer** db;
     POLY_FT4* poly;
 
@@ -605,7 +709,7 @@ void JetDrawSprite(s16 spriteId, s16 x, s16 y, s16 w, s16 h, u8 u, u8 v, u8 uw, 
 }
 
 // Queue two blank textured quads, one at each end of the background OT.
-void func_800A2058(void) {
+static void func_800A2058(void) {
     JetBuffer** db;
     POLY_FT4* poly;
 
@@ -631,7 +735,7 @@ void func_800A2058(void) {
 }
 
 // Point every matrix and vector at scratchpad, then build the world.
-void func_800A2214(void) {
+static void func_800A2214(void) {
     volatile s32* state;
     s32 i;
 
@@ -688,7 +792,7 @@ void func_800A2214(void) {
     g_JetPopupTimer = 0;
 }
 
-void func_800A2420(void) {
+static void func_800A2420(void) {
     RECT unused;
 
     unused = D_800A0000;
@@ -711,7 +815,7 @@ void func_800A2420(void) {
 }
 
 // Upload the nine loaded TIMs and build the sprite tpage/clut tables.
-void func_800A2518(void) {
+static void func_800A2518(void) {
     TIM_IMAGE timimg;
     u_long** tims;
     s32 i;
@@ -754,7 +858,7 @@ void func_800A2518(void) {
     g_JetSpriteClut[11] = GetClut(0x60, 0x1E0);
 }
 
-void func_800A27F0(u_long* addr) {
+static void func_800A27F0(u_long* addr) {
     TIM_IMAGE timimg;
 
     OpenTIM(addr);
@@ -769,7 +873,7 @@ void func_800A27F0(u_long* addr) {
     }
 }
 
-void func_800A2860(void) {
+static void func_800A2860(void) {
     g_AkaoCmd.opcode = 0x10;
     g_AkaoCmd.params[0] = D_800D1BD4;
     AkaoExec();
@@ -830,7 +934,7 @@ void func_800A29AC(s16 arg0) {
     }
 }
 
-void func_800A2AA0(s32 arg0) {
+static void func_800A2AA0(s32 arg0) {
     s32* lastParam;
     s32 param;
 
@@ -866,7 +970,7 @@ void func_800A2AA0(s32 arg0) {
     }
 }
 
-void func_800A2B78(void) {
+static void func_800A2B78(void) {
     g_AkaoCmd.opcode = 0xA2;
     g_AkaoCmd.params[0] = D_800A8338;
     AkaoExec();
@@ -875,7 +979,7 @@ void func_800A2B78(void) {
     AkaoExec();
 }
 
-void func_800A2BE0(void) {
+static void func_800A2BE0(void) {
     D_800A83C8.vy = -0x1B76;
     D_800A83C8.vx = 0;
     D_800A83C8.vz = 0xC8;
@@ -886,7 +990,7 @@ void func_800A2BE0(void) {
 }
 
 // Advance the camera along its path and rebuild the view matrices.
-void func_800A2C50(void) {
+static void func_800A2C50(void) {
     VECTOR pos;
     SVECTOR rot;
     SVECTOR camRot;
@@ -929,7 +1033,7 @@ void func_800A2C50(void) {
     CompMatrix(&D_800A8380, &g_JetCameraRot, &g_JetCameraRot);
 }
 
-void func_800A2DE4(s32 arg0, s32 arg1) {
+static void func_800A2DE4(s32 arg0, s32 arg1) {
     s32 offset;
     u8* base;
 
@@ -939,10 +1043,10 @@ void func_800A2DE4(s32 arg0, s32 arg1) {
     D_800D1724 = *D_800E2604;
 }
 
-void func_800A2E30(void) {}
+static void func_800A2E30(void) {}
 
 // Read the pad and drive the cursor, the camera tweaks and the pause toggle.
-void func_800A2E38(void) {
+static void func_800A2E38(void) {
     u32 pad;
     s32* dir;
     s16* cursorX;
@@ -1122,7 +1226,7 @@ void func_800A2E38(void) {
 }
 
 // Reset both draw lists and the object streams for a new run.
-void func_800A334C(void) {
+static void func_800A334C(void) {
     JetListLink* list;
     s32 i;
 
@@ -1148,7 +1252,7 @@ void func_800A334C(void) {
 }
 
 // Step the track streams forward, spawning whatever each segment lists.
-void func_800A3414(s32 advance) {
+static void func_800A3414(s32 advance) {
     u32* pos;
     s32* segment;
     u32 prev;
@@ -1218,7 +1322,7 @@ void func_800A3414(s32 advance) {
     }
 }
 
-void func_800A35DC(s32 advance) {
+static void func_800A35DC(s32 advance) {
     u32* pos;
     s32* segment;
     u32 prev;
@@ -1259,7 +1363,7 @@ void func_800A35DC(s32 advance) {
     }
 }
 
-void func_800A372C(s32 advance) {
+static void func_800A372C(s32 advance) {
     u32 i;
     u16** tri;
     u16** track;
@@ -1292,7 +1396,7 @@ void func_800A372C(s32 advance) {
     }
 }
 
-void func_800A385C(u16 arg0) {
+static void func_800A385C(u16 arg0) {
     JetListLink* node;
     u16* pCount;
     u16* pTail;
@@ -1318,7 +1422,7 @@ void func_800A385C(u16 arg0) {
     }
 }
 
-void func_800A38D4(u16 arg0) {
+static void func_800A38D4(u16 arg0) {
     JetListLink* list;
     JetListLink* node;
     u16* pCount;
@@ -1350,7 +1454,7 @@ void func_800A38D4(u16 arg0) {
     *pCount = *pCount - 1;
 }
 
-void func_800A3980(u16 arg0) {
+static void func_800A3980(u16 arg0) {
     u16* pCount;
     u16 count;
 
@@ -1387,7 +1491,7 @@ void func_800A3980(u16 arg0) {
     }
 }
 
-void func_800A3A20(u16 arg0) {
+static void func_800A3A20(u16 arg0) {
     JetListLink* list;
     JetListLink* node;
     u16* pCount;

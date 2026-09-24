@@ -2,6 +2,19 @@
 
 #include "jet_private.h"
 
+extern s32 g_JetTriangleCursor;
+extern u32 g_JetModelCount;
+extern JetTriangle* g_JetTriangles;
+extern JetModel g_JetModelPool[];
+extern s32 g_JetQuadCursor;
+extern JetQuad* g_JetQuads;
+extern JetModelInfo* g_JetModelInfoBase;
+extern JetQuad* g_JetQuadsBase;
+
+static JetModel* JetModelAlloc(void);
+static JetQuad* JetQuadsAlloc(s32 count);
+static JetTriangle* JetTrianglesAlloc(s32 count);
+
 void JetModelsReset(void) {
     g_JetTriangleCursor = 0;
     g_JetQuadCursor = 0;
@@ -33,7 +46,7 @@ JetModel* JetModelBuild(s32 infoIndex) {
     return model;
 }
 
-JetModel* JetModelAlloc(void) {
+static JetModel* JetModelAlloc(void) {
     u32* counter;
     JetModel* base;
     s32 index;
@@ -45,7 +58,7 @@ JetModel* JetModelAlloc(void) {
     return &base[index];
 }
 
-JetTriangle* JetTrianglesAlloc(s32 count) {
+static JetTriangle* JetTrianglesAlloc(s32 count) {
     s32* cursor;
     JetTriangle* base;
     s32 index;
@@ -57,7 +70,7 @@ JetTriangle* JetTrianglesAlloc(s32 count) {
     return &base[index];
 }
 
-JetQuad* JetQuadsAlloc(s32 count) {
+static JetQuad* JetQuadsAlloc(s32 count) {
     s32* cursor;
     JetQuad* base;
     s32 index;

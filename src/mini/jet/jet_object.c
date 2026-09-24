@@ -3,7 +3,39 @@
 #include "jet_private.h"
 #include <libc.h>
 
-const u8 D_800A0008 = 0;
+// One scheduled object spawn, read from xbin stream 0xE.
+typedef struct {
+    /* 0x00 */ s16 unk0;
+    /* 0x02 */ s16 : 16;
+    /* 0x04 */ s16 unk4;
+    /* 0x06 */ s16 : 16;
+    /* 0x08 */ s32 unk8;
+    /* 0x0C */ s32 unkC;
+    /* 0x10 */ s32 unk10[0x14];
+} Unk800D1C0C; // size: 0x60
+
+extern SVECTOR* D_800A8954;
+extern s32 D_800A8984;
+extern s32 g_JetNextSpawnSegment;
+extern s32 g_JetSpawnIndex;
+extern u16 D_800D1970[100];
+extern u8* D_800D1C00;
+extern s32* D_800D1C04;
+extern s32* D_800D1C08;
+extern Unk800D1C0C* g_JetSpawns;
+extern u8* g_JetSpawnCounts;
+extern Unk800A4390 g_JetSpawnTemplate;
+extern Unk800A4390 D_800D1DC0[0x64];
+extern u16 D_800D9940;
+extern s16 D_800EE42C;
+
+static s16 func_800A4400(void);
+static void func_800A442C(s16 arg0);
+static void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 type, s16 arg4);
+static void func_800A6B08(Unk800A4390* arg0);
+static void func_800A6BD8(Unk800A4390* arg0);
+
+const u8 D_800A0008 = 0; // the rotation order the object matrices use
 
 void func_800A3AAC(void) {
     Unk800A4390* obj;
@@ -29,7 +61,7 @@ void func_800A3AAC(void) {
     D_800EE42C = 0;
 }
 
-void func_800A3B58(u8 pathIndex, u8 mode) {
+static void func_800A3B58(u8 pathIndex, u8 mode) {
     s32* lengths;
     s32* offsets;
     s32 offset;
@@ -51,7 +83,7 @@ void func_800A3B58(u8 pathIndex, u8 mode) {
 }
 
 // Sample a path at a 16.16 position, mirroring y and z when flag is zero.
-void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
+static void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
     SVECTOR seg[2];
     VECTOR delta;
     s32 idx;
@@ -92,7 +124,7 @@ void func_800A3C04(u32 pos, SVECTOR* path, VECTOR* out, u8 flag) {
 }
 
 // Draw the aiming cursor sprite.
-void func_800A3D50(JetBuffer* arg0) {
+static void func_800A3D50(JetBuffer* arg0) {
     POLY_FT4* poly;
 
     poly = arg0->prims.ft4Cursor;
@@ -109,7 +141,7 @@ void func_800A3D50(JetBuffer* arg0) {
 }
 
 // Draw the two laser beams, from each gun muzzle to the aiming cursor.
-void func_800A3E58(void) {
+static void func_800A3E58(void) {
     JetBuffer** db;
     POLY_FT4* poly;
     u8* scroll;
@@ -147,7 +179,7 @@ void func_800A3E58(void) {
 }
 
 // Allocate an object and its scene node, then initialise its six bounding box face centres.
-s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
+static s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
     s16* count;
     Unk800A4390* obj;
     Unk800A4390* pool;
@@ -201,7 +233,7 @@ s16 func_800A40F4(Unk800A4390* src, s16 parentIndex) {
     return index;
 }
 
-void func_800A4390(Unk800A4390* arg0) {
+static void func_800A4390(Unk800A4390* arg0) {
     s16* count;
 
     if (arg0->unkD8 != -1) {
@@ -214,7 +246,7 @@ void func_800A4390(Unk800A4390* arg0) {
     }
 }
 
-s16 func_800A4400(void) {
+static s16 func_800A4400(void) {
     u16* head;
     s16 index;
 
@@ -225,7 +257,7 @@ s16 func_800A4400(void) {
     return index;
 }
 
-void func_800A442C(s16 arg0) {
+static void func_800A442C(s16 arg0) {
     u16* head;
     u16* slot;
 
@@ -236,7 +268,7 @@ void func_800A442C(s16 arg0) {
 }
 
 // Spawn the objects scheduled for every track segment reached this frame.
-void func_800A4458(void) {
+static void func_800A4458(void) {
     Unk800D1C0C* spawns;
     u8* counts;
     u8* count;
@@ -263,7 +295,7 @@ void func_800A4458(void) {
     g_JetNextSpawnSegment = g_JetTrackSegment;
 }
 
-void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 type, s16 arg4) {
+static void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 type, s16 arg4) {
     g_JetSpawnTemplate.unk0.vx = arg0;
     g_JetSpawnTemplate.unk0.vy = arg1;
     g_JetSpawnTemplate.unk0.vz = arg2;
@@ -1270,7 +1302,7 @@ void func_800A46E8(JetBuffer* db) {
     }
 }
 
-void func_800A6B08(Unk800A4390* arg0) {
+static void func_800A6B08(Unk800A4390* arg0) {
     Unk800D1CAC* state = &arg0->unk28;
     u8 amount;
     s32 x;
@@ -1293,7 +1325,7 @@ void func_800A6B08(Unk800A4390* arg0) {
 }
 
 // Award the score for a hit object and scatter its debris.
-void func_800A6BD8(Unk800A4390* obj) {
+static void func_800A6BD8(Unk800A4390* obj) {
     Unk800D1CAC* st = &obj->unk28;
     s32* score;
     s32* frame;

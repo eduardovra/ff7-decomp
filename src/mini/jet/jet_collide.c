@@ -2,6 +2,19 @@
 
 #include "jet_private.h"
 
+extern s32 g_JetLeftPlaneNormalX;
+extern s32 g_JetLeftPlaneNormalY;
+extern s32 g_JetLeftPlaneNormalZ;
+extern s32 g_JetRightPlaneNormalX;
+extern s32 g_JetRightPlaneNormalY;
+extern s32 g_JetRightPlaneNormalZ;
+extern s32 D_800A8950;
+extern s32 D_800A8968;
+extern s32 g_JetLeftPlaneDistance;
+extern s32 g_JetRightPlaneDistance;
+extern s32 g_JetLeftNormalLength;
+extern s32 g_JetRightNormalLength;
+
 // The four view frustum corner rays at the projection distance, screen order.
 const VECTOR D_800A0410 = {-160, 120, 256, 0};  // bottom left
 const VECTOR D_800A0420 = {160, 120, 256, 0};   // bottom right
@@ -102,7 +115,7 @@ s32 JetVectorInsidePlanes(VECTOR* point) {
     return leftOk & rightOk;
 }
 
-s32 JetSVectorInsidePlanes(SVECTOR* point) {
+static s32 JetSVectorInsidePlanes(SVECTOR* point) {
     s32 hsLeft;
     s32 rightOk;
     s32 leftOk;
@@ -139,7 +152,7 @@ s32 JetSVectorInsidePlanes(SVECTOR* point) {
     return leftOk & rightOk;
 }
 
-s32 JetLeftPlaneHalfSpace(s32 x, s32 y, s32 z) {
+static s32 JetLeftPlaneHalfSpace(s32 x, s32 y, s32 z) {
     s32 nx;
     s32 ny;
     s32 nz;
@@ -151,7 +164,7 @@ s32 JetLeftPlaneHalfSpace(s32 x, s32 y, s32 z) {
     return (nx * (x >> 2)) + (ny * (y >> 2)) + (nz * (z >> 2)) + g_JetLeftPlaneDistance;
 }
 
-s32 JetRightPlaneHalfSpace(s32 x, s32 y, s32 z) {
+static s32 JetRightPlaneHalfSpace(s32 x, s32 y, s32 z) {
     s32 nx;
     s32 ny;
     s32 nz;
@@ -163,7 +176,7 @@ s32 JetRightPlaneHalfSpace(s32 x, s32 y, s32 z) {
     return (nx * (x >> 2)) + (ny * (y >> 2)) + (nz * (z >> 2)) + g_JetRightPlaneDistance;
 }
 
-s32 JetSphereInsidePlanes(VECTOR* center, s16 radius) {
+static s32 JetSphereInsidePlanes(VECTOR* center, s16 radius) {
     s32 leftOk;
     s32 hsLeft;
     s32 rightOk;
@@ -216,7 +229,7 @@ s32 JetSphereInsidePlanes(VECTOR* center, s16 radius) {
     return leftOk & rightOk;
 }
 
-s32 JetSphereInsideLeftPlane(s32 x, s32 y, s32 z, s16 radius) {
+static s32 JetSphereInsideLeftPlane(s32 x, s32 y, s32 z, s16 radius) {
     s32 nx;
     s32 ny;
     s32 nz;
@@ -247,7 +260,7 @@ s32 JetSphereInsideLeftPlane(s32 x, s32 y, s32 z, s16 radius) {
     return ok;
 }
 
-s32 JetSphereInsideRightPlane(s32 x, s32 y, s32 z, s16 radius) {
+static s32 JetSphereInsideRightPlane(s32 x, s32 y, s32 z, s16 radius) {
     s32 nx;
     s32 ny;
     s32 nz;
