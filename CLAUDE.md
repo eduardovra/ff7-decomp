@@ -19,6 +19,8 @@ valid if the sha1 still matches.
   in PCSX-Redux. Use it when sha1 cannot answer the question.
 - `docs/magic-probe.md` -- sampling RAM and frames from a running spell,
   and the residency guard the shared `0x801B0000` load address needs.
+- `docs/jet-probe.md` -- booting straight into the jet minigame and the
+  runtime evidence behind each jet name. Start there to continue naming jet.
 
 ## Verify every change
 

@@ -5,6 +5,44 @@ reverse-engineering in `ff7-coaster` is a source of hypotheses, not of
 names. This file records how to run jet in PCSX-Redux and what each run
 established. Launching and the web API are covered in `magic-probe.md`.
 
+## Where this stands (2026-09-24)
+
+Every jet function is decompiled; this work names what is left from
+runtime evidence. Named so far, each with its evidence below: `g_JetPaused`,
+`g_JetExit`, `g_JetPadDir`, `g_JetAimMode`, `g_JetSpeed`, `g_JetObjects`,
+`g_JetObjectCount`, `JetObjectDamage`, `JetObjectAwardPoints`, `JetPlaySfx`,
+and 10 of the 27 object types in `enum JetObjectType` (`jet_object.c`).
+
+To resume:
+
+1. `tools/redux_launch.py`, then `tools/jet_boot.py` and New Game.
+2. Pause in the first seconds of the ride and save a state
+   (`/api/v1/state/save?name=jet-start`). Redux keeps named states in its
+   own config directory, so an old `jet-start` may already exist; the tour
+   reads the segment it starts from, so any early state works.
+3. `tools/jet_tour.py --state jet-start <types>` captures boxed frames of
+   those types where they spawn, into `build/jet_tour/`. It needs no input.
+
+Open, in rough order of payoff:
+
+- Types 0, 2, 4, 14 (and 14's children 15, 16): seen or scheduled, not yet
+  captured well. Re-run the tour with shorter `--offsets` (e.g. `5,15,30`).
+- 13 shares a case with 7; 3 may be the starfield (not confirmed).
+- Control types 250, 252, 255: invisible; confirm through `g_JetSpeed` or
+  other globals their handlers write, as was done for 254.
+- 100, 201, 203, 230: no spawns seen in a full ride.
+- `unk50` slots: only `[0]` points, `[0xD]` hit points and `[18]` death
+  sound are established, and only for shootable types.
+
+Two traps already hit:
+
+- Do not "hide" an object by clearing `unkDA`. The slot is never freed,
+  `g_JetObjectCount` reaches the cap and spawning stops, which reads as
+  "this type never appears".
+- `g_JetTrackSegment` is the spawn timeline and advances with `g_JetSpeed`,
+  so forcing the speed down freezes spawning too, and forcing it up
+  fast-forwards.
+
 ## Booting straight into jet
 
 Speed Square sits behind the Gold Saucer, and no save is needed to reach it.
@@ -147,13 +185,45 @@ selects the look. It is the only place the type is tested.
 | 5 | 56 | sweeping light beams | path plus constant spin |
 | 5 | 57, 71 | 30-point targets | same handler as the beams |
 | 8, 9 | 67; 68-70 | a speck, then a burst of 20-36 specks | 8 spawns 9 |
-| 10 | 78 | the player's cart (12k px) | same `case` as 5 |
+| 10 | 78 | the player's cart (12k px) | placed by `JetTrackSample` |
 | 17 | 89, 71 | the pumpkin with the cactus | |
 
 Types 0, 2, 4 and 13 were not on screen in the first 1500 frames. 202 and
 203 are spawned only by `JetObjectDamage`/`JetObjectAwardPoints`, so a
 no-input replay never shows them.
 
-Since 5 and 10 share one `case` and the type is tested nowhere else, the
-cart and the beams differ only in their spawn data. Naming 10 "cart" would
-name data, not code.
+`ff7-coaster`'s switch labels agree with every row above; its type 3
+guess, "starfield", is not confirmed (hiding it removes only 10 px of stars,
+most of the starfield survives with every object hidden). It also calls
+`unkC` HP; it is a 0/1 alive flag, and the hit points are `unk50[0xD]`.
+
+These became `enum JetObjectType` in `jet_object.c`: 1, 5, 8, 9 and 10 from
+the frames above plus their handlers, 202 from its spawn sites in
+`JetObjectDamage`/`JetObjectAwardPoints`, 253 from the `g_JetExit` write.
+
+### The tour: types later in the ride, 2026-09-24
+
+The earlier isolation runs hid objects by clearing `unkDA` without freeing
+the slot, so `g_JetObjectCount` climbed to the cap and spawning stopped. That
+is why types 0, 2, 4 and 13 never appeared; those "not seen" results do not
+count. The tour hides nothing.
+
+The spawn table (`g_JetSpawns`, `g_JetSpawnCounts` per segment) gives each
+type's segments. `g_JetTrackSegment` advances with `g_JetSpeed`, so the tour
+holds the speed at `0x40000` until 10 segments before a target, sets
+`0x4000`, and captures 20/60/100/140 frames later with every object's box.
+
+- 254 (`JET_OBJ_STOP`): spawned at segment 1867; `g_JetSpeed` read 0 for
+  ~600 frames even though the tour kept writing `0x40000`, then resumed.
+  Matches its handler: speed 0 until `unk50[0]` vsyncs pass, then
+  `+= unk50[1]` for `unk50[2]` frames.
+- 11 (`JET_OBJ_EXPLOSION`): 9 type-12 objects spawned in one frame as the
+  cart restarted; its handler plays sfx `0x8E`, spawns `unk50[3]` of them
+  and frees itself.
+- 12 (`JET_OBJ_DEBRIS`): the captures show them scattered across the lava
+  scene, moving outward.
+- Seen but not named: 14 (m40, fiery streaks in the lava section; spawns
+  15 and 16), 13 (m45, four thin beams; shares a case with 7, which tilts
+  the object by `unk50[6]` per frame for `unk50[7]` frames), 4 (m43, only
+  at the screen edge; its handler drops it with growing speed until
+  `vy > 0`). 0, 2 were not in view at the capture offsets.

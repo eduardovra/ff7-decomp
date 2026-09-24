@@ -14,6 +14,20 @@ typedef struct {
     /* 0x10 */ s32 unk10[0x14];
 } Unk800D1C0C; // size: 0x60
 
+// Unk800D1CAC.type: the behaviour func_800A46E8 runs; the model sets the look.
+enum JetObjectType {
+    JET_OBJ_FLYER = 1,          // follows its path, turned to face along it
+    JET_OBJ_SPINNER = 5,        // follows its path, spinning at a fixed rate
+    JET_OBJ_FIREWORK = 8,       // rises, slows, bursts into sparks
+    JET_OBJ_FIREWORK_SPARK = 9, // drifts and spins for 100 frames
+    JET_OBJ_CART = 10,          // the player's cart, placed on the track each frame
+    JET_OBJ_EXPLOSION = 11,     // spawns a burst of debris, then frees itself
+    JET_OBJ_DEBRIS = 12,        // flies out and falls for 100 frames
+    JET_OBJ_IMPACT = 202,       // spawned where a shot lands
+    JET_OBJ_RIDE_END = 253,     // fades the screen, then sets g_JetExit
+    JET_OBJ_STOP = 254,         // holds g_JetSpeed at 0 for a while, then accelerates
+};
+
 extern SVECTOR* D_800A8954;
 extern s32 D_800A8984;
 extern s32 g_JetNextSpawnSegment;
@@ -536,7 +550,7 @@ void func_800A46E8(JetBuffer* db) {
                 JetObjectDamage(obj);
             }
             break;
-        case 1:
+        case JET_OBJ_FLYER:
             if (st->unk10 == 1) {
                 SVECTOR* path;
                 s32 pathLen;
@@ -589,7 +603,7 @@ void func_800A46E8(JetBuffer* db) {
                 JetObjectDamage(obj);
             }
             break;
-        case 10:
+        case JET_OBJ_CART:
             if (st->unk10 == 1) {
                 SVECTOR* path;
                 s32 pathLen;
@@ -677,7 +691,7 @@ void func_800A46E8(JetBuffer* db) {
                 JetObjectDamage(obj);
             }
             break;
-        case 5:
+        case JET_OBJ_SPINNER:
             if (st->unk10 == 1) {
                 SVECTOR* path;
                 s32 pathLen;
@@ -851,14 +865,14 @@ void func_800A46E8(JetBuffer* db) {
                 JetObjectFree(obj);
             }
             break;
-        case 11:
+        case JET_OBJ_EXPLOSION:
             JetPlaySfx(0x8E);
             for (j = 0; j < st->unk50[3]; j++) {
-                func_800A4650(0x3446, -0x2710, 0x20CB, 0xC, 0x2A);
+                func_800A4650(0x3446, -0x2710, 0x20CB, JET_OBJ_DEBRIS, 0x2A);
             }
             JetObjectFree(obj);
             // falls through into the debris behaviour below
-        case 12:
+        case JET_OBJ_DEBRIS:
             if (st->unk10 == 1) {
                 st->hit = 0;
                 st->unkC = 100;
@@ -882,7 +896,7 @@ void func_800A46E8(JetBuffer* db) {
                 JetObjectFree(obj);
             }
             break;
-        case 8:
+        case JET_OBJ_FIREWORK:
             if (st->unk10 == 1) {
                 SVECTOR* path;
                 s32 pathLen;
@@ -921,12 +935,12 @@ void func_800A46E8(JetBuffer* db) {
                     x = obj->unk0.vx;
                     y = obj->unk0.vy;
                     z = obj->unk0.vz;
-                    func_800A4650(x, y, z, 9, rand() % 3 + 0x44);
+                    func_800A4650(x, y, z, JET_OBJ_FIREWORK_SPARK, rand() % 3 + 0x44);
                 }
                 st->unkC = 0;
             }
             break;
-        case 9:
+        case JET_OBJ_FIREWORK_SPARK:
             if (st->unk10 == 1) {
                 st->hit = 0;
                 st->unkC = 100;
@@ -1082,14 +1096,14 @@ void func_800A46E8(JetBuffer* db) {
                 x = obj->unk0.vx;
                 y = obj->unk0.vy;
                 z = obj->unk0.vz;
-                func_800A4650(x, y, z, 0xCA, 0x2A);
+                func_800A4650(x, y, z, JET_OBJ_IMPACT, 0x2A);
             }
             st->unkC--;
             if (st->unkC == 0) {
                 JetObjectFree(obj);
             }
             break;
-        case 202:
+        case JET_OBJ_IMPACT:
             if (st->unk10 == 1) {
                 st->hit = 0;
                 st->unkC = 0x32;
@@ -1158,7 +1172,7 @@ void func_800A46E8(JetBuffer* db) {
                 JetObjectFree(obj);
             }
             break;
-        case 254:
+        case JET_OBJ_STOP:
             if (st->unk10 == 1) {
                 st->unk10 = 0;
                 st->unk14 = 0;
@@ -1220,7 +1234,7 @@ void func_800A46E8(JetBuffer* db) {
                 g_JetSpeed = 0x4000;
             }
             break;
-        case 253:
+        case JET_OBJ_RIDE_END:
             if (st->unk10 == 1) {
                 st->unk10 = 0;
                 st->unk14 = 0;
@@ -1320,7 +1334,7 @@ static void JetObjectDamage(Unk800A4390* arg0) {
         x = arg0->unk0.vx;
         y = arg0->unk0.vy;
         z = arg0->unk0.vz;
-        func_800A4650(x, y, z, 0xCA, 0x3F);
+        func_800A4650(x, y, z, JET_OBJ_IMPACT, 0x3F);
     }
 }
 
@@ -1350,7 +1364,7 @@ static void JetObjectAwardPoints(Unk800A4390* obj) {
             x = obj->unk0.vx;
             y = obj->unk0.vy;
             z = obj->unk0.vz;
-            func_800A4650(x, y, z, 0xCA, rand() % 3 + 0x3F);
+            func_800A4650(x, y, z, JET_OBJ_IMPACT, rand() % 3 + 0x3F);
         }
         g_JetPopupModelId = obj->unkD4->modelId;
         points = st->unk50[0];
