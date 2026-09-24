@@ -224,8 +224,38 @@ in source order, which decides what fills the load delay slot.
 the same address formed inside a memory reference goes through the address
 path, which puts the scaled index first (`addu v0,v0,a3`). When the target has
 index-first for a pointer that is then dereferenced several times, the original
-did not build that pointer with `&array[idx]`; `func_800A4458` in `jet.c` still
-hangs on this.
+did not build that pointer with `&array[idx]`. Every C pointer sum (`p + i`,
+`i + p`, `&p[i]`) expands base-first; only integer arithmetic keeps source
+order, so `(T*)(idx * sizeof(T) + (u32)base)` produces index-first. That took
+`func_800A4458` in `jet_object.c` from 60 to 50.
+
+**The loop pass orders hoisted setups, and it will not hoist a user variable
+set after a conditional jump.** The last 50 points of `func_800A4458` were two
+address setups in the preheader: the target materialises the copy destination
+(`g_JetSpawnTemplate+0x78`) before `&g_JetSpawnIndex`. The `-dL`/`-dS`/`-dR`
+dumps show the loop pass emits them in scan order and both schedulers keep it.
+The destination is a compiler temporary made inside the copy loop, hoisted out
+of all three loops. A pointer local to the counter is a user variable, and
+gcc 2.6.3 `loop.c` (`scan_loop`) moves a set only if (1) the reg is used only in
+the set's basic block, (2) it is not a user variable and not used in the exit
+test, or (3) `maybe_never` is clear and the reg is not used before the set.
+`maybe_never` is set by any label or jump and cleared only at a depth-0
+`NOTE_INSN_LOOP_VTOP`, so the inner loop's copied `blez` blocks case 3. Loops
+are scanned inner first and `move_movables` emits in scan order before
+`loop_start`, so a pointer local set anywhere in the segment body lands first,
+and set inside the inner loop it is not hoisted at all.
+
+The fix is to read the counter through an integer cast at every use,
+`*(s32*)(u32)&g_JetSpawnIndex` (a `(u8*)` byte-offset cast works too). The cast
+keeps expand from folding the address into a `mem (symbol_ref)`, so it lives in
+a temporary created at each use -- after the destination -- and case 2 hoists
+it. The same cast through a pointer local does not work: the local is still a
+user variable. All three counter accesses need it. With the counter fixed, the fields read as
+`spawns[index].field` from a value local match too, so the integer-sum pointer
+above is not needed in the final code. Dead ends: an inline helper taking `&g_JetSpawnIndex` (integrate
+substitutes the constant and marks the parameter copy as a user variable), the
+PC port's direct-global form (gcc proves the counter cannot alias the stores
+and stops reloading it), and 70k permuter iterations.
 
 **Declarations must start a block.** gcc 2.6.3 is C89: a declaration after a
 statement is a `parse error`. Any nested `{ }` opens a new block, which is a

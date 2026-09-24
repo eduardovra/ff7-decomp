@@ -178,13 +178,13 @@ extern s32 D_800A897C;
 extern s32 D_800A8968;
 extern s32 D_800A8984;
 extern SVECTOR* D_800A8988;
-extern s32 D_800A898C;
+extern s32 g_JetNextSpawnSegment;
 extern u16 g_JetSpriteTPage[];
 extern s32 D_800A89D0; // fog near
 extern s32 D_800A89D4; // fog far
 extern JetModelInfo* g_JetModelInfo;
 extern u16 g_JetTrackListHead;
-extern s32 D_800A89E0;
+extern s32 g_JetSpawnIndex;
 extern s32 D_800A8958;
 extern u_long D_800A89E4; // loaded TIM address table
 extern u16 D_800A8A68;    // background clut
@@ -213,7 +213,7 @@ extern JetModel g_JetModelPool[];
 extern s32 g_JetScore;
 extern u8 D_800D16DC;
 extern void* D_800D16D4;
-extern s32 D_800D16E0;
+extern s32 g_JetTrackSegment;
 extern JetNode g_JetRootNode;
 extern s32 g_JetQuadCursor;
 extern u8 g_JetBeamScroll;
@@ -244,8 +244,8 @@ extern JetTriangle* g_JetTrianglesBase;
 extern u8* D_800D1C00;
 extern s32* D_800D1C04;
 extern s32* D_800D1C08;
-extern Unk800D1C0C* D_800D1C0C;
-extern u8* D_800D1C10;
+extern Unk800D1C0C* g_JetSpawns;
+extern u8* g_JetSpawnCounts;
 extern JetQuad* g_JetQuadsBase;
 extern u8 g_JetFiring;
 extern u16 D_800D1C50;
@@ -256,7 +256,7 @@ extern u16* D_800D1C60;
 extern u16 g_JetTriangleListCount;
 extern u8 D_800D1C7C;
 extern u16 D_800D1C80;
-extern Unk800A4390 D_800D1C84;
+extern Unk800A4390 g_JetSpawnTemplate;
 extern Unk800A4390 D_800D1DC0[0x64];
 extern u16 D_800D9930;
 extern DR_MODE D_800D9934;

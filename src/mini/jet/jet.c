@@ -47,7 +47,7 @@ u16 MINI_Jet(void) {
     D_800A8A74[0] = JetNodeAlloc(30, 0, 0, 1, &g_JetRootNode, 1200, 50, 3000, 0, 1000, 0);
     for (;;) {
         speed = &D_800A897C;
-        if ((D_800D16E0 * 4) > (D_800D1724 - 0x10) || D_800E2600 == 1) {
+        if ((g_JetTrackSegment * 4) > (D_800D1724 - 0x10) || D_800E2600 == 1) {
             break;
         }
         func_800A2E38();
@@ -668,7 +668,7 @@ void func_800A2214(void) {
     D_800A897C = 0x2710;
     D_800A89D0 = 0x28AA;
     D_800A89D4 = 0x37DC;
-    D_800D16E0 = 0;
+    g_JetTrackSegment = 0;
     D_800D1C54 = 0;
     g_JetScore = 0;
     D_800E25F4 = 0;
@@ -1162,7 +1162,7 @@ void func_800A3414(s32 advance) {
     prev = D_800A8CC8 >> 18;
     next = pos[0] >> 18;
     steps = next - prev;
-    segment = &D_800D16E0;
+    segment = &g_JetTrackSegment;
     segment[0] = segment[0] + steps;
     for (i = 0; i < steps + D_800E25F8; i++) {
         u16** tri;
@@ -1233,7 +1233,7 @@ void func_800A35DC(s32 advance) {
     prev = D_800A8CC8 >> 18;
     next = pos[0] >> 18;
     D_800A894C = next - prev;
-    segment = &D_800D16E0;
+    segment = &g_JetTrackSegment;
     segment[0] = segment[0] + D_800A894C;
     for (i = 0; i < D_800A894C + D_800E25F8; i++) {
         tri = &D_800D1C60;

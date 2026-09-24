@@ -22,8 +22,8 @@ void func_800A3AAC(void) {
     D_800D1C7C = 0;
     g_JetCursorX = 160;
     g_JetCursorY = 120;
-    D_800A898C = 0;
-    D_800A89E0 = 0;
+    g_JetNextSpawnSegment = 0;
+    g_JetSpawnIndex = 0;
     D_800EE42C = 0;
 }
 
@@ -233,61 +233,55 @@ void func_800A442C(s16 arg0) {
     *head = arg0;
 }
 
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/mini/jet/nonmatchings/jet_object", func_800A4458);
-#else
 // Spawn the objects scheduled for every track segment reached this frame.
 void func_800A4458(void) {
     Unk800D1C0C* spawns;
-    Unk800D1C0C* spawn;
-    s32* streamIndex;
     u8* counts;
     u8* count;
     s32 segment;
+    s32 index;
     s32 i;
     s32 j;
 
-    for (segment = D_800A898C; segment < D_800D16E0; segment++) {
-        streamIndex = &D_800A89E0;
-        counts = D_800D1C10;
+    for (segment = g_JetNextSpawnSegment; segment < g_JetTrackSegment; segment++) {
+        counts = g_JetSpawnCounts;
         count = counts + segment;
         for (i = 0; i < *count; i++) {
-            spawns = D_800D1C0C;
-            for (j = 0; j < LEN(D_800D1C84.unk28.unk50); j++) {
-                D_800D1C84.unk28.unk50[j] = spawns[*streamIndex].unk10[j];
+            spawns = g_JetSpawns;
+            for (j = 0; j < LEN(g_JetSpawnTemplate.unk28.unk50); j++) {
+                g_JetSpawnTemplate.unk28.unk50[j] = spawns[*(s32*)(u32)&g_JetSpawnIndex].unk10[j];
             }
-            spawn = &spawns[*streamIndex];
-            D_800D1C84.unk28.unk18 = spawn->unk8;
-            D_800D1C84.unk28.unk1C = spawn->unkC;
-            func_800A45C0(0, 0, 0, spawn->unk0, spawn->unk4);
-            *streamIndex = *streamIndex + 1;
+            index = *(s32*)(u32)&g_JetSpawnIndex;
+            g_JetSpawnTemplate.unk28.unk18 = spawns[index].unk8;
+            g_JetSpawnTemplate.unk28.unk1C = spawns[index].unkC;
+            func_800A45C0(0, 0, 0, spawns[index].unk0, spawns[index].unk4);
+            (*(s32*)(u32)&g_JetSpawnIndex)++;
         }
     }
-    D_800A898C = D_800D16E0;
+    g_JetNextSpawnSegment = g_JetTrackSegment;
 }
-#endif
 
 void func_800A45C0(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
-    D_800D1C84.unk0.vx = arg0;
-    D_800D1C84.unk0.vy = arg1;
-    D_800D1C84.unk0.vz = arg2;
-    D_800D1C84.unk28.unk0 = arg3;
-    D_800D1C84.unk28.unk10 = 1;
-    D_800D1C84.unk28.unk8 = arg4;
-    D_800D1C84.unk28.hit = 0;
-    func_800A40F4(&D_800D1C84, 0);
+    g_JetSpawnTemplate.unk0.vx = arg0;
+    g_JetSpawnTemplate.unk0.vy = arg1;
+    g_JetSpawnTemplate.unk0.vz = arg2;
+    g_JetSpawnTemplate.unk28.unk0 = arg3;
+    g_JetSpawnTemplate.unk28.unk10 = 1;
+    g_JetSpawnTemplate.unk28.unk8 = arg4;
+    g_JetSpawnTemplate.unk28.hit = 0;
+    func_800A40F4(&g_JetSpawnTemplate, 0);
 }
 
 inline void func_800A4650(s16 arg0, s16 arg1, s16 arg2, s16 arg3, s16 arg4) {
-    D_800D1C84.unk0.vx = arg0;
-    D_800D1C84.unk0.vy = arg1;
-    D_800D1C84.unk0.vz = arg2;
-    D_800D1C84.unk28.unk0 = arg3;
-    D_800D1C84.unk28.unk10 = 1;
-    D_800D1C84.unk28.unk8 = arg4;
-    D_800D1C84.unk28.hit = 0;
-    D_800D1C84.unk28.unk50[0xC] = 0;
-    func_800A40F4(&D_800D1C84, 0);
+    g_JetSpawnTemplate.unk0.vx = arg0;
+    g_JetSpawnTemplate.unk0.vy = arg1;
+    g_JetSpawnTemplate.unk0.vz = arg2;
+    g_JetSpawnTemplate.unk28.unk0 = arg3;
+    g_JetSpawnTemplate.unk28.unk10 = 1;
+    g_JetSpawnTemplate.unk28.unk8 = arg4;
+    g_JetSpawnTemplate.unk28.hit = 0;
+    g_JetSpawnTemplate.unk28.unk50[0xC] = 0;
+    func_800A40F4(&g_JetSpawnTemplate, 0);
 }
 
 #ifndef NON_MATCHINGS
@@ -316,7 +310,7 @@ void func_800A46E8(JetBuffer* db) {
     s32 dz;
     s32 step;
     s32* score;
-    s32* frame;
+    s32* segment;
     SVECTOR* path;
     s32 pathLen;
     s32 sound;
@@ -410,11 +404,11 @@ void func_800A46E8(JetBuffer* db) {
             } else {
                 st->unk14++;
             }
-            frame = &D_800D16E0;
-            if (st->unk50[3] < *frame) {
+            segment = &g_JetTrackSegment;
+            if (st->unk50[3] < *segment) {
                 st->unk28 += st->unk1C;
             }
-            if (st->unk50[2] < *frame) {
+            if (st->unk50[2] < *segment) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
@@ -460,7 +454,7 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk28 > st->unk2C) {
                 st->unkC = 0;
             }
-            if (st->unk50[2] < D_800D16E0) {
+            if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
@@ -504,7 +498,7 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk28 > st->unk2C) {
                 st->unkC = 0;
             }
-            if (st->unk50[2] < D_800D16E0) {
+            if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
@@ -551,7 +545,7 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk28 > st->unk2C) {
                 st->unkC = 0;
             }
-            if (st->unk50[2] < D_800D16E0) {
+            if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
@@ -582,11 +576,11 @@ void func_800A46E8(JetBuffer* db) {
                 D_800A8954 = path;
                 func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
             }
-            frame = &D_800D16E0;
-            if (st->unk50[2] < *frame) {
+            segment = &g_JetTrackSegment;
+            if (st->unk50[2] < *segment) {
                 st->unkC = 0;
             }
-            if (st->unk50[3] < *frame) {
+            if (st->unk50[3] < *segment) {
                 st->unk2C += 4;
             }
             if (st->unkC == 0) {
@@ -630,7 +624,7 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk28 > st->unk2C) {
                 st->unkC = 0;
             }
-            if (st->unk50[2] < D_800D16E0) {
+            if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
             obj->unk18.vx += st->unk50[6];
@@ -687,7 +681,7 @@ void func_800A46E8(JetBuffer* db) {
             if (st->unk34 < st->unk30) {
                 st->unkC = 0;
             }
-            if (st->unk50[2] < D_800D16E0) {
+            if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
             if (st->unk28 < st->unk2C) {
@@ -713,7 +707,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unkC = 1;
                 st->hit = 0;
             }
-            if (st->unk50[2] < D_800D16E0) {
+            if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
@@ -743,11 +737,11 @@ void func_800A46E8(JetBuffer* db) {
                 func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
                 st->unk28 = 0;
             }
-            frame = &D_800D16E0;
-            if (st->unk50[2] < *frame) {
+            segment = &g_JetTrackSegment;
+            if (st->unk50[2] < *segment) {
                 st->unkC = 0;
             }
-            if (st->unk50[5] < *frame) {
+            if (st->unk50[5] < *segment) {
                 count = st->unk28;
                 st->unk28 = count + 1;
                 if (count < st->unk50[7]) {
@@ -814,7 +808,7 @@ void func_800A46E8(JetBuffer* db) {
                 D_800A8954 = path;
                 func_800A3C04(0, obj->unkCC, &obj->unk0, 0);
             }
-            if (st->unk50[2] < D_800D16E0) {
+            if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
@@ -909,7 +903,7 @@ void func_800A46E8(JetBuffer* db) {
                 st->unkC = 0;
             }
             obj->unk0.vy += st->unk28;
-            if (st->unk50[2] < D_800D16E0) {
+            if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
             if (st->unkC == 0) {
@@ -1167,9 +1161,9 @@ void func_800A46E8(JetBuffer* db) {
             break;
         case 250:
             if (g_JetScore < st->unk50[0]) {
-                D_800D1C84.unk28.unk50[0] = 0x12C;
-                D_800D1C84.unk28.unk50[1] = 0x190;
-                D_800D1C84.unk28.unk50[2] = 0;
+                g_JetSpawnTemplate.unk28.unk50[0] = 0x12C;
+                g_JetSpawnTemplate.unk28.unk50[1] = 0x190;
+                g_JetSpawnTemplate.unk28.unk50[2] = 0;
                 {
                     s32 x;
                     s32 y;
