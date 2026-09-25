@@ -321,6 +321,42 @@ so `static MATRIX m = {0};` emits 32 zero bytes into `.data` where
 therefore have to carry the initialiser, or the section comes up short and
 the sha1 breaks while every function still scores 0.
 
+## Common bss (`COMM=true`)
+
+Jet's bss came from COMMON symbols: psylink interleaved every file's
+uninitialised non-static globals and put each on a 4-byte boundary, whatever
+its size. C definitions cannot reproduce that order, so the addresses are
+pinned by a table -- splat's `[0x8918, bss]` segment for jet, `common.s` for
+main -- and the C files define the variables as plain `T name;` under
+`COMM=true`. maspsx then keeps them as `.comm`, which the linker resolves to
+the table's definition: the layout stays exact, and the PC build gets real
+typed globals from the same source.
+
+**Known caveat: alignment warnings.** gcc 2.6.3 emits `.comm sym,size` with no
+alignment, so gas assumes the natural one (up to 16), and ld warns wherever
+the table puts a common bigger than 4 bytes on a lesser boundary:
+
+```
+alignment 4 of normal symbol `g_JetLeftPlaneNormal' in .../8918.bss.s.o
+is smaller than 16 used by the common definition in .../jet_collide.c.o
+```
+
+Jet emits 18 of these. They are cosmetic -- the sha1 matches -- and the
+mapping is not at fault: the addresses are the ROM's, every warned symbol is
+used as a real aggregate (`&x`, `x.field`, `x[i]`), and the demanded alignment
+depends only on size. Seven of them sit on 16-byte addresses and still warn
+"alignment 8", because ld judges a symbol through its section, and jet's bss
+starts at `0x800A8918`. Main has none only because its `COMM=true` variables
+are all 4 bytes or smaller; defining one of its large objects in C will
+trigger the same warning.
+
+The fix is `.comm sym,size,4` in maspsx (`maspsx/__init__.py`, the
+`use_comm_section` branch), which models psylink. Tried locally: 0 warnings,
+all overlays still match, maspsx's tests pass. It belongs upstream in
+`mkst/maspsx` behind a flag (e.g. `--comm-alignment 4`), since other projects
+may rely on ld placing their commons, then wired into the `COMM` key in
+`tools/ninja/gen.py`.
+
 ## Toolchain annotation
 
 A `//! PSYQ=3.3 CC1=2.6.3` comment at the top of a file selects the

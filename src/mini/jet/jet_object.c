@@ -1,4 +1,4 @@
-//! PSYQ=3.3 FORCE_MEM=true
+//! PSYQ=3.3 FORCE_MEM=true COMM=true
 
 #include "jet_private.h"
 #include <libc.h>
@@ -17,15 +17,16 @@ enum JetObjectType {
     JET_OBJ_STOP = 254,         // holds g_JetSpeed at 0 for a while, then accelerates
 };
 
-extern SVECTOR* D_800A8954;
-extern s32 D_800A8984;
-extern s32 g_JetNextSpawnSegment;
-extern s32 g_JetSpawnIndex;
-extern u16 g_JetNextFreeObject;
-extern u16 g_JetObjectFreeList[100];
-extern JetObject g_JetSpawnTemplate;
-extern JetObject g_JetObjects[0x64];
-extern s16 g_JetObjectCount;
+SVECTOR* D_800A8954;
+s32 D_800A8984;
+s32 g_JetNextSpawnSegment;
+s32 g_JetSpawnIndex;
+u16 g_JetNextFreeObject;
+u16 g_JetObjectFreeList[100];
+JetObject g_JetSpawnTemplate;
+JetObject g_JetObjects[0x64];
+s16 g_JetObjectCount;
+s16 g_JetPopupPoints;
 
 static s16 JetObjectIndexAlloc(void);
 static void JetObjectIndexFree(s16 index);

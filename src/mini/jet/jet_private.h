@@ -161,7 +161,7 @@ extern s16 g_JetBeam0OriginY;
 extern s16 g_JetBeam1OriginX;
 extern s16 g_JetBeam1OriginY;
 extern s32 g_JetSpeed;
-extern u16 g_JetSpriteTPage[];
+extern u16 g_JetSpriteTPage[12];
 extern JetModelInfo* g_JetModelInfo;
 extern u16 g_JetFadeClut;
 extern s16 g_JetPopupTimer;
@@ -186,7 +186,7 @@ extern u8 g_JetScorePopupAlternate;
 extern u8 g_JetTransitionDrawEnabled;
 extern u8 g_JetExit;
 extern SVECTOR g_JetPopupRot;
-extern u16 g_JetSpriteClut[];
+extern u16 g_JetSpriteClut[12];
 
 void JetPrimCursorsReset(JetPrimBuffer* prims);
 void JetNodeFree(JetNode* node);
