@@ -2,24 +2,20 @@
 
 #include "jet_private.h"
 
-extern s32 g_JetLeftPlaneNormalX;
-extern s32 g_JetLeftPlaneNormalY;
-extern s32 g_JetLeftPlaneNormalZ;
-extern s32 g_JetRightPlaneNormalX;
-extern s32 g_JetRightPlaneNormalY;
-extern s32 g_JetRightPlaneNormalZ;
-extern s32 D_800A8950;
-extern s32 D_800A8968;
+extern VECTOR g_JetLeftPlaneNormal;
+extern VECTOR g_JetRightPlaneNormal;
+extern s32 g_JetLeftPlaneInsideRef;
+extern s32 g_JetRightPlaneInsideRef;
 extern s32 g_JetLeftPlaneDistance;
 extern s32 g_JetRightPlaneDistance;
 extern s32 g_JetLeftNormalLength;
 extern s32 g_JetRightNormalLength;
 
 // The four view frustum corner rays at the projection distance, screen order.
-const VECTOR D_800A0410 = {-160, 120, 256, 0};  // bottom left
-const VECTOR D_800A0420 = {160, 120, 256, 0};   // bottom right
-const VECTOR D_800A0430 = {-160, -120, 256, 0}; // top left
-const VECTOR D_800A0440 = {160, -120, 256, 0};  // top right
+const VECTOR g_JetFrustumBottomLeft = {-160, 120, 256, 0};
+const VECTOR g_JetFrustumBottomRight = {160, 120, 256, 0};
+const VECTOR g_JetFrustumTopLeft = {-160, -120, 256, 0};
+const VECTOR g_JetFrustumTopRight = {160, -120, 256, 0};
 
 // Build the left and right frustum planes from the four corner rays.
 void JetFrustumInit(void) {
@@ -40,12 +36,12 @@ void JetFrustumInit(void) {
     s32 ry;
     s32 rz;
 
-    ln = (VECTOR*)&g_JetLeftPlaneNormalX;
-    rn = (VECTOR*)&g_JetRightPlaneNormalX;
-    blCorner = D_800A0410;
-    brCorner = D_800A0420;
-    tlCorner = D_800A0430;
-    trCorner = D_800A0440;
+    ln = &g_JetLeftPlaneNormal;
+    rn = &g_JetRightPlaneNormal;
+    blCorner = g_JetFrustumBottomLeft;
+    brCorner = g_JetFrustumBottomRight;
+    tlCorner = g_JetFrustumTopLeft;
+    trCorner = g_JetFrustumTopRight;
 
     tl.vx = tlCorner.vx >> 2;
     tl.vy = tlCorner.vy >> 2;
@@ -70,9 +66,9 @@ void JetFrustumInit(void) {
     rz = rn->vz;
     g_JetLeftPlaneDistance = -(lx * (tlCorner.vx >> 2)) - (ly * (tlCorner.vy >> 2)) - (lz * (tlCorner.vz >> 2));
     g_JetRightPlaneDistance = -(rx * (trCorner.vx >> 2)) - (ry * (trCorner.vy >> 2)) - (rz * (trCorner.vz >> 2));
-    D_800A8950 =
+    g_JetLeftPlaneInsideRef =
         (lx * (trCorner.vx >> 2)) + (ly * (trCorner.vy >> 2)) + (lz * (trCorner.vz >> 2)) + g_JetLeftPlaneDistance;
-    D_800A8968 =
+    g_JetRightPlaneInsideRef =
         (rx * (tlCorner.vx >> 2)) + (ry * (tlCorner.vy >> 2)) + (rz * (tlCorner.vz >> 2)) + g_JetRightPlaneDistance;
     g_JetLeftNormalLength = SquareRoot0((lx * lx) + (ly * ly) + (lz * lz));
     g_JetRightNormalLength = SquareRoot0((rn->vx * rn->vx) + (rn->vy * rn->vy) + (rn->vz * rn->vz));
@@ -92,24 +88,24 @@ s32 JetVectorInsidePlanes(VECTOR* point) {
 
     leftOk = 0;
     rightOk = 0;
-    lx = g_JetLeftPlaneNormalX;
-    ly = g_JetLeftPlaneNormalY;
-    lz = g_JetLeftPlaneNormalZ;
+    lx = g_JetLeftPlaneNormal.vx;
+    ly = g_JetLeftPlaneNormal.vy;
+    lz = g_JetLeftPlaneNormal.vz;
     hsLeft = (lx * (point->vx >> 2)) + (ly * (point->vy >> 2)) + (lz * (point->vz >> 2)) + g_JetLeftPlaneDistance;
-    rx = g_JetRightPlaneNormalX;
-    ry = g_JetRightPlaneNormalY;
-    rz = g_JetRightPlaneNormalZ;
+    rx = g_JetRightPlaneNormal.vx;
+    ry = g_JetRightPlaneNormal.vy;
+    rz = g_JetRightPlaneNormal.vz;
     hsRight = (rx * (point->vx >> 2)) + (ry * (point->vy >> 2)) + (rz * (point->vz >> 2)) + g_JetRightPlaneDistance;
-    if (hsLeft > 0 && D_800A8950 > 0) {
+    if (hsLeft > 0 && g_JetLeftPlaneInsideRef > 0) {
         leftOk = 1;
     }
-    if (hsLeft < 0 && D_800A8950 < 0) {
+    if (hsLeft < 0 && g_JetLeftPlaneInsideRef < 0) {
         leftOk = 1;
     }
-    if (hsRight > 0 && D_800A8968 > 0) {
+    if (hsRight > 0 && g_JetRightPlaneInsideRef > 0) {
         rightOk = 1;
     }
-    if (hsRight < 0 && D_800A8968 < 0) {
+    if (hsRight < 0 && g_JetRightPlaneInsideRef < 0) {
         rightOk = 1;
     }
     return leftOk & rightOk;
@@ -129,24 +125,24 @@ static s32 JetSVectorInsidePlanes(SVECTOR* point) {
 
     leftOk = 0;
     rightOk = 0;
-    lx = g_JetLeftPlaneNormalX;
-    ly = g_JetLeftPlaneNormalY;
-    lz = g_JetLeftPlaneNormalZ;
+    lx = g_JetLeftPlaneNormal.vx;
+    ly = g_JetLeftPlaneNormal.vy;
+    lz = g_JetLeftPlaneNormal.vz;
     hsLeft = (lx * (point->vx >> 2)) + (ly * (point->vy >> 2)) + (lz * (point->vz >> 2)) + g_JetLeftPlaneDistance;
-    rx = g_JetRightPlaneNormalX;
-    ry = g_JetRightPlaneNormalY;
-    rz = g_JetRightPlaneNormalZ;
+    rx = g_JetRightPlaneNormal.vx;
+    ry = g_JetRightPlaneNormal.vy;
+    rz = g_JetRightPlaneNormal.vz;
     hsRight = (rx * (point->vx >> 2)) + (ry * (point->vy >> 2)) + (rz * (point->vz >> 2)) + g_JetRightPlaneDistance;
-    if (hsLeft > 0 && D_800A8950 > 0) {
+    if (hsLeft > 0 && g_JetLeftPlaneInsideRef > 0) {
         leftOk = 1;
     }
-    if (hsLeft < 0 && D_800A8950 < 0) {
+    if (hsLeft < 0 && g_JetLeftPlaneInsideRef < 0) {
         leftOk = 1;
     }
-    if (hsRight > 0 && D_800A8968 > 0) {
+    if (hsRight > 0 && g_JetRightPlaneInsideRef > 0) {
         rightOk = 1;
     }
-    if (hsRight < 0 && D_800A8968 < 0) {
+    if (hsRight < 0 && g_JetRightPlaneInsideRef < 0) {
         rightOk = 1;
     }
     return leftOk & rightOk;
@@ -157,9 +153,9 @@ static s32 JetLeftPlaneHalfSpace(s32 x, s32 y, s32 z) {
     s32 ny;
     s32 nz;
 
-    nx = g_JetLeftPlaneNormalX;
-    ny = g_JetLeftPlaneNormalY;
-    nz = g_JetLeftPlaneNormalZ;
+    nx = g_JetLeftPlaneNormal.vx;
+    ny = g_JetLeftPlaneNormal.vy;
+    nz = g_JetLeftPlaneNormal.vz;
 
     return (nx * (x >> 2)) + (ny * (y >> 2)) + (nz * (z >> 2)) + g_JetLeftPlaneDistance;
 }
@@ -169,9 +165,9 @@ static s32 JetRightPlaneHalfSpace(s32 x, s32 y, s32 z) {
     s32 ny;
     s32 nz;
 
-    nx = g_JetRightPlaneNormalX;
-    ny = g_JetRightPlaneNormalY;
-    nz = g_JetRightPlaneNormalZ;
+    nx = g_JetRightPlaneNormal.vx;
+    ny = g_JetRightPlaneNormal.vy;
+    nz = g_JetRightPlaneNormal.vz;
 
     return (nx * (x >> 2)) + (ny * (y >> 2)) + (nz * (z >> 2)) + g_JetRightPlaneDistance;
 }
@@ -192,14 +188,14 @@ static s32 JetSphereInsidePlanes(VECTOR* center, s16 radius) {
 
     leftOk = 0;
     rightOk = 0;
-    lx = g_JetLeftPlaneNormalX;
-    ly = g_JetLeftPlaneNormalY;
-    lz = g_JetLeftPlaneNormalZ;
+    lx = g_JetLeftPlaneNormal.vx;
+    ly = g_JetLeftPlaneNormal.vy;
+    lz = g_JetLeftPlaneNormal.vz;
     hsLeft = (lx * (center->vx >> 2)) + (ly * (center->vy >> 2)) + (lz * (center->vz >> 2)) + g_JetLeftPlaneDistance;
-    if (D_800A8950 > 0 && hsLeft >= 0) {
+    if (g_JetLeftPlaneInsideRef > 0 && hsLeft >= 0) {
         leftOk = 1;
     }
-    if (D_800A8950 < 0 && hsLeft <= 0) {
+    if (g_JetLeftPlaneInsideRef < 0 && hsLeft <= 0) {
         leftOk = 1;
     }
     if (leftOk == 0) {
@@ -209,14 +205,14 @@ static s32 JetSphereInsidePlanes(VECTOR* center, s16 radius) {
             leftOk = 1;
         }
     }
-    rx = g_JetRightPlaneNormalX;
-    ry = g_JetRightPlaneNormalY;
-    rz = g_JetRightPlaneNormalZ;
+    rx = g_JetRightPlaneNormal.vx;
+    ry = g_JetRightPlaneNormal.vy;
+    rz = g_JetRightPlaneNormal.vz;
     hsRight = (rx * (center->vx >> 2)) + (ry * (center->vy >> 2)) + (rz * (center->vz >> 2)) + g_JetRightPlaneDistance;
-    if (D_800A8968 > 0 && hsRight >= 0) {
+    if (g_JetRightPlaneInsideRef > 0 && hsRight >= 0) {
         rightOk = 1;
     }
-    if (D_800A8968 < 0 && hsRight <= 0) {
+    if (g_JetRightPlaneInsideRef < 0 && hsRight <= 0) {
         rightOk = 1;
     }
     if (rightOk == 0) {
@@ -237,15 +233,15 @@ static s32 JetSphereInsideLeftPlane(s32 x, s32 y, s32 z, s16 radius) {
     s32 ok;
     s32 len;
 
-    nx = g_JetLeftPlaneNormalX;
-    ny = g_JetLeftPlaneNormalY;
-    nz = g_JetLeftPlaneNormalZ;
+    nx = g_JetLeftPlaneNormal.vx;
+    ny = g_JetLeftPlaneNormal.vy;
+    nz = g_JetLeftPlaneNormal.vz;
     ok = 0;
     hs = (nx * (x >> 2)) + (ny * (y >> 2)) + (nz * (z >> 2)) + g_JetLeftPlaneDistance;
-    if (D_800A8950 > 0 && hs >= 0) {
+    if (g_JetLeftPlaneInsideRef > 0 && hs >= 0) {
         ok = 1;
     }
-    if (D_800A8950 < 0 && hs <= 0) {
+    if (g_JetLeftPlaneInsideRef < 0 && hs <= 0) {
         ok = 1;
     }
     if (ok == 0) {
@@ -268,15 +264,15 @@ static s32 JetSphereInsideRightPlane(s32 x, s32 y, s32 z, s16 radius) {
     s32 ok;
     s32 len;
 
-    nx = g_JetRightPlaneNormalX;
-    ny = g_JetRightPlaneNormalY;
-    nz = g_JetRightPlaneNormalZ;
+    nx = g_JetRightPlaneNormal.vx;
+    ny = g_JetRightPlaneNormal.vy;
+    nz = g_JetRightPlaneNormal.vz;
     ok = 0;
     hs = (nx * (x >> 2)) + (ny * (y >> 2)) + (nz * (z >> 2)) + g_JetRightPlaneDistance;
-    if (D_800A8968 > 0 && hs >= 0) {
+    if (g_JetRightPlaneInsideRef > 0 && hs >= 0) {
         ok = 1;
     }
-    if (D_800A8968 < 0 && hs <= 0) {
+    if (g_JetRightPlaneInsideRef < 0 && hs <= 0) {
         ok = 1;
     }
     if (ok == 0) {

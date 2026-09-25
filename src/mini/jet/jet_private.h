@@ -111,8 +111,8 @@ typedef struct {
     /* 0x18 */ SVECTOR unk18; // spawn rotation
     /* 0x20 */ char pad20[8];
     /* 0x28 */ JetObjectState unk28;
-    /* 0xC8 */ s32 unkC8;      // the object path's length
-    /* 0xCC */ SVECTOR* unkCC; // the object path itself
+    /* 0xC8 */ s32 pathLen;
+    /* 0xCC */ SVECTOR* path;
     /* 0xD0 */ s32 : 32;
     /* 0xD4 */ JetNode* unkD4;
     /* 0xD8 */ s16 unkD8;
@@ -123,19 +123,51 @@ typedef struct {
     /* 0x134 */ char pad134[8];
 } JetObject; // size: 0x13C
 
-extern VECTOR D_800A83B8;
-extern s16 D_800A895C;
-extern s16 D_800A8964;
-extern s16 D_800A8970;
-extern s16 D_800A8978;
+// One scheduled object spawn, read from xbin stream 0xE.
+typedef struct {
+    /* 0x00 */ s16 type;
+    /* 0x02 */ s16 : 16;
+    /* 0x04 */ s16 modelId;
+    /* 0x06 */ s16 : 16;
+    /* 0x08 */ s32 pathIndex;
+    /* 0x0C */ s32 speed;
+    /* 0x10 */ s32 params[0x14];
+} JetObjectSpawn; // size: 0x60
+
+// XBINADR.BIN: pointers to the xbin streams in the decompressed XBIN2.BIN.
+typedef struct {
+    /* 0x00 */ u_long unk0; // sound data, handed to Akao opcode 0x10
+    /* 0x04 */ JetModelInfo* modelInfo;
+    /* 0x08 */ u16* trackAdds;
+    /* 0x0C */ u16* trackRemoves;
+    /* 0x10 */ u8* trackPaths;
+    /* 0x14 */ s32* trackPathOffsets;
+    /* 0x18 */ s32* trackPathLengths;
+    /* 0x1C */ SVECTOR* trackRotations;
+    /* 0x20 */ u16* triangleAdds;
+    /* 0x24 */ u16* triangleRemoves;
+    /* 0x28 */ JetTriangle* triangles;
+    /* 0x2C */ u8* objectPaths;
+    /* 0x30 */ s32* objectPathOffsets;
+    /* 0x34 */ s32* objectPathLengths;
+    /* 0x38 */ JetObjectSpawn* spawns;
+    /* 0x3C */ u8* spawnCounts;
+    /* 0x40 */ JetQuad* quads;
+} JetXbinAdr; // size: 0x44
+
+extern VECTOR g_JetCameraPosCopy;
+extern s16 g_JetBeam0OriginX;
+extern s16 g_JetBeam0OriginY;
+extern s16 g_JetBeam1OriginX;
+extern s16 g_JetBeam1OriginY;
 extern s32 g_JetSpeed;
 extern u16 g_JetSpriteTPage[];
 extern JetModelInfo* g_JetModelInfo;
-extern u16 D_800A8A68; // background clut
+extern u16 g_JetFadeClut;
 extern s16 g_JetPopupTimer;
 extern s16 g_JetPopupPoints;
 extern s16 g_JetPopupModelId;
-extern u16 D_800AB894; // background tpage
+extern u16 g_JetFadeTPage;
 extern JetBuffer g_JetBuffers[2];
 extern s32 g_JetScore;
 extern s32 g_JetTrackSegment;
@@ -143,12 +175,9 @@ extern JetNode g_JetRootNode;
 extern u8 g_JetBeamScroll;
 extern JetModel* g_JetModelTable[100];
 extern JetBuffer* g_JetBufferPtr[1];
-extern u8* D_800D1BE4;
-extern s32* D_800D1BE8;
-extern s32* D_800D1BEC;
-extern JetTriangle* g_JetTrianglesBase;
+extern JetXbinAdr g_JetXbinAdr;
 extern u8 g_JetFiring;
-extern s32 D_800D1C54;
+extern s32 g_JetCameraPathPos;
 extern s16 g_JetShotPower;
 extern u8 g_JetShotRepeatCounter;
 extern s16 g_JetCursorX;

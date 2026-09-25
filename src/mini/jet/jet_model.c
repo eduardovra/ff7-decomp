@@ -8,8 +8,6 @@ extern JetTriangle* g_JetTriangles;
 extern JetModel g_JetModelPool[];
 extern s32 g_JetQuadCursor;
 extern JetQuad* g_JetQuads;
-extern JetModelInfo* g_JetModelInfoBase;
-extern JetQuad* g_JetQuadsBase;
 
 static JetModel* JetModelAlloc(void);
 static JetQuad* JetQuadsAlloc(s32 count);
@@ -19,9 +17,9 @@ void JetModelsReset(void) {
     g_JetTriangleCursor = 0;
     g_JetQuadCursor = 0;
     g_JetModelCount = 0;
-    g_JetTriangles = g_JetTrianglesBase;
-    g_JetQuads = g_JetQuadsBase;
-    g_JetModelInfo = g_JetModelInfoBase;
+    g_JetTriangles = g_JetXbinAdr.triangles;
+    g_JetQuads = g_JetXbinAdr.quads;
+    g_JetModelInfo = g_JetXbinAdr.modelInfo;
 }
 
 JetModel* JetModelBuild(s32 infoIndex) {

@@ -3,17 +3,6 @@
 #include "jet_private.h"
 #include <libc.h>
 
-// One scheduled object spawn, read from xbin stream 0xE.
-typedef struct {
-    /* 0x00 */ s16 type;
-    /* 0x02 */ s16 : 16;
-    /* 0x04 */ s16 modelId;
-    /* 0x06 */ s16 : 16;
-    /* 0x08 */ s32 pathIndex;
-    /* 0x0C */ s32 speed;
-    /* 0x10 */ s32 params[0x14];
-} JetObjectSpawn; // size: 0x60
-
 // JetObjectState.type selects behaviour; the model sets the look.
 enum JetObjectType {
     JET_OBJ_FLYER = 1,          // follows its path, turned to face along it
@@ -34,11 +23,6 @@ extern s32 g_JetNextSpawnSegment;
 extern s32 g_JetSpawnIndex;
 extern u16 g_JetNextFreeObject;
 extern u16 g_JetObjectFreeList[100];
-extern u8* D_800D1C00;
-extern s32* D_800D1C04;
-extern s32* D_800D1C08;
-extern JetObjectSpawn* g_JetSpawns;
-extern u8* g_JetSpawnCounts;
 extern JetObject g_JetSpawnTemplate;
 extern JetObject g_JetObjects[0x64];
 extern s16 g_JetObjectCount;
@@ -49,7 +33,7 @@ static void JetObjectCreate(s16 x, s16 y, s16 z, s16 type, s16 modelId);
 static void JetObjectDamage(JetObject* object);
 static void JetObjectAwardPoints(JetObject* arg0);
 
-const u8 D_800A0008 = 0; // the rotation order the object matrices use
+const u8 g_JetObjectRotOrder = 0;
 
 void JetObjectsInit(void) {
     JetObject* obj;
@@ -81,18 +65,18 @@ static void JetObjectPathLoad(u8 pathIndex, u8 mode) {
     s32 offset;
 
     if (mode == 0) {
-        lengths = D_800D1C08;
-        offsets = D_800D1C04;
+        lengths = g_JetXbinAdr.objectPathLengths;
+        offsets = g_JetXbinAdr.objectPathOffsets;
         D_800A8984 = lengths[pathIndex];
         offset = offsets[pathIndex];
-        D_800A8954 = (SVECTOR*)(D_800D1C00 + offset);
+        D_800A8954 = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
     }
     if (mode == 1) {
-        lengths = D_800D1BEC;
-        offsets = D_800D1BE8;
+        lengths = g_JetXbinAdr.trackPathLengths;
+        offsets = g_JetXbinAdr.trackPathOffsets;
         D_800A8984 = lengths[pathIndex];
         offset = offsets[pathIndex];
-        D_800A8954 = (SVECTOR*)(D_800D1BE4 + offset);
+        D_800A8954 = (SVECTOR*)(g_JetXbinAdr.trackPaths + offset);
     }
 }
 
@@ -170,8 +154,8 @@ static void JetDrawBeams(void) {
         scroll = &g_JetBeamScroll;
         spread = g_JetShotPower >> 3;
         poly = db[0]->prims.ft4Cursor;
-        setXY4(poly, D_800A895C + spread, D_800A8964, *cursorX, *cursorY, D_800A895C - spread, D_800A8964, *cursorX,
-               *cursorY);
+        setXY4(poly, g_JetBeam0OriginX + spread, g_JetBeam0OriginY, *cursorX, *cursorY, g_JetBeam0OriginX - spread,
+               g_JetBeam0OriginY, *cursorX, *cursorY);
         setRGB0(poly, 0x80, 0x80, 0x80);
         setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
         poly->tpage = g_JetSpriteTPage[1];
@@ -179,8 +163,8 @@ static void JetDrawBeams(void) {
         SetSemiTrans(poly, 1);
         addPrim(&db[0]->ot[1], poly);
         poly++;
-        setXY4(poly, D_800A8970 + spread, D_800A8978, *cursorX, *cursorY, D_800A8970 - spread, D_800A8978, *cursorX,
-               *cursorY);
+        setXY4(poly, g_JetBeam1OriginX + spread, g_JetBeam1OriginY, *cursorX, *cursorY, g_JetBeam1OriginX - spread,
+               g_JetBeam1OriginY, *cursorX, *cursorY);
         setRGB0(poly, 0x80, 0x80, 0x80);
         setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
         poly->tpage = g_JetSpriteTPage[1];
@@ -292,10 +276,10 @@ static void JetObjectsSpawnScheduled(void) {
     s32 j;
 
     for (segment = g_JetNextSpawnSegment; segment < g_JetTrackSegment; segment++) {
-        counts = g_JetSpawnCounts;
+        counts = g_JetXbinAdr.spawnCounts;
         count = counts + segment;
         for (i = 0; i < *count; i++) {
-            spawns = g_JetSpawns;
+            spawns = g_JetXbinAdr.spawns;
             for (j = 0; j < LEN(g_JetSpawnTemplate.unk28.unk50); j++) {
                 g_JetSpawnTemplate.unk28.unk50[j] = spawns[*(s32*)(u32)&g_JetSpawnIndex].params[j];
             }
@@ -390,11 +374,11 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 offset;
 
                 pathIndex = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[pathIndex];
-                offset = D_800D1C04[pathIndex];
-                path = (SVECTOR*)(D_800D1C00 + offset);
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
+                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
+                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
+                obj->path = path;
+                obj->pathLen = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->unk14 = 0;
@@ -423,7 +407,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 z;
 
                 step = st->unk28;
-                pathPos = &D_800D1C54;
+                pathPos = &g_JetCameraPathPos;
                 JetTrackSample(pathPos[0] + 0x2FFFD, -100, &pos, &rot);
                 x = st->unk2C;
                 x += (step * (pos.vx - x)) >> 7;
@@ -449,7 +433,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 }
                 st->unkC = 0;
             }
-            if (st->hit != 0) {
+            if (st->hit) {
                 JetObjectDamage(obj);
             }
             break;
@@ -460,15 +444,15 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 offset;
 
                 sound = st->unk50[17];
-                if (sound != 0) {
+                if (sound) {
                     JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[pathIndex];
-                offset = D_800D1C04[pathIndex];
-                path = (SVECTOR*)(D_800D1C00 + offset);
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
+                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
+                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
+                obj->path = path;
+                obj->pathLen = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->unk14 = 0;
@@ -476,7 +460,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 st->unk28 = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                st->unk2C = (obj->unkC8 - 2) << 16;
+                st->unk2C = (obj->pathLen - 2) << 16;
             } else {
                 st->unk14++;
             }
@@ -491,11 +475,11 @@ void JetObjectsUpdate(JetBuffer* db) {
                 JetObjectFree(obj);
                 break;
             }
-            if (st->hit != 0) {
+            if (st->hit) {
                 JetObjectDamage(obj);
             }
             if (st->unk28 < st->unk2C) {
-                JetPathSample(st->unk28, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(st->unk28, obj->path, &obj->unk0, 0);
                 obj->unk18.vx = 0;
                 obj->unk18.vy = 0;
                 obj->unk18.vz = 0;
@@ -508,15 +492,15 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 offset;
 
                 sound = st->unk50[17];
-                if (sound != 0) {
+                if (sound) {
                     JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[pathIndex];
-                offset = D_800D1C04[pathIndex];
-                path = (SVECTOR*)(D_800D1C00 + offset);
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
+                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
+                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
+                obj->path = path;
+                obj->pathLen = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->unk14 = 0;
@@ -524,7 +508,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 st->unk28 = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                st->unk2C = (obj->unkC8 - 1) << 16;
+                st->unk2C = (obj->pathLen - 1) << 16;
             } else {
                 st->unk14++;
             }
@@ -542,11 +526,11 @@ void JetObjectsUpdate(JetBuffer* db) {
                 JetObjectFree(obj);
                 break;
             }
-            JetPathSample(st->unk28, obj->unkCC, &obj->unk0, 0);
+            JetPathSample(st->unk28, obj->path, &obj->unk0, 0);
             obj->unk18.vx += st->unk50[3];
             obj->unk18.vy += st->unk50[4];
             obj->unk18.vz += st->unk50[5];
-            if (st->hit != 0) {
+            if (st->hit) {
                 JetObjectDamage(obj);
             }
             break;
@@ -557,15 +541,15 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 offset;
 
                 sound = st->unk50[17];
-                if (sound != 0) {
+                if (sound) {
                     JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[pathIndex];
-                offset = D_800D1C04[pathIndex];
-                path = (SVECTOR*)(D_800D1C00 + offset);
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
+                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
+                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
+                obj->path = path;
+                obj->pathLen = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->unk14 = 0;
@@ -573,7 +557,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 st->unk28 = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                st->unk2C = (obj->unkC8 - 1) << 16;
+                st->unk2C = (obj->pathLen - 1) << 16;
             } else {
                 st->unk14++;
             }
@@ -591,15 +575,15 @@ void JetObjectsUpdate(JetBuffer* db) {
                 JetObjectFree(obj);
                 break;
             }
-            JetPathSample(st->unk28, obj->unkCC, &obj->unk0, 0);
-            JetPathSample((st->unk28 + 0x10000) % ((obj->unkC8 - 1) << 16), obj->unkCC, &next, 0);
+            JetPathSample(st->unk28, obj->path, &obj->unk0, 0);
+            JetPathSample((st->unk28 + 0x10000) % ((obj->pathLen - 1) << 16), obj->path, &next, 0);
             dx = next.vx - obj->unk0.vx;
             dy = next.vy - obj->unk0.vy;
             dz = next.vz - obj->unk0.vz;
             obj->unk18.vx = ratan2(dy, SquareRoot0(dx * dx + dz * dz));
             obj->unk18.vy = -ratan2(dz, dx) - 0x400;
             obj->unk18.vz = 0;
-            if (st->hit != 0) {
+            if (st->hit) {
                 JetObjectDamage(obj);
             }
             break;
@@ -610,14 +594,14 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 offset;
 
                 sound = st->unk50[17];
-                if (sound != 0) {
+                if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathLen = D_800D1BEC[0];
-                offset = D_800D1BE8[0];
-                path = (SVECTOR*)(D_800D1BE4 + offset);
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                pathLen = g_JetXbinAdr.trackPathLengths[0];
+                offset = g_JetXbinAdr.trackPathOffsets[0];
+                path = (SVECTOR*)(g_JetXbinAdr.trackPaths + offset);
+                obj->path = path;
+                obj->pathLen = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->unk14 = 0;
@@ -625,7 +609,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 st->unk28 = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                st->unk2C = (obj->unkC8 - 1) << 16;
+                st->unk2C = (obj->pathLen - 1) << 16;
             } else {
                 st->unk14++;
             }
@@ -643,9 +627,9 @@ void JetObjectsUpdate(JetBuffer* db) {
                 JetObjectFree(obj);
                 break;
             }
-            JetTrackSample(D_800D1C54 + 0x3FFFC, 10, &obj->unk0, &obj->unk18);
+            JetTrackSample(g_JetCameraPathPos + 0x3FFFC, 10, &obj->unk0, &obj->unk18);
             drawMode = 1;
-            if (st->hit != 0) {
+            if (st->hit) {
                 JetObjectDamage(obj);
             }
             break;
@@ -656,21 +640,21 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 offset;
 
                 sound = st->unk50[17];
-                if (sound != 0) {
+                if (sound) {
                     JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[pathIndex];
-                offset = D_800D1C04[pathIndex];
-                path = (SVECTOR*)(D_800D1C00 + offset);
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
+                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
+                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
+                obj->path = path;
+                obj->pathLen = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->hit = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                JetPathSample(0, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(0, obj->path, &obj->unk0, 0);
             }
             segment = &g_JetTrackSegment;
             if (st->unk50[2] < *segment) {
@@ -687,7 +671,7 @@ void JetObjectsUpdate(JetBuffer* db) {
             if (obj->unk0.vy > 0) {
                 st->unkC = 0;
             }
-            if (st->hit != 0) {
+            if (st->hit) {
                 JetObjectDamage(obj);
             }
             break;
@@ -698,20 +682,20 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 offset;
 
                 sound = st->unk50[17];
-                if (sound != 0) {
+                if (sound) {
                     JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[pathIndex];
-                offset = D_800D1C04[pathIndex];
-                path = (SVECTOR*)(D_800D1C00 + offset);
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
+                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
+                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
+                obj->path = path;
+                obj->pathLen = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->hit = 0;
                 st->unk28 = 0;
-                st->unk2C = (obj->unkC8 - 1) << 16;
+                st->unk2C = (obj->pathLen - 1) << 16;
                 obj->unk18.vx = st->unk50[3];
                 obj->unk18.vy = st->unk50[4];
                 D_800A8984 = pathLen;
@@ -737,10 +721,10 @@ void JetObjectsUpdate(JetBuffer* db) {
             if (st->unk50[14] == 1) {
                 st->unk50[14] = 0;
             }
-            if (st->unkC != 0) {
-                JetPathSample(st->unk28, obj->unkCC, &obj->unk0, 0);
-                if (st->hit != 0) {
-                    if (st->unk50[10] != 5 || g_JetSpeed < 0x4015) {
+            if (st->unkC) {
+                JetPathSample(st->unk28, obj->path, &obj->unk0, 0);
+                if (st->hit) {
+                    if (st->unk50[10] != 5 || g_JetSpeed < 16405) {
                         JetObjectDamage(obj);
                     }
                     if (st->unk50[10] == 5) {
@@ -758,28 +742,28 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 offset;
 
                 sound = st->unk50[17];
-                if (sound != 0) {
+                if (sound) {
                     JetPlaySfx(sound);
                 }
                 pathIndex = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[pathIndex];
-                offset = D_800D1C04[pathIndex];
-                path = (SVECTOR*)(D_800D1C00 + offset);
+                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
+                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
+                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                obj->path = path;
+                obj->pathLen = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->hit = 0;
                 st->unk28 = (rand() % st->unk50[3]) * 2 - st->unk50[3] - 1;
                 st->unk2C = 0;
                 st->unk30 = 0;
-                st->unk34 = (obj->unkC8 - 1) << 16;
+                st->unk34 = (obj->pathLen - 1) << 16;
                 obj->unk18.vx = 0;
                 obj->unk18.vy = 0;
                 obj->unk18.vz = 0;
-                JetPathSample(0, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(0, obj->path, &obj->unk0, 0);
             }
             st->unk30 += st->unk1C;
             if (st->unk34 < st->unk30) {
@@ -800,8 +784,8 @@ void JetObjectsUpdate(JetBuffer* db) {
                 JetObjectFree(obj);
                 break;
             }
-            JetPathSample(st->unk30, obj->unkCC, &obj->unk0, 0);
-            if (st->hit != 0) {
+            JetPathSample(st->unk30, obj->path, &obj->unk0, 0);
+            if (st->hit) {
                 JetObjectDamage(obj);
             }
             break;
@@ -814,8 +798,8 @@ void JetObjectsUpdate(JetBuffer* db) {
             if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
-            if (st->unkC != 0) {
-                if (st->hit != 0) {
+            if (st->unkC) {
+                if (st->hit) {
                     JetObjectDamage(obj);
                 }
             } else {
@@ -830,11 +814,11 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 offset;
 
                 pathIndex = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[pathIndex];
-                offset = D_800D1C04[pathIndex];
-                path = (SVECTOR*)(D_800D1C00 + offset);
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
+                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
+                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
+                obj->path = path;
+                obj->pathLen = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->hit = 0;
@@ -843,7 +827,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 obj->unk18.vz = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                JetPathSample(0, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(0, obj->path, &obj->unk0, 0);
                 st->unk28 = 0;
             }
             segment = &g_JetTrackSegment;
@@ -857,8 +841,8 @@ void JetObjectsUpdate(JetBuffer* db) {
                     obj->unk18.vx += st->unk50[6];
                 }
             }
-            if (st->unkC != 0) {
-                if (st->hit != 0) {
+            if (st->unkC) {
+                if (st->hit) {
                     JetObjectDamage(obj);
                 }
             } else {
@@ -903,18 +887,18 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 offset;
 
                 pathIndex = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[pathIndex];
-                offset = D_800D1C04[pathIndex];
-                path = (SVECTOR*)(D_800D1C00 + offset);
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
+                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
+                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
+                obj->path = path;
+                obj->pathLen = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->hit = 0;
                 st->unk28 = 0;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                JetPathSample(0, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(0, obj->path, &obj->unk0, 0);
             }
             if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
@@ -971,11 +955,11 @@ void JetObjectsUpdate(JetBuffer* db) {
 
                 JetPlaySfx(0xA);
                 pathIndex = st->unk18 & 0xFF;
-                pathLen = D_800D1C08[pathIndex];
-                offset = D_800D1C04[pathIndex];
-                path = (SVECTOR*)(D_800D1C00 + offset);
-                obj->unkCC = path;
-                obj->unkC8 = pathLen;
+                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
+                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
+                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
+                obj->path = path;
+                obj->pathLen = pathLen;
                 st->unk10 = 0;
                 st->unkC = 1;
                 st->hit = 0;
@@ -983,7 +967,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 st->unk28 = -0x46;
                 D_800A8984 = pathLen;
                 D_800A8954 = path;
-                JetPathSample(0, obj->unkCC, &obj->unk0, 0);
+                JetPathSample(0, obj->path, &obj->unk0, 0);
             }
             st->unk28++;
             st->unk14++;
@@ -1019,8 +1003,8 @@ void JetObjectsUpdate(JetBuffer* db) {
             if (st->unk50[2] < g_JetTrackSegment) {
                 st->unkC = 0;
             }
-            if (st->unkC != 0) {
-                if (st->hit != 0) {
+            if (st->unkC) {
+                if (st->hit) {
                     JetObjectDamage(obj);
                 }
             } else {
@@ -1071,9 +1055,9 @@ void JetObjectsUpdate(JetBuffer* db) {
             }
             break;
         case 3:
-            obj->unk0.vx = D_800A83B8.vx;
-            obj->unk0.vy = D_800A83B8.vy - 0x9C4;
-            obj->unk0.vz = D_800A83B8.vz;
+            obj->unk0.vx = g_JetCameraPosCopy.vx;
+            obj->unk0.vy = g_JetCameraPosCopy.vy - 0x9C4;
+            obj->unk0.vz = g_JetCameraPosCopy.vz;
             otIndex = 0x3E8;
             obj->unk18.vx = 0;
             obj->unk18.vy = 0;
@@ -1223,8 +1207,8 @@ void JetObjectsUpdate(JetBuffer* db) {
             tpagePrim = db->prims.ft4Cursor;
             setRGB0(tpagePrim, 0, 0, 0);
             setXY4(tpagePrim, 0, 0, 0, 0, 0, 0, 0, 0);
-            tpagePrim->tpage = D_800AB894;
-            tpagePrim->clut = D_800A8A68;
+            tpagePrim->tpage = g_JetFadeTPage;
+            tpagePrim->clut = g_JetFadeClut;
             SetSemiTrans(tpagePrim, 0);
             addPrim(&db->ot2[1], tpagePrim);
             tpagePrim++;
@@ -1257,8 +1241,8 @@ void JetObjectsUpdate(JetBuffer* db) {
             tpagePrim = db->prims.ft4Cursor;
             setRGB0(tpagePrim, 0, 0, 0);
             setXY4(tpagePrim, 0, 0, 0, 0, 0, 0, 0, 0);
-            tpagePrim->tpage = D_800AB894;
-            tpagePrim->clut = D_800A8A68;
+            tpagePrim->tpage = g_JetFadeTPage;
+            tpagePrim->clut = g_JetFadeClut;
             SetSemiTrans(tpagePrim, 0);
             addPrim(&db->ot2[1], tpagePrim);
             tpagePrim++;
@@ -1297,7 +1281,7 @@ void JetObjectsUpdate(JetBuffer* db) {
         obj->unkD4->m.t[0] = obj->unk0.vx;
         obj->unkD4->m.t[1] = obj->unk0.vy;
         obj->unkD4->m.t[2] = obj->unk0.vz;
-        order = D_800A0008;
+        order = g_JetObjectRotOrder;
         if (order == 0) {
             RotMatrixYXZ(&obj->unk18, &obj->unkD4->m);
         }
