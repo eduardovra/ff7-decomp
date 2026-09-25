@@ -106,9 +106,9 @@ typedef struct {
 } JetObjectState;               // size: 0xA0
 
 typedef struct {
-    /* 0x00 */ VECTOR unk0;
+    /* 0x00 */ VECTOR position;
     /* 0x10 */ char pad10[8];
-    /* 0x18 */ SVECTOR unk18; // spawn rotation
+    /* 0x18 */ SVECTOR rotation;
     /* 0x20 */ char pad20[8];
     /* 0x28 */ JetObjectState unk28;
     /* 0xC8 */ s32 pathLen;
