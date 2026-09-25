@@ -163,12 +163,27 @@ sh    $v0, %lo(sym)($at)         sh    $v1, 0($v0)
 ```
 
 A read-modify-write on a named global therefore pays for the address twice.
-The pointer local is the only way to ask for it once, so one in the target
-is evidence the original source had one -- it is not a decomp hack. The
-shape is toolchain-invariant: in `jet.c` `func_800A4400` the direct form
+A pointer local asks for it once, so the shape in the target is evidence of
+the original source, not a decomp hack (see the struct note below for the
+other source that produces it). The shape is toolchain-invariant: in `jet.c` `func_800A4400` the direct form
 scores 615 or more under all five cc1/aspsx pairings the build offers, so a
 diff of this shape is a source problem, never an annotation problem.
 `func_800A442C`, `func_800A8238` and `func_800A8264` are the same idiom.
+
+**A struct member or array element gets the materialised form for free.**
+Only a bare scalar global is folded into `%lo`. Name `g_S.b` or `g_Arr[0]`
+(offset 0 included) and gcc treats the address as a constant it can hold in
+a register: used more than once it becomes `la`/`0($reg)`, used once it
+folds like a scalar. Each member is its own constant, so two members of one
+struct in the same function still get separate `lui` pairs, never a shared
+base plus offsets -- a big context struct and separate one-field wrappers
+compile identically. No qualifier or flag moves a scalar: `volatile`,
+`static`, `-O1`/`-O3`, `-G8`, `-fpic`, `-mabicalls` and `-membedded-pic`
+were all tried with cc1-psx-26. So `extern struct { s32 v; } g_JetPadDir;`
+matches with direct `g_JetPadDir.v = 4` writes, in place of the pointer
+local. Whether the target was really a struct is a layout question: jet's
+bss puts every 1- and 2-byte global in its own 4-byte slot with unreferenced
+holes between them, which is linker `.comm` allocation, not struct packing.
 
 **A store at `reg + offset` beyond 16 bits, where the register holds a
 known global address, means the source held that byte's address in a

@@ -39,7 +39,9 @@ extern u16 g_JetTrackListHead;
 extern s32 D_800A8958;
 extern u_long* g_JetTexAdr[10]; // TEXADR.BIN: TIM pointers into TEX.BIN
 extern u16 g_JetTriangleListHead;
-extern s32 g_JetPadDir; // 1..9 keypad layout, 0 = none
+extern struct {
+    s32 v;
+} g_JetPadDir; // 1..9 keypad layout, 0 = none
 extern s32 D_800A8A7C;
 extern s32 g_JetStartHeldFrames;
 extern JetNode* g_JetPopupNode[1];
@@ -1050,7 +1052,6 @@ static void func_800A2E30(void) {}
 // Read the pad and drive the cursor, the camera tweaks and the pause toggle.
 static void JetInputUpdate(void) {
     u32 pad;
-    s32* dir;
     s16* cursorX;
     s16* cursorY;
     u8* shoot;
@@ -1070,32 +1071,30 @@ static void JetInputUpdate(void) {
 
     pad = InputReadPadsRaw(1);
     if (g_JetPaused == 0) {
-        dir = &g_JetPadDir;
-        *dir = 0;
+        g_JetPadDir.v = 0;
         D_800A8A7C = 0;
         if (pad & PADLleft) {
-            *dir = 4;
+            g_JetPadDir.v = 4;
         }
         if (pad & PADLright) {
-            *dir = 6;
+            g_JetPadDir.v = 6;
         }
         if (pad & PADLup) {
-            *dir = 8;
+            g_JetPadDir.v = 8;
             if (pad & PADLleft) {
-                *dir = 7;
+                g_JetPadDir.v = 7;
             }
             if (pad & PADLright) {
-                *dir = 9;
+                g_JetPadDir.v = 9;
             }
         }
         if (pad & PADLdown) {
-            dir = &g_JetPadDir;
-            *dir = 2;
+            g_JetPadDir.v = 2;
             if (pad & PADLleft) {
-                *dir = 1;
+                g_JetPadDir.v = 1;
             }
             if (pad & PADLright) {
-                *dir = 3;
+                g_JetPadDir.v = 3;
             }
         }
         if (g_JetAimMode == 1) {
