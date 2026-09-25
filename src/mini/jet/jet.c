@@ -33,15 +33,15 @@ extern s16 D_800A896C;
 extern s16 D_800A8974;
 extern s16 D_800A8980;
 extern SVECTOR* g_JetTrackPath;
-extern s32 g_JetFogNear;
-extern s32 g_JetFogFar;
+extern struct {
+    s32 near;
+    s32 far;
+} g_JetFog;
 extern u16 g_JetTrackListHead;
 extern s32 D_800A8958;
 extern u_long* g_JetTexAdr[10]; // TEXADR.BIN: TIM pointers into TEX.BIN
 extern u16 g_JetTriangleListHead;
-extern struct {
-    s32 v;
-} g_JetPadDir; // 1..9 keypad layout, 0 = none
+extern s32 g_JetPadDir; // 1..9 keypad layout, 0 = none
 extern s32 D_800A8A7C;
 extern s32 g_JetStartHeldFrames;
 extern JetNode* g_JetPopupNode[1];
@@ -154,7 +154,7 @@ u16 MINI_Jet(void) {
     JetTrackPathLoad(1, 0);
     g_JetTrackRight = *path;
     JetAudioInit();
-    SetFogNearFar(g_JetFogNear, g_JetFogFar, 256);
+    SetFogNearFar(g_JetFog.near, g_JetFog.far, 256);
     g_JetPopupNode[0] = JetNodeAlloc(30, 0, 0, 1, &g_JetRootNode, 1200, 50, 3000, 0, 1000, 0);
     for (;;) {
         speed = &g_JetSpeed;
@@ -776,8 +776,8 @@ static void JetInitialize(void) {
         g_JetModelTable[i] = JetModelBuild(i);
     }
     g_JetSpeed = 10000;
-    g_JetFogNear = 10410;
-    g_JetFogFar = 14300;
+    g_JetFog.near = 10410;
+    g_JetFog.far = 14300;
     g_JetTrackSegment = 0;
     g_JetCameraPathPos = 0;
     g_JetScore = 0;
@@ -1052,6 +1052,7 @@ static void func_800A2E30(void) {}
 // Read the pad and drive the cursor, the camera tweaks and the pause toggle.
 static void JetInputUpdate(void) {
     u32 pad;
+    s32* dir;
     s16* cursorX;
     s16* cursorY;
     u8* shoot;
@@ -1059,8 +1060,6 @@ static void JetInputUpdate(void) {
     s16* powerRegen;
     u8* repeat;
     u8* scroll;
-    s32* fogFar;
-    s32* fogNear;
     s32* speed;
     s32* brake;
     s32* held;
@@ -1071,30 +1070,32 @@ static void JetInputUpdate(void) {
 
     pad = InputReadPadsRaw(1);
     if (g_JetPaused == 0) {
-        g_JetPadDir.v = 0;
+        dir = &g_JetPadDir;
+        *dir = 0;
         D_800A8A7C = 0;
         if (pad & PADLleft) {
-            g_JetPadDir.v = 4;
+            *dir = 4;
         }
         if (pad & PADLright) {
-            g_JetPadDir.v = 6;
+            *dir = 6;
         }
         if (pad & PADLup) {
-            g_JetPadDir.v = 8;
+            *dir = 8;
             if (pad & PADLleft) {
-                g_JetPadDir.v = 7;
+                *dir = 7;
             }
             if (pad & PADLright) {
-                g_JetPadDir.v = 9;
+                *dir = 9;
             }
         }
         if (pad & PADLdown) {
-            g_JetPadDir.v = 2;
+            dir = &g_JetPadDir;
+            *dir = 2;
             if (pad & PADLleft) {
-                g_JetPadDir.v = 1;
+                *dir = 1;
             }
             if (pad & PADLright) {
-                g_JetPadDir.v = 3;
+                *dir = 3;
             }
         }
         if (g_JetAimMode == 1) {
@@ -1157,20 +1158,16 @@ static void JetInputUpdate(void) {
         }
         if (g_JetAimMode == 0) {
             if (pad & PADLdown) {
-                fogFar = &g_JetFogFar;
-                *fogFar -= 10;
+                g_JetFog.far -= 10;
             }
             if (pad & PADLup) {
-                fogFar = &g_JetFogFar;
-                *fogFar += 10;
+                g_JetFog.far += 10;
             }
             if (pad & PADLleft) {
-                fogNear = &g_JetFogNear;
-                *fogNear -= 10;
+                g_JetFog.near -= 10;
             }
             if (pad & PADLright) {
-                fogNear = &g_JetFogNear;
-                *fogNear += 10;
+                g_JetFog.near += 10;
             }
             if (pad & PADRdown) {
                 cam = &D_800A83D8;
