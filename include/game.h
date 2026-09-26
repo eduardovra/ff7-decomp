@@ -783,7 +783,7 @@ typedef struct {
     s8 limitLevel; // 1-based, unlike BattlePartyWork.limitLevel
     u8 unk21;
     s8 unk22;
-    u8 characterFlags; // CharacterFlags bits
+    u8 characterFlags;
     ActiveCharEnabledCounter enabledCounters[8];
     u16 physicalAttackElements;
     u16 halvedElements;
@@ -1428,7 +1428,7 @@ s32 SysGetLimitCmdId(s32 charId, s32 limitIndex);
 int SYS_GetDiskNo(void);
 
 // from overlays
-u16 MINI_Jet(void); // minigame result, stored to the savemap by the caller
+u16 MINI_Jet(void);
 extern u_long* D_8019D5E8;
 extern s32 D_8019DAA0;
 

@@ -53,6 +53,7 @@ g_JetLeftPlaneNormal = 0x800A892C; // size:0x10
 g_JetRightPlaneNormal = 0x800A893C; // size:0x10
 g_JetTrackSegmentsCrossed = 0x800A894C; // size:0x4
 g_JetLeftPlaneInsideRef = 0x800A8950; // size:0x4
+g_JetLaserPitch = 0x800A8958; // size:0x4
 g_JetBeam0OriginX = 0x800A895C; // size:0x2
 g_JetBeam0OriginY = 0x800A8964; // size:0x2
 g_JetRightPlaneInsideRef = 0x800A8968; // size:0x4

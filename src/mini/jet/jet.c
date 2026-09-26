@@ -3,13 +3,11 @@
 #include "jet_private.h"
 #include <libc.h>
 
-// Where TEX.BIN loads, then XBIN2.BIN decompresses once the TIMs are in VRAM.
 #define JET_ASSET_ADDR ((u_long*)0x800F0000)
 
-// A doubly-linked draw-list entry, parallel to the array it orders. Both
-// links are indices into that array, with JET_LIST_END for the ends.
 #define JET_LIST_END 0xFFFF
 
+// prev and next index the array the draw list orders.
 typedef struct {
     /* 0x0 */ u16 prev;
     /* 0x2 */ u16 next;
@@ -30,7 +28,7 @@ struct {
     s32 far;
 } g_JetFog;
 u16 g_JetTrackListHead;
-s32 D_800A8958;
+s32 g_JetLaserPitch;
 u_long* g_JetTexAdr[10]; // TEXADR.BIN: TIM pointers into TEX.BIN
 u16 g_JetTriangleListHead;
 s32 g_JetPadDir; // 1..9 keypad layout, 0 = none
@@ -156,7 +154,7 @@ u16 MINI_Jet(void) {
     JetBuffer* next;
     JetBuffer* current;
     s32* speed;
-    volatile s32* ptr; // points to D_800E25FC, zeroed every frame, write only - left over debug?
+    volatile s32* ptr;
     SVECTOR** path;
 
     JetInitialize();
@@ -966,13 +964,13 @@ void JetPlaySfx(s16 soundId) {
     }
 }
 
-static void JetSetLaserVolume(s32 volume) {
-    s32* lastParam;
+static void JetUpdateLaserSfx(s32 power) {
+    s32* lastPitch;
     s32 param;
 
-    lastParam = &D_800A8958;
-    if (*lastParam == 0) {
-        if (volume & 0xFF) {
+    lastPitch = &g_JetLaserPitch;
+    if (*lastPitch == 0) {
+        if (power & 0xFF) {
             g_AkaoCmd.opcode = AKAO_PLAY_SLOT3;
             g_AkaoCmd.params[0] = AKAO_PAN_CENTER;
             g_AkaoCmd.params[1] = SFX_22B;
@@ -980,25 +978,25 @@ static void JetSetLaserVolume(s32 volume) {
         } else {
             g_AkaoCmd.opcode = AKAO_PLAY_SLOT3;
             g_AkaoCmd.params[0] = AKAO_PAN_CENTER;
-            g_AkaoCmd.params[1] = 0;
+            g_AkaoCmd.params[1] = SFX_NULL;
             AkaoExec();
-            D_800A8958 = 0;
+            g_JetLaserPitch = 0;
             return;
         }
     }
-    param = volume & 0xFF;
+    param = power & 0xFF;
     if (param) {
         g_JetLaserVolume = param;
         g_AkaoCmd.opcode = AKAO_SET_PITCH_SLOT3;
         g_AkaoCmd.params[0] = param;
         AkaoExec();
-        *lastParam = param;
+        *lastPitch = param;
     } else {
         g_AkaoCmd.opcode = AKAO_PLAY_SLOT3;
         g_AkaoCmd.params[0] = AKAO_PAN_CENTER;
-        g_AkaoCmd.params[1] = 0;
+        g_AkaoCmd.params[1] = SFX_NULL;
         AkaoExec();
-        D_800A8958 = 0;
+        g_JetLaserPitch = 0;
     }
 }
 
@@ -1147,7 +1145,7 @@ static void JetInputUpdate(void) {
             *shoot = 0;
             if (pad & PADRright) {
                 power = &g_JetShotPower;
-                JetSetLaserVolume(*power & 0xFF);
+                JetUpdateLaserSfx(*power & 0xFF);
                 if (*power >= 9) {
                     (*power)--;
                 }
@@ -1163,7 +1161,7 @@ static void JetInputUpdate(void) {
                     *repeat = count - 1;
                 }
             } else {
-                JetSetLaserVolume(0);
+                JetUpdateLaserSfx(0);
                 powerRegen = &g_JetShotPower;
                 if (*powerRegen < 128) {
                     (*powerRegen)++;
