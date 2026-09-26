@@ -5,13 +5,14 @@ reverse-engineering in `ff7-coaster` is a source of hypotheses, not of
 names. This file records how to run jet in PCSX-Redux and what each run
 established. Launching and the web API are covered in `magic-probe.md`.
 
-## Where this stands (2026-09-24)
+## Where this stands (2026-09-25)
 
 Every jet function is decompiled; this work names what is left from
 runtime evidence. Named so far, each with its evidence below: `g_JetPaused`,
 `g_JetExit`, `g_JetPadDir`, `g_JetAimMode`, `g_JetSpeed`, `g_JetObjects`,
 `g_JetObjectCount`, `JetObjectDamage`, `JetObjectAwardPoints`, `JetPlaySfx`,
-and 10 of the 27 object types in `enum JetObjectType` (`jet_object.c`).
+13 of the 27 object types in `enum JetObjectType` (`jet_object.c`), and
+the generic `JetObject` and `JetObjectState` fields.
 
 To resume:
 
@@ -28,20 +29,43 @@ Open, in rough order of payoff:
 - Types 0, 2, 4, 14 (and 14's children 15, 16): seen or scheduled, not yet
   captured well. Re-run the tour with shorter `--offsets` (e.g. `5,15,30`).
 - 13 shares a case with 7; 3 may be the starfield (not confirmed).
-- Control types 250, 252, 255: invisible; confirm through `g_JetSpeed` or
-  other globals their handlers write, as was done for 254.
-- 100, 201, 203, 230: no spawns seen in a full ride.
+- 100, 201, 203, 230, 250: no spawns seen in a full ride (250 was confirmed
+  by injecting one).
 - `unk50` slots: only `[0]` points, `[0xD]` hit points and `[18]` death
   sound are established, and only for shootable types.
 
 Two traps already hit:
 
-- Do not "hide" an object by clearing `unkDA`. The slot is never freed,
+- Do not "hide" an object by clearing `active` (was `unkDA`). The slot is never freed,
   `g_JetObjectCount` reaches the cap and spawning stops, which reads as
   "this type never appears".
 - `g_JetTrackSegment` is the spawn timeline and advances with `g_JetSpeed`,
   so forcing the speed down freezes spawning too, and forcing it up
   fast-forwards.
+
+## Probing the native build
+
+`./build-pc/ff7_pc -jet` runs the ride on the host (see `psyz-port.md`),
+so gdb reads jet's globals and structs by name, with types. A gdb Python
+`Breakpoint` subclass on `JetObjectsUpdate` whose `stop()` returns `False`
+is a per-frame hook. `SDL_VIDEO_DRIVER=offscreen` runs it without a window
+and uncapped, about 200 frames a second under the hook. With no input the
+ride is the same one PCSX-Redux plays.
+
+`tools/jet_native_tour.py <types>` is the native counterpart of
+`jet_tour.py`: one no-input ride under gdb, saving the displayed frame with
+each target object's box whenever it reaches one of `--ages` frames old.
+Frames come from PSY-Z's `Psyz_VideoAllocCapturedFrame`, called from gdb.
+Only five box points count: `JetProject6Points` never writes `unk11C[5]`
+(in the original assembly too), so it stays at the spawn template's value.
+
+Resolve symbols inside `stop()`, not when the script loads: the binary is
+PIE, so an address taken before `run` is unrelocated and faults.
+
+Only jet's game logic is original there. Its GTE renderers, the CD chain
+and the libgpu/libgte stubs are port code, so settle anything about drawing,
+loading or sound in PCSX-Redux instead. Struct offsets differ on 64-bit;
+use field names, never offsets.
 
 ## Booting straight into jet
 
@@ -135,7 +159,7 @@ observation confirms it.
 ### Objects and hits, confirmed 2026-09-24
 
 - `g_JetObjects` (was `D_800D1DC0`): the 100-slot `Unk800A4390` pool with a
-  free list; `unkDA != 0` marks a live slot. A per-frame scan at
+  free list; `active != 0` (was `unkDA`) marks a live slot. A per-frame scan at
   `func_800A46E8` logged 570 spawn/free events over one ride.
 - `g_JetObjectCount` (was `D_800EE42C`): read 27 with exactly 27 live slots.
 - `JetObjectDamage` (was `func_800A6B08`): a hit logger showed each call
@@ -167,10 +191,67 @@ observation confirms it.
   sound is not established -- only that the argument selects the effect.
 - Verdict: confirmed, including `unk50[18]` as the death sound id.
 
+### Object and state fields, confirmed 2026-09-25 (native build)
+
+Hypotheses from the handlers in `JetObjectsUpdate`; each checked every frame
+of a 6000-frame no-input ride under gdb (296 objects of 12 types).
+
+- `JetObject.active` (was `unkDA`): live objects counted every frame equalled
+  `g_JetObjectCount` on all 6000 frames.
+- `JetObject.index` (was `unkD8`): equal to the object's own slot in 67138
+  live checks, `-1` in 532862 free ones.
+- `JetObject.node` (was `unkD4`) and `JetObjectState.modelId` (was `unk8`):
+  the node was non-null and `node->modelId == modelId` in all 67138 live
+  checks.
+- `JetObject.state` (was `unk28`): the `JetObjectState` itself.
+- `needsInit` (was `unk10`): 1 on all 115 objects caught right after a
+  scheduled spawn; every handler tests it, runs its setup and clears it.
+  Type 3 has no setup and never clears it.
+- `age` (was `unk14`): stepped by exactly 1 per frame for every type that
+  touches it (0, 1, 9, 10, 17, 252, 255); types 4, 5, 8, 13 never change it.
+- `life` (was `unkC`): 1 on every live frame of types 0, 1, 5, 10, 13, 17,
+  then 0 on the frame the slot was freed; type 9 counted it down from 99.
+  Types 3, 252, 255 leave it 0 and free themselves by other tests.
+- `pathIndex` and `speed` (were `unk18`, `unk1C`): copied from the spawn
+  record's fields of those names. For path types 0, 1, 5 and 17, `unk28` rose
+  by exactly `speed` per frame (17809 of 17821 frames; the 12 others are type
+  17 before its start segment, which the code gates).
+- Left unnamed: `unk28`..`unk34` hold a different quantity per type (path
+  position, velocity, a timer).
+
+### Control types 250, 252, 255, confirmed 2026-09-26 (native build)
+
+One full no-input ride (12012 frames) logged every spawn and free of a type
+of 200 or more, with `g_JetSpeed`, `g_JetTrackSegment` and
+`g_JetDrawEnabled`.
+
+- 252 (`JET_OBJ_RIDE_START`): the first control object, at frame 46.
+  Drawing was off on frames 0-45 and on from its spawn; it held
+  `g_JetSpeed` at 0 until it freed itself 126 frames later, leaving 16384.
+  It also spawns the type 3 object. Its fade is 253's with the shade
+  reversed.
+- 255 (`JET_OBJ_SPEED_CHANGE`): 15 spawns, each changing the speed by
+  `-unk50[0]` per frame for `unk50[1]` frames while above `unk50[2]`. For
+  example `[1200, 16, 16384]` took it from 80447 to 59020 (17 x 1200), and
+  `[-1000, 120, 30000]` from 32905 to 166106. The last one, `[760, 800, 0]`,
+  drove it below 0; the handler clamped it and spawned the 253 that ended
+  the ride. So the retail ride ends through a 255, not a scheduled 253.
+- 250 (`JET_OBJ_SCORE_CHECK`): the schedule has none, so one was injected at
+  frame 300 (`call JetObjectCreate(0, 0, 0, 250, 29)` from the gdb script;
+  an inferior call from inside a Python `stop()` hangs). With `unk50[0]` =
+  100 and score 0 it spawned a 255 `[300, 400, 0]`, the speed reached 0 in
+  54 frames, a 253 followed and `MINI_Jet` returned. With `unk50[0]` = 0
+  nothing happened.
+- `g_JetDrawEnabled` (was `g_JetTransitionDrawEnabled`): it gates both
+  `DrawOTag` calls, so it is all drawing, not a transition. It read 0 on
+  frames 0-45, 1 from 252's spawn, and 253 clears it at the exit.
+- Left unnamed: type 3 sits 0x9C4 above the camera every frame; what it
+  looks like still needs frames from Redux.
+
 ## What each object type looks like
 
 Method: from the `jet-start` state with no input, the replay is
-deterministic. A per-frame hook at `func_800A46E8` clears `unkDA` on every
+deterministic. A per-frame hook at `func_800A46E8` clears `active` on every
 object except the types being kept. Each capture is pixel-diffed against the
 same frame with every object hidden, so what differs is exactly the kept
 type. (Hiding a parent stops its children spawning, so keep 8 with 9.)
@@ -195,7 +276,8 @@ no-input replay never shows them.
 `ff7-coaster`'s switch labels agree with every row above; its type 3
 guess, "starfield", is not confirmed (hiding it removes only 10 px of stars,
 most of the starfield survives with every object hidden). It also calls
-`unkC` HP; it is a 0/1 alive flag, and the hit points are `unk50[0xD]`.
+`unkC` HP; it is `life` (a 0/1 alive flag, or a countdown for short-lived
+types), and the hit points are `unk50[0xD]`.
 
 These became `enum JetObjectType` in `jet_object.c`: 1, 5, 8, 9 and 10 from
 the frames above plus their handlers, 202 from its spawn sites in
@@ -203,7 +285,7 @@ the frames above plus their handlers, 202 from its spawn sites in
 
 ### The tour: types later in the ride, 2026-09-24
 
-The earlier isolation runs hid objects by clearing `unkDA` without freeing
+The earlier isolation runs hid objects by clearing `active` without freeing
 the slot, so `g_JetObjectCount` climbed to the cap and spawning stopped. That
 is why types 0, 2, 4 and 13 never appeared; those "not seen" results do not
 count. The tour hides nothing.

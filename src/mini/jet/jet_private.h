@@ -104,12 +104,12 @@ typedef struct JetNode {
 typedef struct {
     /* 0x00 */ s32 type;
     /* 0x04 */ s32 hit;
-    /* 0x08 */ s32 unk8;
-    /* 0x0C */ s32 unkC;
-    /* 0x10 */ s32 unk10;
-    /* 0x14 */ s32 unk14;
-    /* 0x18 */ s32 unk18;
-    /* 0x1C */ s32 unk1C;
+    /* 0x08 */ s32 modelId;
+    /* 0x0C */ s32 life;      // 0 frees the object; short-lived types count it down
+    /* 0x10 */ s32 needsInit; // set at spawn, cleared by the type handler's first update
+    /* 0x14 */ s32 age;       // frames since spawn
+    /* 0x18 */ s32 pathIndex;
+    /* 0x1C */ s32 speed; // path position step per frame
     /* 0x20 */ char pad20[8];
     /* 0x28 */ s32 unk28;
     /* 0x2C */ s32 unk2C;
@@ -124,13 +124,13 @@ typedef struct {
     /* 0x10 */ char pad10[8];
     /* 0x18 */ SVECTOR rotation;
     /* 0x20 */ char pad20[8];
-    /* 0x28 */ JetObjectState unk28;
+    /* 0x28 */ JetObjectState state;
     /* 0xC8 */ s32 pathLen;
     /* 0xCC */ SVECTOR* path;
     /* 0xD0 */ s32 : 32;
-    /* 0xD4 */ JetNode* unkD4;
-    /* 0xD8 */ s16 unkD8;
-    /* 0xDA */ s16 unkDA;
+    /* 0xD4 */ JetNode* node;
+    /* 0xD8 */ s16 index; // slot in g_JetObjects, -1 when free
+    /* 0xDA */ s16 active;
     /* 0xDC */ SVECTOR unkDC[6]; // the model bounding box's six face centres
     /* 0x10C */ char pad10C[0x10];
     /* 0x11C */ u_long unk11C[6]; // the same six points projected to the screen
@@ -197,7 +197,7 @@ extern u8 g_JetShotRepeatCounter;
 extern s16 g_JetCursorX;
 extern s16 g_JetCursorY;
 extern u8 g_JetScorePopupAlternate;
-extern u8 g_JetTransitionDrawEnabled;
+extern u8 g_JetDrawEnabled;
 extern u8 g_JetExit;
 extern SVECTOR g_JetPopupRot;
 extern u16 g_JetSpriteClut[12];

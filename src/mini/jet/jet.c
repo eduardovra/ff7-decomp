@@ -88,7 +88,7 @@ u8 g_JetShotRepeatCounter;
 s16 g_JetCursorX;
 s16 g_JetCursorY;
 u8 g_JetScorePopupAlternate;
-u8 g_JetTransitionDrawEnabled;
+u8 g_JetDrawEnabled;
 u8 g_JetExit;
 SVECTOR g_JetPopupRot;
 u16 g_JetSpriteClut[12];
@@ -206,7 +206,7 @@ u16 MINI_Jet(void) {
         PutDrawEnv(&g_JetBufferPtr[0]->draw);
         PutDispEnv(&g_JetBufferPtr[0]->disp);
         ClearImage(&g_JetBufferPtr[0]->draw.clip, 0, 0, 0);
-        if (g_JetTransitionDrawEnabled) {
+        if (g_JetDrawEnabled) {
             DrawOTag(&g_JetBufferPtr[0]->ot[LEN(g_JetBufferPtr[0]->ot) - 1]);
             DrawOTag(&g_JetBufferPtr[0]->ot2[LEN(g_JetBufferPtr[0]->ot2) - 1]);
         }
@@ -310,10 +310,10 @@ void JetDrawObjectAndCheckHit(JetBuffer* drawBuffer, JetNode* node, s16 otIndex,
         }
     }
     if (JetVectorInsidePlanes((VECTOR*)g_JetWorldMatrix->t)) {
-        object->unk28.hit = 0;
+        object->state.hit = 0;
         if (g_JetCursorX < maxX && minX < g_JetCursorX && g_JetCursorY < maxY && minY < g_JetCursorY &&
             g_JetFiring == 1) {
-            object->unk28.hit = g_JetFiring;
+            object->state.hit = g_JetFiring;
         }
     }
 }
@@ -789,7 +789,7 @@ static void JetInitialize(void) {
     g_JetTrackSegment = 0;
     g_JetCameraPathPos = 0;
     g_JetScore = 0;
-    g_JetTransitionDrawEnabled = 0;
+    g_JetDrawEnabled = 0;
     g_JetExit = 0;
     g_JetPopupModelId = 0;
     g_JetScorePopupAlternate = 0;
