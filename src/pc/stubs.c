@@ -9,7 +9,7 @@
     int name(void) { return 0; }
 #define STUB_DATA(name, size) __attribute__((aligned(8))) unsigned char name[size]
 
-// 990 globals
+// 996 globals
 STUB_DATA(D_8003623C, 256);
 STUB_DATA(D_80062F19, 256);
 STUB_DATA(D_80062F1A, 256);
@@ -99,6 +99,8 @@ STUB_DATA(D_800A0068, 64);
 STUB_DATA(D_800A00A8, 16);
 STUB_DATA(D_800A00B8, 536);
 STUB_DATA(D_800B1254, 244);
+STUB_DATA(D_800B1298, 256);
+STUB_DATA(D_800B12C0, 256);
 STUB_DATA(D_800B1348, 8);
 STUB_DATA(D_800B1350, 356);
 STUB_DATA(D_800B1358, 256);
@@ -363,7 +365,11 @@ STUB_DATA(D_800F4CEC, 64);
 STUB_DATA(D_800F4D2C, 320);
 STUB_DATA(D_800F5028, 256);
 STUB_DATA(D_800F502C, 256);
+STUB_DATA(D_800F5030, 256);
 STUB_DATA(D_800F5034, 256);
+STUB_DATA(D_800F5038, 256);
+STUB_DATA(D_800F503A, 256);
+STUB_DATA(D_800F503C, 256);
 STUB_DATA(D_800F5040, 56);
 STUB_DATA(D_800F5074, 256);
 STUB_DATA(D_800F5078, 256);
@@ -625,7 +631,6 @@ STUB_DATA(D_801516CC, 40);
 STUB_DATA(D_801516F4, 4);
 STUB_DATA(D_801516F8, 4);
 STUB_DATA(D_8015174C, 40);
-STUB_DATA(D_80151774, 4);
 STUB_DATA(D_8015178C, 40);
 STUB_DATA(D_801517BC, 4);
 STUB_DATA(D_801517C4, 4);
@@ -746,7 +751,7 @@ STUB_DATA(D_801E8F38, 256);
 STUB_DATA(D_801E8F44, 256);
 STUB_DATA(SavedScriptIds, 384);
 STUB_DATA(g_AccessoryTable, 520);
-STUB_DATA(g_ActiveCharacters, 131072);
+STUB_DATA(g_ActiveCharacters, 9796);
 STUB_DATA(g_ActiveCharsHPMPInited, 1508);
 STUB_DATA(g_ActiveEncounter, 172);
 STUB_DATA(g_AkaoCdVol, 16);
@@ -762,7 +767,7 @@ STUB_DATA(g_AkaoGlobalUpdateFlags, 4);
 STUB_DATA(g_AkaoMusicActiveMask, 4);
 STUB_DATA(g_AkaoMusicActiveMaskStored, 16);
 STUB_DATA(g_AkaoMusicAltMask, 16);
-STUB_DATA(g_AkaoMusicBuffer, 75780);
+STUB_DATA(g_AkaoMusicBuffer, 75776);
 STUB_DATA(g_AkaoMusicFadeSteps, 256);
 STUB_DATA(g_AkaoMusicId, 22);
 STUB_DATA(g_AkaoMusicKeyedMask, 4);
@@ -784,9 +789,9 @@ STUB_DATA(g_AkaoSavedChannels0, 6336);
 STUB_DATA(g_AkaoSavedChannels1, 6336);
 STUB_DATA(g_AkaoSavedMusicActiveMask0, 70);
 STUB_DATA(g_AkaoSavedMusicId0, 22);
-STUB_DATA(g_AkaoSavedMusicId1, 26);
+STUB_DATA(g_AkaoSavedMusicId1, 22);
 STUB_DATA(g_AkaoSoundActiveMaskStored, 4);
-STUB_DATA(g_AkaoSoundChannelsMode, 448);
+STUB_DATA(g_AkaoSoundChannelsMode, 444);
 STUB_DATA(g_AkaoSoundSlots, 1668);
 STUB_DATA(g_AkaoStreamLoopSize, 4);
 STUB_DATA(g_AkaoStreamLoopSrc, 4);
@@ -828,6 +833,7 @@ STUB_DATA(g_BattleCameraCount, 20);
 STUB_DATA(g_BattleCameraCursor, 8);
 STUB_DATA(g_BattleCameraSlots, 1160);
 STUB_DATA(g_BattleCmdOpcodeOffs, 152);
+STUB_DATA(g_BattleCurrentTargetMask, 76);
 STUB_DATA(g_BattleEffectCallbacks, 400);
 STUB_DATA(g_BattleEffectCursor, 96);
 STUB_DATA(g_BattleEffectSlots, 3220);
@@ -851,7 +857,7 @@ STUB_DATA(g_BattleStartFXFlags, 2204);
 STUB_DATA(g_BattleState, 6644);
 STUB_DATA(g_BattleUnitPresentMask, 18);
 STUB_DATA(g_BattleWork, 680);
-STUB_DATA(g_CameraScrollCurrentStep, 284);
+STUB_DATA(g_CameraScrollCurrentStep, 4);
 STUB_DATA(g_CameraScrollEnabled, 4);
 STUB_DATA(g_CameraScrollNumSteps, 4);
 STUB_DATA(g_CameraScrollStartX, 4);
@@ -864,7 +870,7 @@ STUB_DATA(g_Channel1, 4448);
 STUB_DATA(g_Channel1Config, 4);
 STUB_DATA(g_Channel3ActiveMask, 4);
 STUB_DATA(g_Channel3OffMask, 4);
-STUB_DATA(g_CharIdToEntity, 6164);
+STUB_DATA(g_CharIdToEntity, 16);
 STUB_DATA(g_CharacterLevelData, 36);
 STUB_DATA(g_CharacterLock, 4);
 STUB_DATA(g_CurrentEntity, 8);
@@ -876,13 +882,13 @@ STUB_DATA(g_EncounterBannerActive, 4);
 STUB_DATA(g_EncounterBannerStringId, 5236);
 STUB_DATA(g_EncounterType, 4);
 STUB_DATA(g_EntityForSplitJoin, 4);
-STUB_DATA(g_EntitySplitJoinState, 52);
+STUB_DATA(g_EntitySplitJoinState, 48);
 STUB_DATA(g_EntityToLine, 50);
 STUB_DATA(g_EntityToModel, 76);
 STUB_DATA(g_FFTextLetterOffset, 12544);
 STUB_DATA(g_FFTextNumberOffset, 131072);
 STUB_DATA(g_FieldCurrentOpcode, 4);
-STUB_DATA(g_FieldDebugCurPage, 20);
+STUB_DATA(g_FieldDebugCurPage, 8);
 STUB_DATA(g_FieldDebugPages, 2268);
 STUB_DATA(g_FieldDebugRChars, 4);
 STUB_DATA(g_FieldDebugRDm, 76);
@@ -892,7 +898,7 @@ STUB_DATA(g_FieldDebugRb, 12692);
 STUB_DATA(g_FieldDebugTransp, 4);
 STUB_DATA(g_FieldEncounters, 52);
 STUB_DATA(g_FieldEncountersP, 4);
-STUB_DATA(g_FieldEntity, 2116);
+STUB_DATA(g_FieldEntity, 2112);
 STUB_DATA(g_FieldKeyState, 8);
 STUB_DATA(g_FieldLineCount, 68);
 STUB_DATA(g_FieldLines, 1004);
@@ -900,11 +906,11 @@ STUB_DATA(g_FieldMapVars, 260);
 STUB_DATA(g_FieldModelAnimId, 16);
 STUB_DATA(g_FieldModelAnimStatus, 1552);
 STUB_DATA(g_FieldModelBaseAnimSpeed, 36);
-STUB_DATA(g_FieldModelCount, 24);
+STUB_DATA(g_FieldModelCount, 4);
 STUB_DATA(g_FieldModelData, 4);
 STUB_DATA(g_FieldModelEffAnimSpeed, 32);
 STUB_DATA(g_FieldModelLoaderData, 4);
-STUB_DATA(g_FieldModels, 20);
+STUB_DATA(g_FieldModels, 4);
 STUB_DATA(g_FieldModelsP, 8);
 STUB_DATA(g_FieldMovieJustStarted, 256);
 STUB_DATA(g_FieldMoviePlayed, 4);
@@ -921,7 +927,7 @@ STUB_DATA(g_FieldState, 308);
 STUB_DATA(g_FieldText, 4);
 STUB_DATA(g_FieldTriggers, 16);
 STUB_DATA(g_FieldTriggersP, 8);
-STUB_DATA(g_FieldWaitCounter, 108);
+STUB_DATA(g_FieldWaitCounter, 100);
 STUB_DATA(g_FireTexture, 65696);
 STUB_DATA(g_GameState, 4);
 STUB_DATA(g_IsFieldLoading, 4);
@@ -950,10 +956,10 @@ STUB_DATA(g_PosCursorPrimId, 76);
 STUB_DATA(g_PosCursorPrims, 80);
 STUB_DATA(g_PosCursorX, 4);
 STUB_DATA(g_PosCursorY, 8);
-STUB_DATA(g_PrevGameState, 28);
+STUB_DATA(g_PrevGameState, 4);
 STUB_DATA(g_RainForce, 8);
 STUB_DATA(g_RandomTableIndex, 8);
-STUB_DATA(g_RandomTableStep, 100168);
+STUB_DATA(g_RandomTableStep, 88);
 STUB_DATA(g_RefrecBaseScale, 8);
 STUB_DATA(g_RefrecBufferPtr, 256);
 STUB_DATA(g_RefrecPrimBuffer, 131072);
@@ -975,7 +981,7 @@ STUB_DATA(g_ThunderRenderData0, 148);
 STUB_DATA(g_ThunderRenderData1, 200);
 STUB_DATA(g_ThunderTexture, 65740);
 STUB_DATA(g_TutorialActive, 20);
-STUB_DATA(g_WeaponTable, 5636);
+STUB_DATA(g_WeaponTable, 5632);
 STUB_DATA(g_WindowBuffer, 64);
 STUB_DATA(g_WindowBufferPos, 256);
 STUB_DATA(g_WindowCount, 8);
@@ -995,22 +1001,22 @@ STUB_DATA(g_WindowWaitTime, 8);
 STUB_DATA(g_cDb, 140);
 STUB_DATA(g_db, 131072);
 STUB_DATA(g_dbIndex, 64);
-STUB_DATA(g_modelScreenPos, 196);
+STUB_DATA(g_modelScreenPos, 120);
 STUB_DATA(g_pFieldState, 4);
 STUB_DATA(menus, 1460);
 STUB_DATA(s_PadBuffers, 256);
 STUB_DATA(transform_matrix, 1640);
 
-// 522 functions
+// 527 functions
 STUB_FUNC(AddBackgroundToRender)
 STUB_FUNC(AddStrNextDebugRow)
 STUB_FUNC(AkaoCmd_15_PlayMusicSwapSaved)
-STUB_FUNC(AkaoCmd_82_ResetMusicAndSoundVol)
+STUB_FUNC(AkaoCmd_82_ResetVolume)
 STUB_FUNC(AkaoCmd_90_SetMuteMusicMask)
 STUB_FUNC(AkaoCmd_92_SetCondition)
 STUB_FUNC(AkaoCmd_C8_SetCdVol)
-STUB_FUNC(AkaoCmd_F4_SaveSoundState)
-STUB_FUNC(AkaoCmd_F5_RestoreSoundState)
+STUB_FUNC(AkaoCmd_F4_SaveState)
+STUB_FUNC(AkaoCmd_F5_RestoreState)
 STUB_FUNC(AkaoDeinit)
 STUB_FUNC(AkaoDispatchCommand)
 STUB_FUNC(AkaoInstrInit)
@@ -1340,6 +1346,7 @@ STUB_FUNC(func_800262D8)
 STUB_FUNC(func_80033BE0)
 STUB_FUNC(func_80034444)
 STUB_FUNC(func_80034D5C)
+STUB_FUNC(func_80034F3C)
 STUB_FUNC(func_800354CC)
 STUB_FUNC(func_80036244)
 STUB_FUNC(func_800A00BC)
@@ -1350,12 +1357,15 @@ STUB_FUNC(func_800A0514)
 STUB_FUNC(func_800A0C58)
 STUB_FUNC(func_800A12AC)
 STUB_FUNC(func_800A14BC)
+STUB_FUNC(func_800A1630)
 STUB_FUNC(func_800A17C0)
-STUB_FUNC(func_800A18BC)
 STUB_FUNC(func_800A19A4)
 STUB_FUNC(func_800A19FC)
 STUB_FUNC(func_800A1EEC)
+STUB_FUNC(func_800A1F40)
 STUB_FUNC(func_800A1F48)
+STUB_FUNC(func_800A272C)
+STUB_FUNC(func_800A28D8)
 STUB_FUNC(func_800A2974)
 STUB_FUNC(func_800A2BD4)
 STUB_FUNC(func_800A3178)
@@ -1378,6 +1388,7 @@ STUB_FUNC(func_800A835C)
 STUB_FUNC(func_800A8AE8)
 STUB_FUNC(func_800A8E84)
 STUB_FUNC(func_800A9520)
+STUB_FUNC(func_800A9828)
 STUB_FUNC(func_800A9D94)
 STUB_FUNC(func_800AA304)
 STUB_FUNC(func_800AA950)
