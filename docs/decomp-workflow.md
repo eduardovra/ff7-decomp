@@ -297,8 +297,9 @@ an `s32` local first (`lw` + late `sll/sra`); make those locals block-scoped,
 since gcc only ties a dying input to the output register (`sll s0,s0`) for
 pseudos that live in one basic block; and write the helper's own stores as
 plain member assignments, not `setVector`, or a loop that hoists the struct
-address keeps `lui at` forms for the vector fields. `func_800A4650` in `jet.c`,
-matched into `func_800A6B08` and `func_800A6BD8`, is the worked example.
+address keeps `lui at` forms for the vector fields. `JetObjectCreateUnscheduled`
+in `jet_object.c`, matched into `JetObjectDamage` and `JetObjectAwardPoints`, is
+the worked example.
 
 ## Data layout failures look like nothing is wrong
 

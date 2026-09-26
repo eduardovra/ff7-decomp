@@ -32,7 +32,8 @@ Open, in rough order of payoff:
 - 100, 201, 203, 230, 250: no spawns seen in a full ride (250 was confirmed
   by injecting one).
 - `unk50` slots: only `[0]` points, `[0xD]` hit points and `[18]` death
-  sound are established, and only for shootable types.
+  sound are established, and only for shootable types. `[12]` is never read
+  (see its finding below).
 
 Two traps already hit:
 
@@ -247,6 +248,91 @@ of 200 or more, with `g_JetSpeed`, `g_JetTrackSegment` and
   frames 0-45, 1 from 252's spawn, and 253 clears it at the exit.
 - Left unnamed: type 3 sits 0x9C4 above the camera every frame; what it
   looks like still needs frames from Redux.
+
+### `JetObjectCreateUnscheduled` and `unk50[12]`, confirmed 2026-09-26 (native build)
+
+- `JetObjectCreateUnscheduled` (was `func_800A4650`): `JetObjectCreate` plus
+  `params.raw[0xC] = 0`. `JetObjectCreate` has one caller, the spawn-schedule
+  loop; this one is called only from object logic at runtime (handlers in
+  `JetObjectsUpdate`, `JetObjectDamage`, `JetObjectAwardPoints`). The PC port
+  has the same pair, `C_005EB507` / `C_005EB566`, unnamed ("create new
+  object[1]" / "[2]").
+- `unk50[12]`: a dump of all 235 spawn records found it nonzero only on types
+  0 and 1 (31 of their 94 records), always a track segment strictly between
+  the spawn segment and `unk50[2]`, the segment that frees the object (e.g.
+  spawned at 300, `[12]` 329, freed after 335).
+- Nothing reads it. No C reads it by name or index, `jet_gte.s` has no access
+  at its offset, and the PC port only copies it. Hardware access watchpoints
+  over a full ride (11534 frames) on the template's slot and on all 34 type
+  0/1 objects that carried a value logged no access on any object; on the
+  template only the schedule copy, the `= 0` above and `JetObjectAlloc`'s copy.
+- Verdict: the function name is confirmed by its call sites. `[12]` stays
+  unnamed: level data the retail code never consumes, and the `= 0` is dead.
+
+### Params layout (`JetObjectParams`), 2026-09-26
+
+From the handlers, confirmed only by matching (`make build`):
+
+- `common` (was `shootable`): slots every path type shares. `[1]`
+  `loopPath` (`== 1` wraps the path position; 0, 1, 5, 10), `[2]`
+  `endSegment` (freed once `g_JetTrackSegment` passes it; every path type),
+  `[17]` `spawnSfx` (played in the `needsInit` setup; 0, 1, 2, 4, 5, 10, 17).
+- `explosion.debrisCount` `[3]`, `spinner.startRot`/`rotStep` `[3..5]`/`[6..8]`,
+  `firework.riseSpeed`/`riseDecel` `[3]`/`[4]`,
+  `stalactite.fallSegment` `[3]`, `eruption.debrisCount` `[3]`.
+- Left as `raw[]`, needing a type name first: 0 (`[3..5]` spin per frame;
+  model 56 is the same sweeping beam type 5 draws), 2 (`[3]` range of a
+  random target for `rotation.vx`, `[4]` yaw step), 7/13 (`[3..4]` start rotation, `[5]` segment it starts
+  tilting, `[6]` step, `[7]` frames), 17 (`[3]` segment it starts
+  moving). Also `[10]` (`JetObjectAwardPoints` mode 1-5, and type 5's
+  hit-model swap), `[11]` (mode 3's turn step), `[14]` (type 5 hit flag).
+
+### Types 4, 14, 15 named, 2026-09-26 (native build)
+
+`jet_native_tour.py 2 4 14 --ages 5,20,60,100,140,200,280 --per-type 4`.
+
+- 4 (`JET_OBJ_STALACTITE`, field `fallSegment`): at age 100 (segment 1022)
+  the box sits on a crystal hanging from the cave ceiling; by age 140 it has
+  left the frame. The handler holds it at path point 0 and adds 4 to its
+  fall speed per frame once the ride passes `[3]`. One group of seven models
+  on path 21 has `[3]` = 1125, 1126, 1127, so they drop in turn.
+- 14 (`JET_OBJ_ERUPTION`, field `debrisCount`): a flame column rising out of
+  the lava at ages 60 and 100. It plays `SFX_FIRA`, and at age 5 spawns
+  `[3]` (10 in every record) type 15 plus one type 16.
+- 15 (`JET_OBJ_ERUPTION_DEBRIS`): model 42, the explosion debris model; the
+  age-100 frame shows its chunks in the air. Launched up with random
+  sideways speed, spinning, falling for 200 frames.
+- Still unnamed: 16 (model 41; rises from age 21, then falls), 2 (small and
+  dark at every capture age in the space section).
+
+### Isolation viewer: types 2, 16 named, 2026-09-26 (native build)
+
+Method: `tools/jet_isolate.py <type>` patches the native-only copies under
+`build-pc/strd/` (never `src/`), films one ride, and deletes the copies so
+they regenerate. The patch, driven by env vars: `JET_ISOLATE=<type>` skips
+`JetDrawTrack`/`JetDrawTriangleList`, draws only the first live object of
+that type (the filter sits before the draw dispatch in `JetObjectsUpdate`,
+so logic and slots are untouched), and after `JetCameraUpdate` replaces the
+camera with an identity rotation `JET_ISOLATE_DIST` in front of the object's
+first position (`JET_ISOLATE_FOLLOW=1` tracks it instead;
+`JET_ISOLATE_MODEL` filters by model). The camera is rebuilt from the track
+every frame, so the override does not leak into the ride. A gdb loop grabs
+`Psyz_VideoAllocCapturedFrame` every N frames of the object's life. Fog
+hides objects beyond ~8000; 3000-5000 works.
+
+- Validation: type 4 m46 hangs point-down from its origin and drops out of
+  view at segments 1036-1040 (`fallSegment` 1032).
+- 2 (`JET_OBJ_BALLOON`, fields `tiltRange`, `yawStep`): all four models are
+  balloons on strings -- m37 red, m73 blue, m74 yellow, m90 a large
+  character-shaped one (70 points, 50 health).
+- 16 (`JET_OBJ_ERUPTION_FLAME`): m41 flame rising from below at age 30-40,
+  sinking out by 140.
+- 14 alone (m40) is the flame column itself: shoots up, turns while rising,
+  falls back. 15 (m42) is a small ember chunk.
+- Not named, mixed looks per model: 0 is m56 a searchlight cone sweeping,
+  m54 a spinning star target; 17 is m89 a rock chunk, m94 a large slab (and
+  m71, a points target); 13 m45 is a downward spotlight (its tilt starts at
+  segment 2010, past the captured window), m87 did not render at 3500.
 
 ## What each object type looks like
 
