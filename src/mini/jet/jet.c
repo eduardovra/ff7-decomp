@@ -190,7 +190,7 @@ u16 MINI_Jet(void) {
             if (*speed < 16384) {
                 D_800A8338 = 0;
             } else {
-                D_800A8338 = 0x7F;
+                D_800A8338 = AKAO_VOL_MAX;
             }
         } else {
             JetDrawSprite(9, 202, 192, 96, 32, 0, 0x50, 0x60, 0x20, 0);
@@ -222,7 +222,7 @@ u16 MINI_Jet(void) {
         ClearOTagR(g_JetBufferPtr[0]->ot2, LEN(g_JetBufferPtr[0]->ot2));
         JetPrimCursorsReset(&g_JetBufferPtr[0]->prims);
     }
-    g_AkaoCmd.opcode = 0xB8;
+    g_AkaoCmd.opcode = AKAO_SET_ALL_VOL_BALANCE;
     g_AkaoCmd.params[0] = 0;
     AkaoExec();
     return g_JetScore;
@@ -904,33 +904,33 @@ static void JetLoadTim(u_long* tim) {
 }
 
 static void JetAudioInit(void) {
-    g_AkaoCmd.opcode = 0x10;
+    g_AkaoCmd.opcode = AKAO_PLAY_MUSIC;
     g_AkaoCmd.params[0] = g_JetXbinAdr.unk0;
     AkaoExec();
-    g_AkaoCmd.opcode = 0xC0;
-    g_AkaoCmd.params[0] = 0x7F;
+    g_AkaoCmd.opcode = AKAO_VOLUME_SET;
+    g_AkaoCmd.params[0] = AKAO_VOL_MAX;
     AkaoExec();
-    g_AkaoCmd.opcode = 0xB8;
-    g_AkaoCmd.params[0] = 0x7F;
+    g_AkaoCmd.opcode = AKAO_SET_ALL_VOL_BALANCE;
+    g_AkaoCmd.params[0] = AKAO_VOL_MAX;
     AkaoExec();
-    g_AkaoCmd.opcode = 0xBC;
+    g_AkaoCmd.opcode = AKAO_SET_ALL_PITCH;
     g_AkaoCmd.params[0] = 0;
     AkaoExec();
-    g_AkaoCmd.opcode = 0xA2;
+    g_AkaoCmd.opcode = AKAO_SET_VOL_BALANCE_SLOT0;
     g_AkaoCmd.params[0] = 0;
     AkaoExec();
-    g_AkaoCmd.opcode = 0x2A;
-    g_AkaoCmd.params[0] = 0x40;
-    g_AkaoCmd.params[1] = 0x177;
+    g_AkaoCmd.opcode = AKAO_PLAY_SLOT0;
+    g_AkaoCmd.params[0] = AKAO_PAN_CENTER;
+    g_AkaoCmd.params[1] = SFX_177;
     AkaoExec();
 }
 
 void JetAudioFadeOut(void) {
-    g_AkaoCmd.opcode = 0xC1;
+    g_AkaoCmd.opcode = AKAO_VOL_SLIDE_FROM_CURR;
     g_AkaoCmd.params[0] = 0xF0;
     g_AkaoCmd.params[1] = 0;
     AkaoExec();
-    g_AkaoCmd.opcode = 0xB9;
+    g_AkaoCmd.opcode = AKAO_SLIDE_ALL_VOL_BALANCE;
     g_AkaoCmd.params[0] = 0xF0;
     g_AkaoCmd.params[1] = 0;
     AkaoExec();
@@ -945,20 +945,20 @@ void JetPlaySfx(s16 soundId) {
     channel = (*pChannel + 1) & 1;
     *pChannel = channel;
     if (channel == 0) {
-        g_AkaoCmd.opcode = 0xB0;
+        g_AkaoCmd.opcode = AKAO_SET_PITCH_SLOT2;
         g_AkaoCmd.params[0] = 0;
         AkaoExec();
-        g_AkaoCmd.opcode = 0x28;
-        g_AkaoCmd.params[0] = 0x40;
+        g_AkaoCmd.opcode = AKAO_PLAY_SLOT2;
+        g_AkaoCmd.params[0] = AKAO_PAN_CENTER;
         g_AkaoCmd.params[1] = soundId;
         AkaoExec();
     }
     if (*pChannel == 1) {
-        g_AkaoCmd.opcode = 0xB1;
+        g_AkaoCmd.opcode = AKAO_SET_PITCH_SLOT1;
         g_AkaoCmd.params[0] = 0;
         AkaoExec();
-        g_AkaoCmd.opcode = 0x29;
-        g_AkaoCmd.params[0] = 0x40;
+        g_AkaoCmd.opcode = AKAO_PLAY_SLOT1;
+        g_AkaoCmd.params[0] = AKAO_PAN_CENTER;
         g_AkaoCmd.params[1] = soundId;
         AkaoExec();
     }
@@ -971,13 +971,13 @@ static void JetSetLaserVolume(s32 volume) {
     lastParam = &D_800A8958;
     if (*lastParam == 0) {
         if (volume & 0xFF) {
-            g_AkaoCmd.opcode = 0x2B;
-            g_AkaoCmd.params[0] = 0x40;
-            g_AkaoCmd.params[1] = 0x22B;
+            g_AkaoCmd.opcode = AKAO_PLAY_SLOT3;
+            g_AkaoCmd.params[0] = AKAO_PAN_CENTER;
+            g_AkaoCmd.params[1] = SFX_22B;
             AkaoExec();
         } else {
-            g_AkaoCmd.opcode = 0x2B;
-            g_AkaoCmd.params[0] = 0x40;
+            g_AkaoCmd.opcode = AKAO_PLAY_SLOT3;
+            g_AkaoCmd.params[0] = AKAO_PAN_CENTER;
             g_AkaoCmd.params[1] = 0;
             AkaoExec();
             D_800A8958 = 0;
@@ -987,13 +987,13 @@ static void JetSetLaserVolume(s32 volume) {
     param = volume & 0xFF;
     if (param) {
         g_JetLaserVolume = param;
-        g_AkaoCmd.opcode = 0xB3;
+        g_AkaoCmd.opcode = AKAO_SET_PITCH_SLOT3;
         g_AkaoCmd.params[0] = param;
         AkaoExec();
         *lastParam = param;
     } else {
-        g_AkaoCmd.opcode = 0x2B;
-        g_AkaoCmd.params[0] = 0x40;
+        g_AkaoCmd.opcode = AKAO_PLAY_SLOT3;
+        g_AkaoCmd.params[0] = AKAO_PAN_CENTER;
         g_AkaoCmd.params[1] = 0;
         AkaoExec();
         D_800A8958 = 0;
@@ -1001,10 +1001,10 @@ static void JetSetLaserVolume(s32 volume) {
 }
 
 static void JetAudioUpdateVolumes(void) {
-    g_AkaoCmd.opcode = 0xA2;
+    g_AkaoCmd.opcode = AKAO_SET_VOL_BALANCE_SLOT0;
     g_AkaoCmd.params[0] = D_800A8338;
     AkaoExec();
-    g_AkaoCmd.opcode = 0xA3;
+    g_AkaoCmd.opcode = AKAO_SET_VOL_BALANCE_SLOT3;
     g_AkaoCmd.params[0] = g_JetLaserVolume;
     AkaoExec();
 }
@@ -1245,7 +1245,7 @@ static void JetInputUpdate(void) {
         } else {
             *paused = 1;
         }
-        JetPlaySfx(0x3B);
+        JetPlaySfx(SFX_BUTTON);
     }
 }
 
