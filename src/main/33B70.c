@@ -23,6 +23,9 @@ extern CdlLOC D_80071A68;    // cd sector
 extern size_t D_80071A6C;    // amount of sectors to read
 extern u_long* D_80071A80;   // read content destination
 extern void (*D_80071A84)(); // callback
+#ifdef VERSION_PC
+extern size_t g_PcCdChainBytes; // exact length, so reads stop where the PS1's DMA would overrun
+#endif
 
 void func_80034CAC(u32 arg0);
 static s32 ReadDiskNo(void);
@@ -97,6 +100,9 @@ void SysCdromSetChainParam(int op, int sector, size_t len, u_long* dst, void (*c
 
     CdIntToPos(sector, &D_80071A68);
     D_80071A6C = (len + 0x7FF) >> 11;
+#ifdef VERSION_PC
+    g_PcCdChainBytes = len;
+#endif
     D_80071A80 = dst;
     D_80071A84 = cb;
     D_80071A60 = op;

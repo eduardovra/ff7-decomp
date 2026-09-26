@@ -1,9 +1,8 @@
 #ifndef JET_PRIVATE_H
 #define JET_PRIVATE_H
 
-#include "types.h"
 #include <game.h>
-#include <inline_o.h>
+#include <psxsdk/inline_o.h>
 #include <libetc.h>
 
 // Nine write cursors, each reset to the start of its own buffer below.
@@ -72,6 +71,21 @@ typedef struct {
     /* 0x1A */ s16 boundsMinZ;
     /* 0x1C */ s32 : 32;
 } JetModel; // size: 0x20
+
+// Argument block for the GTE renderers in jet_gte.s.
+typedef struct {
+    /* 0x0 */ JetTriangle* tris;
+    /* 0x4 */ POLY_G3* prim;
+    /* 0x8 */ OT_TYPE* ot;
+    /* 0xC */ JetModel* model;
+} JetModelDrawArgs; // size: 0x10
+
+void* JetDrawModelTris(JetModelDrawArgs* args);
+void JetProject3Points(SVECTOR* points, u_long* screen);
+void JetProject6Points(SVECTOR* points, u_long* screen);
+void* JetDrawModelTrisUI(JetModelDrawArgs* args);
+POLY_G3* JetDrawTriangle(JetTriangle* arg0, POLY_G3* arg1, OT_TYPE* arg2, JetTriangle* arg3);
+POLY_FT4* JetDrawTrackQuad(SVECTOR* arg0, POLY_FT4* arg1, OT_TYPE* arg2, SVECTOR* arg3);
 
 // Doubly linked list node, chained by JetNodesInit with a 0x38 stride.
 typedef struct JetNode {

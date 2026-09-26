@@ -189,29 +189,42 @@
 }
 
 #else
-#define gte_ldv0(r1)
-#define gte_ldv3(r1,r2,r3)
-#define gte_SetGeomScreen(r1)
-#define gte_SetRotMatrix(r1)
-#define gte_SetTransMatrix(r1)
-#define gte_rtps()
-#define gte_rtpt()
-#define gte_rt()
-#define gte_rtv0()
-#define gte_nclip()
-#define gte_stsxy(r1)
-#define gte_stsxy3(r1,r2,r3)
-#define gte_stsxy2(r1)
-#define gte_stsz(r1)
-#define gte_stsz3(r1,r2,r3)
-#define gte_stszotz(r1)
-#define gte_stopz(r1)
-#define gte_stlvnl(r1)
-#define gte_ldlv0( r0 )
-#define gte_ldclmv( r0 )
-#define gte_rtir()
-#define gte_stclmv( r0 )
-#define gte_stlvl( r0 )
+// PSY-Z's libgte.h supplies the common macros; the rest drive its GTE emulator.
+#include <psyz/gte.h>
+
+#define gte_rt() Psyz_GteCommand(0x4A480012)
+#define gte_rtv0() Psyz_GteCommand(0x4A486012)
+#define gte_rtir() Psyz_GteCommand(0x4A49E012)
+
+#define gte_ldlv0(r1)                                                                                                  \
+    {                                                                                                                  \
+        unsigned short* _v = (unsigned short*)(r1);                                                                    \
+        Psyz_GteDataWrite(0, _v[0] | ((unsigned int)_v[2] << 16));                                                     \
+        Psyz_GteDataWrite(1, *(unsigned int*)&_v[4]);                                                                  \
+    }
+
+#define gte_stsz(r1) (*(unsigned int*)(r1) = Psyz_GteDataRead(19))
+
+#define gte_stsz3(r1, r2, r3)                                                                                          \
+    {                                                                                                                  \
+        *(unsigned int*)(r1) = Psyz_GteDataRead(17);                                                                   \
+        *(unsigned int*)(r2) = Psyz_GteDataRead(18);                                                                   \
+        *(unsigned int*)(r3) = Psyz_GteDataRead(19);                                                                   \
+    }
+
+#define gte_stlvnl(r1)                                                                                                 \
+    {                                                                                                                  \
+        ((unsigned int*)(r1))[0] = Psyz_GteDataRead(25);                                                               \
+        ((unsigned int*)(r1))[1] = Psyz_GteDataRead(26);                                                               \
+        ((unsigned int*)(r1))[2] = Psyz_GteDataRead(27);                                                               \
+    }
+
+#define gte_stlvl(r1)                                                                                                  \
+    {                                                                                                                  \
+        ((unsigned int*)(r1))[0] = Psyz_GteDataRead(9);                                                                \
+        ((unsigned int*)(r1))[1] = Psyz_GteDataRead(10);                                                               \
+        ((unsigned int*)(r1))[2] = Psyz_GteDataRead(11);                                                               \
+    }
 #endif
 
 #endif

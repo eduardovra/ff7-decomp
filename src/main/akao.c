@@ -2253,7 +2253,7 @@ s32 AkaoExec(void) {
     case 0x15:
     case 0x18:
     case 0x19:
-        data = (u8*)g_AkaoCmd.params[0];
+        data = (u8*)(u32)g_AkaoCmd.params[0]; // u32 first: no sign extension on 64-bit
         if (data[0] == 'A' && data[1] == 'K' && data[2] == 'A' && data[3] == 'O') {
             data += 4;
             musicId = *(u16*)data;

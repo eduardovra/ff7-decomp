@@ -6,14 +6,6 @@
 // Where TEX.BIN loads, then XBIN2.BIN decompresses once the TIMs are in VRAM.
 #define JET_ASSET_ADDR ((u_long*)0x800F0000)
 
-// Argument block for the GTE renderers in jet_gte.s.
-typedef struct {
-    /* 0x0 */ JetTriangle* tris;
-    /* 0x4 */ POLY_G3* prim;
-    /* 0x8 */ OT_TYPE* ot;
-    /* 0xC */ JetModel* model;
-} JetModelDrawArgs; // size: 0x10
-
 // A doubly-linked draw-list entry, parallel to the array it orders. Both
 // links are indices into that array, with JET_LIST_END for the ends.
 #define JET_LIST_END 0xFFFF
@@ -101,12 +93,6 @@ u8 g_JetExit;
 SVECTOR g_JetPopupRot;
 u16 g_JetSpriteClut[12];
 extern void* D_80110BB8;
-void* JetDrawModelTris(JetModelDrawArgs* args);
-void JetProject3Points(SVECTOR* points, u_long* screen);
-void JetProject6Points(SVECTOR* points, u_long* screen);
-void* JetDrawModelTrisUI(JetModelDrawArgs* args);
-POLY_G3* JetDrawTriangle(JetTriangle* arg0, POLY_G3* arg1, OT_TYPE* arg2, JetTriangle* arg3);
-POLY_FT4* JetDrawTrackQuad(SVECTOR* arg0, POLY_FT4* arg1, OT_TYPE* arg2, SVECTOR* arg3);
 
 static void JetDrawEnergyGauge();
 static void JetDrawNumber(s32 value, s32 x, s32 y, s16 zeroPad, u16 textureV);
@@ -818,6 +804,18 @@ static void JetInitialize(void) {
     g_JetPopupTimer = 0;
 }
 
+#ifdef VERSION_PC
+// TEXADR.BIN and XBINADR.BIN hold 32-bit PS1 addresses; widen them in place.
+static void JetWidenAddresses(void* table, s32 count) {
+    u32* packed = table;
+    u_long* wide = table;
+
+    while (count--) {
+        wide[count] = packed[count];
+    }
+}
+#endif
+
 static void JetLoadAssets(void) {
     RECT unused;
 
@@ -826,6 +824,9 @@ static void JetLoadAssets(void) {
     SystemLoadFileBySector(g_JetAssetFiles[0].sector, g_JetAssetFiles[0].size, (u_long*)g_JetTexAdr, NULL);
     while (SystemCdromReadChain())
         ;
+#ifdef VERSION_PC
+    JetWidenAddresses(g_JetTexAdr, LEN(g_JetTexAdr));
+#endif
     SystemLoadFileBySector(g_JetAssetFiles[1].sector, g_JetAssetFiles[1].size, JET_ASSET_ADDR, NULL);
     while (SystemCdromReadChain())
         ;
@@ -835,6 +836,9 @@ static void JetLoadAssets(void) {
     SystemLoadFileBySector(g_JetAssetFiles[2].sector, g_JetAssetFiles[2].size, &g_JetXbinAdr.unk0, NULL);
     while (SystemCdromReadChain())
         ;
+#ifdef VERSION_PC
+    JetWidenAddresses(&g_JetXbinAdr, sizeof(g_JetXbinAdr) / sizeof(u_long));
+#endif
     SysCdromStartLoadLzs(g_JetAssetFiles[3].sector, g_JetAssetFiles[3].size, JET_ASSET_ADDR, NULL);
     while (SystemCdromReadChain())
         ;

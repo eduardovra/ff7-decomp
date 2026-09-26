@@ -5,7 +5,10 @@
 // the game is still a generated stub, so -battle is expected to misbehave.
 
 #include <psyz.h>
+#include <psyz/cd.h>
+#include <libcd.h>
 #include <libgpu.h>
+#include <libgte.h>
 #include <libetc.h>
 #include <stdio.h>
 #include <string.h>
@@ -31,23 +34,31 @@ extern void func_800148B4(void);
 extern void func_80014934(void);
 extern void BATINI_Main(int sceneID);
 extern void BATTLE_RunFrame(void);
+extern unsigned short MINI_Jet(void);
+extern void InputInit(void);
 
 #define PS1_RAM_BASE 0x80000000
 #define PS1_RAM_SIZE 0x00200000
+#define PS1_SCRATCHPAD_BASE 0x1F800000
+#define PS1_SCRATCHPAD_SIZE 0x1000
+#define DEFAULT_DISK "disks/Final Fantasy VII (USA) (Disc 1).cue"
 
 static DoubleBuffer db[2];
 static DoubleBuffer* cdb;
 
-// Casts like (u8*)0x801B0000 survive all over the decompiled C, so map the
-// PS1's 2MB of RAM where the console had it and they all become valid.
-static int MapPs1Ram(void) {
-    void* ram = mmap((void*)PS1_RAM_BASE, PS1_RAM_SIZE, PROT_READ | PROT_WRITE,
-                     MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
+static int MapAt(unsigned long base, unsigned long size) {
+    void* p = mmap((void*)base, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
 
-    if (ram == MAP_FAILED) {
+    if (p == MAP_FAILED) {
         return 0;
     }
-    return ram == (void*)PS1_RAM_BASE;
+    return p == (void*)base;
+}
+
+// Casts like (u8*)0x801B0000 survive all over the decompiled C, so map the
+// PS1's 2MB of RAM and its 1KB scratchpad where the console had them.
+static int MapPs1Ram(void) {
+    return MapAt(PS1_RAM_BASE, PS1_RAM_SIZE) && MapAt(PS1_SCRATCHPAD_BASE, PS1_SCRATCHPAD_SIZE);
 }
 
 static void InitGraphics(void) {
@@ -121,6 +132,7 @@ static int RunHeadless(void) {
 int main(int argc, char* argv[]) {
     int frameLimit = 0;
     int intoBattle = 0;
+    int intoJet = 0;
     int headless = 0;
     int sceneID = 0;
     int frame = 0;
@@ -131,6 +143,8 @@ int main(int argc, char* argv[]) {
             frameLimit = atoi(argv[++i]);
         } else if (!strcmp(argv[i], "-headless")) {
             headless = 1;
+        } else if (!strcmp(argv[i], "-jet")) {
+            intoJet = 1;
         } else if (!strcmp(argv[i], "-battle")) {
             intoBattle = 1;
         } else if (!strcmp(argv[i], "-scene") && i + 1 < argc) {
@@ -145,6 +159,21 @@ int main(int argc, char* argv[]) {
     InitGraphics();
     FntLoad(960, 256);
     SetDumpFnt(FntOpen(16, 16, SCREEN_WIDTH - 32, SCREEN_HEIGHT - 32, 0, 512));
+
+    if (intoJet) {
+        // The ride runs its own frame loop and returns the score when it ends.
+        if (!MapPs1Ram()) {
+            printf("could not map PS1 RAM at %08x\n", PS1_RAM_BASE);
+            return 1;
+        }
+        // What main's boot init does before any overlay runs.
+        InitGeom();
+        Psyz_CdSetDiskPath(DEFAULT_DISK);
+        CdInit();
+        InputInit();
+        printf("jet result %d\n", MINI_Jet());
+        return 0;
+    }
 
     if (intoBattle && !MapPs1Ram()) {
         printf("could not map PS1 RAM at %08x\n", PS1_RAM_BASE);

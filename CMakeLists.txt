@@ -74,6 +74,12 @@ set(FF7_SOURCES
     src/mini/chocobo/chocobo.c
     src/mini/chocobo/chocobo2.c
     src/mini/chocobo/chocobo_model.c
+    src/mini/jet/jet.c
+    src/mini/jet/jet_buffer.c
+    src/mini/jet/jet_collide.c
+    src/mini/jet/jet_model.c
+    src/mini/jet/jet_node.c
+    src/mini/jet/jet_object.c
 
     # Magics
     src/magic/barrier.c
@@ -124,6 +130,10 @@ if(FF7_PC)
 endif()
 
 add_library(${PROJECT_NAME} ${FF7_STR_SOURCES})
+if(FF7_PC)
+    # Native stand-ins for code and data still in assembly.
+    target_sources(${PROJECT_NAME} PRIVATE src/pc/cdchain.c src/pc/jet_gte.c src/pc/libgpu_ext.c src/pc/libgte_ext.c)
+endif()
 psyz_strip_file_prefix(${PROJECT_NAME})
 psyz_title(${PROJECT_NAME} "Final Fantasy VII")
 find_package(ZLIB REQUIRED)
@@ -131,6 +141,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE psyz m ZLIB::ZLIB)
 target_include_directories(${PROJECT_NAME} PRIVATE include src/pc)
 target_compile_definitions(${PROJECT_NAME} PRIVATE SKIP_ASM=1 NON_MATCHINGS FF7_STR VERSION_PC)
 target_compile_options(${PROJECT_NAME} PRIVATE
+    -fcommon
+    -fgnu89-inline
     -Wno-implicit-function-declaration
     -Wno-int-conversion
     -Wno-return-mismatch
@@ -159,4 +171,6 @@ if(FF7_PC)
         include/psxsdk
         tools/psyz/psyz/include)
     target_link_libraries(ff7_pc PRIVATE ${PROJECT_NAME} psyz)
+    # Routes calls past PSY-Z functions that are still empty stubs.
+    target_link_options(ff7_pc PRIVATE -Wl,--wrap=VectorNormal,--wrap=OpenTIM,--wrap=ReadTIM)
 endif()

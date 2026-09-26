@@ -282,13 +282,13 @@ static void JetObjectsSpawnScheduled(void) {
         for (i = 0; i < *count; i++) {
             spawns = g_JetXbinAdr.spawns;
             for (j = 0; j < LEN(g_JetSpawnTemplate.unk28.unk50); j++) {
-                g_JetSpawnTemplate.unk28.unk50[j] = spawns[*(s32*)(u32)&g_JetSpawnIndex].params[j];
+                g_JetSpawnTemplate.unk28.unk50[j] = spawns[*(s32*)(u_long)&g_JetSpawnIndex].params[j];
             }
-            index = *(s32*)(u32)&g_JetSpawnIndex;
+            index = *(s32*)(u_long)&g_JetSpawnIndex;
             g_JetSpawnTemplate.unk28.unk18 = spawns[index].pathIndex;
             g_JetSpawnTemplate.unk28.unk1C = spawns[index].speed;
             JetObjectCreate(0, 0, 0, spawns[index].type, spawns[index].modelId);
-            (*(s32*)(u32)&g_JetSpawnIndex)++;
+            (*(s32*)(u_long)&g_JetSpawnIndex)++;
         }
     }
     g_JetNextSpawnSegment = g_JetTrackSegment;
