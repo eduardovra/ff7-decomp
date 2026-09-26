@@ -100,24 +100,50 @@ typedef struct JetNode {
     /* 0x34 */ struct JetNode* next;
 } JetNode; // size: 0x38
 
+// Per-type parameters, copied from the spawn record.
+typedef union {
+    s32 raw[0x14];
+    struct {
+        /* 0x00 */ s32 points;
+        /* 0x04 */ s32 unk4[12];
+        /* 0x34 */ s32 health;
+        /* 0x38 */ s32 unk38[4];
+        /* 0x48 */ s32 deathSfx;
+        /* 0x4C */ s32 unk4C;
+    } shootable;
+    struct {
+        /* 0x0 */ s32 minScore;
+    } scoreCheck;
+    struct {
+        /* 0x0 */ s32 delay; // vsyncs
+        /* 0x4 */ s32 accel;
+        /* 0x8 */ s32 accelFrames;
+    } stop;
+    struct {
+        /* 0x0 */ s32 step;
+        /* 0x4 */ s32 frames;
+        /* 0x8 */ s32 minSpeed; // step applies only above it
+    } speedChange;
+} JetObjectParams; // size: 0x50
+
 // The behaviour state an object's type handler drives.
 typedef struct {
     /* 0x00 */ s32 type;
     /* 0x04 */ s32 hit;
     /* 0x08 */ s32 modelId;
-    /* 0x0C */ s32 life;      // 0 frees the object; short-lived types count it down
-    /* 0x10 */ s32 needsInit; // set at spawn, cleared by the type handler's first update
-    /* 0x14 */ s32 age;       // frames since spawn
+    /* 0x0C */ s32 life; // 0 frees the object
+    /* 0x10 */ s32 needsInit;
+    /* 0x14 */ s32 age;
     /* 0x18 */ s32 pathIndex;
-    /* 0x1C */ s32 speed; // path position step per frame
+    /* 0x1C */ s32 speed;
     /* 0x20 */ char pad20[8];
     /* 0x28 */ s32 unk28;
     /* 0x2C */ s32 unk2C;
     /* 0x30 */ s32 unk30;
     /* 0x34 */ s32 unk34;
     /* 0x38 */ char pad38[0x18];
-    /* 0x50 */ s32 unk50[0x14]; // shootable types: [0] points, [0xD] hit points, [18] death sfx
-} JetObjectState;               // size: 0xA0
+    /* 0x50 */ JetObjectParams params;
+} JetObjectState; // size: 0xA0
 
 typedef struct {
     /* 0x00 */ VECTOR position;
@@ -129,7 +155,7 @@ typedef struct {
     /* 0xCC */ SVECTOR* path;
     /* 0xD0 */ s32 : 32;
     /* 0xD4 */ JetNode* node;
-    /* 0xD8 */ s16 index; // slot in g_JetObjects, -1 when free
+    /* 0xD8 */ s16 index; // -1 when free
     /* 0xDA */ s16 active;
     /* 0xDC */ SVECTOR unkDC[6]; // the model bounding box's six face centres
     /* 0x10C */ char pad10C[0x10];
@@ -205,7 +231,7 @@ extern u16 g_JetSpriteClut[12];
 void JetPrimCursorsReset(JetPrimBuffer* prims);
 void JetNodeFree(JetNode* node);
 void JetPlaySfx(s16 soundId);
-void JetDrawObjectAndCheckHit(JetBuffer* drawBuffer, JetNode* node, s16 otIndex, s32 unusedArg, JetObject* object);
+void JetDrawObjectAndCheckHit(JetBuffer* db, JetNode* node, s16 otIndex, s32 unusedArg, JetObject* object);
 s32 JetVectorInsidePlanes(VECTOR* arg0);
 void JetObjectsInit(void);
 void JetFrustumInit(void);
@@ -216,7 +242,7 @@ void JetNodesInit(void);
 void JetTrackSample(u32 trackPosition, s32 heightOffset, VECTOR* position, SVECTOR* rotation);
 void JetAudioFadeOut(void);
 void JetObjectsUpdate(JetBuffer* db);
-void JetDrawCartAndProjectBeams(JetBuffer* drawBuffer, JetNode* node, s16 otIndex, s32 unusedArg, JetObject* object);
+void JetDrawCartAndProjectBeams(JetBuffer* db, JetNode* node, s16 otIndex, s32 unusedArg, JetObject* object);
 JetNode* JetNodeAlloc(
     s16 modelId, s32 arg1, s32 arg2, s32 arg3, JetNode* parent, s32 x, s32 y, s32 z, s16 rotX, s16 rotY, s16 rotZ);
 
