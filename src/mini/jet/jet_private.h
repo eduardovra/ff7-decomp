@@ -127,6 +127,21 @@ typedef union {
         /* 0xC */ s32 fallSegment;
     } stalactite;
     struct {
+        /* 0x0 */ s32 unk0[3];
+        /* 0xC */ s32 startSegment;
+    } triggered;
+    struct {
+        /* 0x0 */ s32 unk0[3];
+        /* 0xC */ s32 rotStep[3];
+    } tumbler;
+    struct {
+        /* 0x00 */ s32 unk0[3];
+        /* 0x0C */ s32 startRot[2];
+        /* 0x14 */ s32 swingSegment;
+        /* 0x18 */ s32 swingStep;
+        /* 0x1C */ s32 swingFrames;
+    } swing;
+    struct {
         /* 0x00 */ s32 unk0[3];
         /* 0x0C */ s32 startRot[3];
         /* 0x18 */ s32 rotStep[3];
@@ -179,7 +194,8 @@ typedef struct {
             /* 0x4 */ s32 pathEnd;
         } path;
         struct {
-            /* 0x0 */ s32 unk0[2];
+            /* 0x0 */ s32 targetTilt;
+            /* 0x4 */ s32 tilt;
             /* 0x8 */ s32 pathPos;
             /* 0xC */ s32 pathEnd;
         } balloon;
@@ -191,6 +207,27 @@ typedef struct {
             /* 0x0 */ s32 step;
             /* 0x4 */ s32 start[3];
         } incoming;
+        struct {
+            /* 0x0 */ s32 frame;
+        } swing;
+        struct {
+            /* 0x0 */ s32 x;
+            /* 0x4 */ s32 y;
+            /* 0x8 */ s32 z;
+        } velocity;
+        struct {
+            /* 0x0 */ s32 velX;
+            /* 0x4 */ s32 velZ;
+            /* 0x8 */ s32 velY;
+        } eruptionDebris;
+        struct {
+            /* 0x0 */ s32 accelerating;
+            /* 0x4 */ s32 startVsync;
+            /* 0x8 */ s32 accelFrame;
+        } stop;
+        struct {
+            /* 0x0 */ s32 velY;
+        } jump;
     } vars;
     /* 0x38 */ char pad38[0x18];
     /* 0x50 */ JetObjectParams params;
@@ -208,9 +245,9 @@ typedef struct {
     /* 0xD4 */ JetNode* node;
     /* 0xD8 */ s16 index; // -1 when free
     /* 0xDA */ s16 active;
-    /* 0xDC */ SVECTOR unkDC[6]; // the model bounding box's six face centres
+    /* 0xDC */ SVECTOR boxFaceCentres[6];
     /* 0x10C */ char pad10C[0x10];
-    /* 0x11C */ u_long unk11C[6]; // the same six points projected to the screen
+    /* 0x11C */ u_long boxFaceScreenXY[6];
     /* 0x134 */ char pad134[8];
 } JetObject; // size: 0x13C
 

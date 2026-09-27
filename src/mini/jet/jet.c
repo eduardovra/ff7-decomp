@@ -18,10 +18,10 @@ s32 D_800A8A84;
 void* D_800A891C;
 void* D_800A8920;
 s32 g_JetTrackSegmentsCrossed;
-s16 D_800A8960;
-s16 D_800A896C;
-s16 D_800A8974;
-s16 D_800A8980;
+s16 g_JetBeam0Vertex2X;
+s16 g_JetBeam0Vertex2Y;
+s16 g_JetBeam1Vertex2X;
+s16 g_JetBeam1Vertex2Y;
 SVECTOR* g_JetTrackPath;
 struct {
     s32 near;
@@ -286,16 +286,16 @@ void JetDrawObjectAndCheckHit(JetBuffer* db, JetNode* node, s16 otIndex, s32 unu
     args.ot = &db->ot[otIndex];
     args.model = node->model;
     db->prims.g3Cursor = JetDrawModelTris(&args);
-    JetProject6Points(object->unkDC, object->unk11C);
-    ys[0] = object->unk11C[0] >> 16;
+    JetProject6Points(object->boxFaceCentres, object->boxFaceScreenXY);
+    ys[0] = object->boxFaceScreenXY[0] >> 16;
     minY = ys[0];
     maxY = minY;
-    xs[0] = object->unk11C[0];
+    xs[0] = object->boxFaceScreenXY[0];
     minX = xs[0];
     maxX = minX;
-    for (i = 1; i < LEN(object->unk11C); i++) {
-        ys[i] = (object->unk11C[i] & 0xFFFF0000) >> 16;
-        xs[i] = object->unk11C[i];
+    for (i = 1; i < LEN(object->boxFaceScreenXY); i++) {
+        ys[i] = (object->boxFaceScreenXY[i] & 0xFFFF0000) >> 16;
+        xs[i] = object->boxFaceScreenXY[i];
         if (minX > xs[i]) {
             minX = xs[i];
         }
@@ -379,15 +379,15 @@ void JetDrawCartAndProjectBeams(JetBuffer* db, JetNode* node, s16 otIndex, s32 u
     JetProject3Points(&shadow[index]->tris[0].v0, screen);
     g_JetBeam0OriginY = screen[1] >> 16;
     g_JetBeam0OriginX = screen[1];
-    D_800A896C = screen[2] >> 16;
-    D_800A8960 = screen[2];
+    g_JetBeam0Vertex2Y = screen[2] >> 16;
+    g_JetBeam0Vertex2X = screen[2];
     JetProject3Points(&shadow[index]->tris[1].v0, screen);
     xy1 = screen[1];
     xy2 = screen[2];
     g_JetBeam1OriginY = xy1 >> 16;
     g_JetBeam1OriginX = xy1;
-    D_800A8980 = xy2 >> 16;
-    D_800A8974 = xy2;
+    g_JetBeam1Vertex2Y = xy2 >> 16;
+    g_JetBeam1Vertex2X = xy2;
 }
 
 // Load a node's matrix into the GTE and draw its model's triangles.
