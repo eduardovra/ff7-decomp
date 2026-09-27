@@ -43,7 +43,7 @@ s32 g_JetSpawnIndex;
 u16 g_JetNextFreeObject;
 u16 g_JetObjectFreeList[100];
 JetObject g_JetSpawnTemplate;
-JetObject g_JetObjects[0x64];
+JetObject g_JetObjects[100];
 s16 g_JetObjectCount;
 s16 g_JetPopupPoints;
 
@@ -333,7 +333,7 @@ inline void JetObjectCreateUnscheduled(s16 x, s16 y, s16 z, s16 type, s16 modelI
     g_JetSpawnTemplate.state.needsInit = 1;
     g_JetSpawnTemplate.state.modelId = modelId;
     g_JetSpawnTemplate.state.hit = 0;
-    g_JetSpawnTemplate.state.params.raw[0xC] = 0;
+    g_JetSpawnTemplate.state.params.common.unk30 = 0;
     JetObjectAlloc(&g_JetSpawnTemplate, 0);
 }
 

@@ -5,14 +5,26 @@ reverse-engineering in `ff7-coaster` is a source of hypotheses, not of
 names. This file records how to run jet in PCSX-Redux and what each run
 established. Launching and the web API are covered in `magic-probe.md`.
 
-## Where this stands (2026-09-25)
+## Where this stands (2026-09-27)
 
 Every jet function is decompiled; this work names what is left from
 runtime evidence. Named so far, each with its evidence below: `g_JetPaused`,
 `g_JetExit`, `g_JetPadDir`, `g_JetAimMode`, `g_JetSpeed`, `g_JetObjects`,
 `g_JetObjectCount`, `JetObjectDamage`, `JetObjectAwardPoints`, `JetPlaySfx`,
-13 of the 27 object types in `enum JetObjectType` (`jet_object.c`), and
-the generic `JetObject` and `JetObjectState` fields.
+all 27 object types in `enum JetObjectType` (`jet_object.c`), the model ids
+the code uses (`enum JetModelId`), and the generic `JetObject` and
+`JetObjectState` fields. `jet.c` still has 46 `D_` globals.
+
+Older entries below use names since replaced:
+
+| Old | Now |
+|---|---|
+| `unk50[n]` | `params.raw[n]`; named views in `JetObjectParams`, e.g. `[0]` `common.points`, `[2]` `common.endSegment`, `[10]` `common.awardMode`, `[12]` `common.unk30`, `[0xD]` `common.health`, `[18]` `common.deathSfx` |
+| `unk28`..`unk34` | `JetObjectState.vars`, a per-type union (`path`, `balloon`, `velocity`, ...) |
+| `unkDA` | `active` |
+| `unkDC`, `unk11C` | `boxFaceCentres`, `boxFaceScreenXY` |
+| `func_800A46E8` | `JetObjectsUpdate` |
+| `D_800A8954`, `D_800A8984` | `g_JetLastPath`, `g_JetLastPathLen`: outputs of the inline `JetObjectPathLoad` |
 
 To resume:
 
@@ -32,9 +44,8 @@ Open, in rough order of payoff:
   (18 × m45 spotlight, m87 and m88 vines), each turning -35 × 64 about x.
 - 100, 201, 203, 230, 250: no spawns seen in a full ride (250 was confirmed
   by injecting one).
-- `unk50` slots: only `[0]` points, `[0xD]` hit points and `[18]` death
-  sound are established, and only for shootable types. `[12]` is never read
-  (see its finding below).
+- `params`: `common.unk30` (`[12]`) is never read (see its finding
+  below); `common.unk38` and `common.unk4C` have no known reader either.
 
 Two traps already hit:
 
@@ -58,7 +69,7 @@ ride is the same one PCSX-Redux plays.
 `jet_tour.py`: one no-input ride under gdb, saving the displayed frame with
 each target object's box whenever it reaches one of `--ages` frames old.
 Frames come from PSY-Z's `Psyz_VideoAllocCapturedFrame`, called from gdb.
-Only five box points count: `JetProject6Points` never writes `unk11C[5]`
+Only five box points count: `JetProject6Points` never writes `boxFaceScreenXY[5]`
 (in the original assembly too), so it stays at the spawn template's value.
 
 Resolve symbols inside `stop()`, not when the script loads: the binary is
