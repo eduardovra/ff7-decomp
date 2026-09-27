@@ -27,6 +27,7 @@ enum JetObjectType {
     JET_OBJ_INCOMING = 100,       // flies at the camera; costs 5 points unless shot in time
     JET_OBJ_IMPACT_BURST = 201,   // spawns an impact every frame for 20 frames
     JET_OBJ_IMPACT = 202,         // spawned where a shot lands
+    JET_OBJ_FRAGMENT = 203,       // flung fast out of a destroyed target for 50 frames
     JET_OBJ_STATIC = 230,         // stays where it spawned; can be shot
     JET_OBJ_SCORE_CHECK = 250,    // ends the ride below a score threshold
     JET_OBJ_RIDE_START = 252,     // enables drawing and fades in
@@ -1131,7 +1132,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 JetObjectFree(obj);
             }
             break;
-        case 203:
+        case JET_OBJ_FRAGMENT:
             if (objState->needsInit == 1) {
                 objState->hit = 0;
                 objState->life = 50;
@@ -1391,7 +1392,7 @@ static void JetObjectAwardPoints(JetObject* obj) {
             x = obj->position.vx;
             y = obj->position.vy;
             z = obj->position.vz;
-            JetObjectCreateUnscheduled(x, y, z, 0xCB, rand() % 3 + 60);
+            JetObjectCreateUnscheduled(x, y, z, JET_OBJ_FRAGMENT, rand() % 3 + JET_MODEL_SHARD);
         }
         g_JetPopupModelId = obj->node->modelId;
         points = objState->params.common.points;
@@ -1438,7 +1439,7 @@ static void JetObjectAwardPoints(JetObject* obj) {
             x = obj->position.vx;
             y = obj->position.vy;
             z = obj->position.vz;
-            JetObjectCreateUnscheduled(x, y, z, 0xCB, rand() % 3 + 63);
+            JetObjectCreateUnscheduled(x, y, z, JET_OBJ_FRAGMENT, rand() % 3 + JET_MODEL_SPARKLE);
         }
         g_JetPopupModelId = obj->node->modelId;
         points = objState->params.common.points;

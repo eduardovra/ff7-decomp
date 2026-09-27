@@ -28,7 +28,7 @@ Open, in rough order of payoff:
 
 - Types 0, 2, 4, 14 (and 14's children 15, 16): seen or scheduled, not yet
   captured well. Re-run the tour with shorter `--offsets` (e.g. `5,15,30`).
-- 13 shares a case with 7. 203 is still unnamed.
+- 13 shares a case with 7.
 - 100, 201, 203, 230, 250: no spawns seen in a full ride (250 was confirmed
   by injecting one).
 - `unk50` slots: only `[0]` points, `[0xD]` hit points and `[18]` death

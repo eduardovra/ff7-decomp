@@ -78,6 +78,7 @@ enum JetModelId {
     JET_MODEL_FLAME = 41,
     JET_MODEL_DEBRIS = 42,
     JET_MODEL_STARFIELD = 59,
+    JET_MODEL_SHARD = 60,    // first of three variants
     JET_MODEL_SPARKLE = 63,  // first of three variants
     JET_MODEL_CONFETTI = 68, // first of three: red, blue, yellow
     JET_MODEL_BEAM_ORIGINS = 79,
