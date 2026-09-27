@@ -3,6 +3,8 @@
 #include "jet_private.h"
 #include <libc.h>
 
+#define JET_TRACK_SEGMENT 0xFFFF
+
 // JetObjectState.type selects behaviour; the model sets the look.
 enum JetObjectType {
     JET_OBJ_FLYER = 1,            // follows its path, turned to face along it
@@ -17,6 +19,7 @@ enum JetObjectType {
     JET_OBJ_ERUPTION = 14,        // a flame jet out of the lava that throws up debris
     JET_OBJ_ERUPTION_DEBRIS = 15, // flung up, spins and falls for 200 frames
     JET_OBJ_ERUPTION_FLAME = 16,  // rises out of the lava after 21 frames, then sinks
+    JET_OBJ_INCOMING = 100,       // flies at the camera; costs 5 points unless shot in time
     JET_OBJ_IMPACT = 202,         // spawned where a shot lands
     JET_OBJ_SCORE_CHECK = 250,    // ends the ride below a score threshold
     JET_OBJ_RIDE_START = 252,     // enables drawing and fades in
@@ -25,8 +28,8 @@ enum JetObjectType {
     JET_OBJ_SPEED_CHANGE = 255,   // ends the ride if g_JetSpeed drops below 0
 };
 
-SVECTOR* D_800A8954;
-s32 D_800A8984;
+SVECTOR* g_JetLastPath;
+s32 g_JetLastPathLen;
 s32 g_JetNextSpawnSegment;
 s32 g_JetSpawnIndex;
 u16 g_JetNextFreeObject;
@@ -76,16 +79,16 @@ static void JetObjectPathLoad(u8 pathIndex, u8 mode) {
     if (mode == 0) {
         lengths = g_JetXbinAdr.objectPathLengths;
         offsets = g_JetXbinAdr.objectPathOffsets;
-        D_800A8984 = lengths[pathIndex];
+        g_JetLastPathLen = lengths[pathIndex];
         offset = offsets[pathIndex];
-        D_800A8954 = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
+        g_JetLastPath = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
     }
     if (mode == 1) {
         lengths = g_JetXbinAdr.trackPathLengths;
         offsets = g_JetXbinAdr.trackPathOffsets;
-        D_800A8984 = lengths[pathIndex];
+        g_JetLastPathLen = lengths[pathIndex];
         offset = offsets[pathIndex];
-        D_800A8954 = (SVECTOR*)(g_JetXbinAdr.trackPaths + offset);
+        g_JetLastPath = (SVECTOR*)(g_JetXbinAdr.trackPaths + offset);
     }
 }
 
@@ -344,7 +347,7 @@ void JetObjectsUpdate(JetBuffer* db) {
     SVECTOR rot;
     JetObject* obj;
     JetObject* pool;
-    JetObjectState* st;
+    JetObjectState* objState;
     POLY_G4* fade;
     POLY_FT4* tpagePrim;
     s16 pathIndex;
@@ -369,7 +372,7 @@ void JetObjectsUpdate(JetBuffer* db) {
         otIndex = 0;
         pool = g_JetObjects;
         obj = &pool[i];
-        st = &obj->state;
+        objState = &obj->state;
         if (obj->active == 0) {
             continue;
         }
@@ -377,35 +380,35 @@ void JetObjectsUpdate(JetBuffer* db) {
         do {
         } while (0);
         switch (obj->state.type) {
-        case 100:
-            if (st->needsInit == 1) {
+        case JET_OBJ_INCOMING:
+            if (objState->needsInit == 1) {
                 SVECTOR* path;
                 s32 pathLen;
                 s32 offset;
 
-                pathIndex = st->pathIndex & 0xFF;
+                pathIndex = objState->pathIndex & 0xFF;
                 pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
                 offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
                 path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
                 obj->path = path;
                 obj->pathLen = pathLen;
-                st->needsInit = 0;
-                st->life = 1;
-                st->age = 0;
-                st->hit = 0;
-                st->params.raw[10] = 1;
-                st->unk28 = 0;
-                st->unk2C = obj->position.vx;
-                st->unk30 = obj->position.vy;
-                D_800A8984 = pathLen;
-                D_800A8954 = path;
-                st->unk34 = obj->position.vz;
-                st->params.raw[0] = 0;
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->age = 0;
+                objState->hit = 0;
+                objState->params.common.awardMode = 1;
+                objState->vars.incoming.step = 0;
+                objState->vars.incoming.start[0] = obj->position.vx;
+                objState->vars.incoming.start[1] = obj->position.vy;
+                g_JetLastPathLen = pathLen;
+                g_JetLastPath = path;
+                objState->vars.incoming.start[2] = obj->position.vz;
+                objState->params.raw[0] = 0;
             } else {
-                st->age++;
-                st->unk28++;
+                objState->age++;
+                objState->vars.incoming.step++;
             }
-            if (st->life == 0) {
+            if (objState->life == 0) {
                 JetObjectFree(obj);
                 break;
             }
@@ -416,194 +419,194 @@ void JetObjectsUpdate(JetBuffer* db) {
                 s32 y;
                 s32 z;
 
-                step = st->unk28;
+                step = objState->vars.incoming.step;
                 pathPos = &g_JetCameraPathPos;
-                JetTrackSample(pathPos[0] + 0x2FFFD, -100, &pos, &rot);
-                x = st->unk2C;
+                JetTrackSample(pathPos[0] + 3 * JET_TRACK_SEGMENT, -100, &pos, &rot);
+                x = objState->vars.incoming.start[0];
                 x += (step * (pos.vx - x)) >> 7;
-                y = st->unk30;
+                y = objState->vars.incoming.start[1];
                 y += (step * (pos.vy - y)) >> 7;
-                z = st->unk34;
+                z = objState->vars.incoming.start[2];
                 z += (step * (pos.vz - z)) >> 7;
                 obj->position.vx = x;
                 obj->position.vy = y;
                 obj->position.vz = z;
-                JetTrackSample(pathPos[0] + 0x3FFFC, -100, &pos, &rot);
+                JetTrackSample(pathPos[0] + 4 * JET_TRACK_SEGMENT, -100, &pos, &rot);
             }
             dx = obj->position.vx - pos.vx;
             dy = obj->position.vy - pos.vy;
             dz = obj->position.vz - pos.vz;
             SquareRoot0(dx * dx + dy * dy + dz * dz);
-            if (st->age >= 0x81) {
+            if (objState->age >= 0x81) {
                 score = &g_JetScore;
                 if (*score > 5) {
                     *score -= 5;
                 } else {
                     *score = 0;
                 }
-                st->life = 0;
+                objState->life = 0;
             }
-            if (st->hit) {
+            if (objState->hit) {
                 JetObjectDamage(obj);
             }
             break;
         case 17:
-            if (st->needsInit == 1) {
+            if (objState->needsInit == 1) {
                 SVECTOR* path;
                 s32 pathLen;
                 s32 offset;
 
-                sound = st->params.common.spawnSfx;
+                sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = st->pathIndex & 0xFF;
+                pathIndex = objState->pathIndex & 0xFF;
                 pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
                 offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
                 path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
                 obj->path = path;
                 obj->pathLen = pathLen;
-                st->needsInit = 0;
-                st->life = 1;
-                st->age = 0;
-                st->hit = 0;
-                st->unk28 = 0;
-                D_800A8984 = pathLen;
-                D_800A8954 = path;
-                st->unk2C = (obj->pathLen - 2) << 16;
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->age = 0;
+                objState->hit = 0;
+                objState->vars.path.pathPos = 0;
+                g_JetLastPathLen = pathLen;
+                g_JetLastPath = path;
+                objState->vars.path.pathEnd = (obj->pathLen - 2) << 16;
             } else {
-                st->age++;
+                objState->age++;
             }
             segment = &g_JetTrackSegment;
-            if (st->params.raw[3] < *segment) {
-                st->unk28 += st->speed;
+            if (objState->params.raw[3] < *segment) {
+                objState->vars.path.pathPos += objState->speed;
             }
-            if (st->params.common.endSegment < *segment) {
-                st->life = 0;
+            if (objState->params.common.endSegment < *segment) {
+                objState->life = 0;
             }
-            if (st->life == 0) {
+            if (objState->life == 0) {
                 JetObjectFree(obj);
                 break;
             }
-            if (st->hit) {
+            if (objState->hit) {
                 JetObjectDamage(obj);
             }
-            if (st->unk28 < st->unk2C) {
-                JetPathSample(st->unk28, obj->path, &obj->position, 0);
+            if (objState->vars.path.pathPos < objState->vars.path.pathEnd) {
+                JetPathSample(objState->vars.path.pathPos, obj->path, &obj->position, 0);
                 obj->rotation.vx = 0;
                 obj->rotation.vy = 0;
                 obj->rotation.vz = 0;
             }
             break;
         case 0:
-            if (st->needsInit == 1) {
+            if (objState->needsInit == 1) {
                 SVECTOR* path;
                 s32 pathLen;
                 s32 offset;
 
-                sound = st->params.common.spawnSfx;
+                sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = st->pathIndex & 0xFF;
+                pathIndex = objState->pathIndex & 0xFF;
                 pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
                 offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
                 path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
                 obj->path = path;
                 obj->pathLen = pathLen;
-                st->needsInit = 0;
-                st->life = 1;
-                st->age = 0;
-                st->hit = 0;
-                st->unk28 = 0;
-                D_800A8984 = pathLen;
-                D_800A8954 = path;
-                st->unk2C = (obj->pathLen - 1) << 16;
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->age = 0;
+                objState->hit = 0;
+                objState->vars.path.pathPos = 0;
+                g_JetLastPathLen = pathLen;
+                g_JetLastPath = path;
+                objState->vars.path.pathEnd = (obj->pathLen - 1) << 16;
             } else {
-                st->age++;
+                objState->age++;
             }
-            st->unk28 += st->speed;
-            if (st->params.common.loopPath == 1) {
-                st->unk28 %= st->unk2C;
+            objState->vars.path.pathPos += objState->speed;
+            if (objState->params.common.loopPath == 1) {
+                objState->vars.path.pathPos %= objState->vars.path.pathEnd;
             }
-            if (st->unk28 > st->unk2C) {
-                st->life = 0;
+            if (objState->vars.path.pathPos > objState->vars.path.pathEnd) {
+                objState->life = 0;
             }
-            if (st->params.common.endSegment < g_JetTrackSegment) {
-                st->life = 0;
+            if (objState->params.common.endSegment < g_JetTrackSegment) {
+                objState->life = 0;
             }
-            if (st->life == 0) {
+            if (objState->life == 0) {
                 JetObjectFree(obj);
                 break;
             }
-            JetPathSample(st->unk28, obj->path, &obj->position, 0);
-            obj->rotation.vx += st->params.raw[3];
-            obj->rotation.vy += st->params.raw[4];
-            obj->rotation.vz += st->params.raw[5];
-            if (st->hit) {
+            JetPathSample(objState->vars.path.pathPos, obj->path, &obj->position, 0);
+            obj->rotation.vx += objState->params.raw[3];
+            obj->rotation.vy += objState->params.raw[4];
+            obj->rotation.vz += objState->params.raw[5];
+            if (objState->hit) {
                 JetObjectDamage(obj);
             }
             break;
         case JET_OBJ_FLYER:
-            if (st->needsInit == 1) {
+            if (objState->needsInit == 1) {
                 SVECTOR* path;
                 s32 pathLen;
                 s32 offset;
 
-                sound = st->params.common.spawnSfx;
+                sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = st->pathIndex & 0xFF;
+                pathIndex = objState->pathIndex & 0xFF;
                 pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
                 offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
                 path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
                 obj->path = path;
                 obj->pathLen = pathLen;
-                st->needsInit = 0;
-                st->life = 1;
-                st->age = 0;
-                st->hit = 0;
-                st->unk28 = 0;
-                D_800A8984 = pathLen;
-                D_800A8954 = path;
-                st->unk2C = (obj->pathLen - 1) << 16;
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->age = 0;
+                objState->hit = 0;
+                objState->vars.path.pathPos = 0;
+                g_JetLastPathLen = pathLen;
+                g_JetLastPath = path;
+                objState->vars.path.pathEnd = (obj->pathLen - 1) << 16;
             } else {
-                st->age++;
+                objState->age++;
             }
-            st->unk28 += st->speed;
-            if (st->params.common.loopPath == 1) {
-                st->unk28 %= st->unk2C;
+            objState->vars.path.pathPos += objState->speed;
+            if (objState->params.common.loopPath == 1) {
+                objState->vars.path.pathPos %= objState->vars.path.pathEnd;
             }
-            if (st->unk28 > st->unk2C) {
-                st->life = 0;
+            if (objState->vars.path.pathPos > objState->vars.path.pathEnd) {
+                objState->life = 0;
             }
-            if (st->params.common.endSegment < g_JetTrackSegment) {
-                st->life = 0;
+            if (objState->params.common.endSegment < g_JetTrackSegment) {
+                objState->life = 0;
             }
-            if (st->life == 0) {
+            if (objState->life == 0) {
                 JetObjectFree(obj);
                 break;
             }
-            JetPathSample(st->unk28, obj->path, &obj->position, 0);
-            JetPathSample((st->unk28 + 0x10000) % ((obj->pathLen - 1) << 16), obj->path, &next, 0);
+            JetPathSample(objState->vars.path.pathPos, obj->path, &obj->position, 0);
+            JetPathSample((objState->vars.path.pathPos + 0x10000) % ((obj->pathLen - 1) << 16), obj->path, &next, 0);
             dx = next.vx - obj->position.vx;
             dy = next.vy - obj->position.vy;
             dz = next.vz - obj->position.vz;
             obj->rotation.vx = ratan2(dy, SquareRoot0(dx * dx + dz * dz));
             obj->rotation.vy = -ratan2(dz, dx) - 0x400;
             obj->rotation.vz = 0;
-            if (st->hit) {
+            if (objState->hit) {
                 JetObjectDamage(obj);
             }
             break;
         case JET_OBJ_CART:
-            if (st->needsInit == 1) {
+            if (objState->needsInit == 1) {
                 SVECTOR* path;
                 s32 pathLen;
                 s32 offset;
 
-                sound = st->params.common.spawnSfx;
+                sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
@@ -612,133 +615,133 @@ void JetObjectsUpdate(JetBuffer* db) {
                 path = (SVECTOR*)(g_JetXbinAdr.trackPaths + offset);
                 obj->path = path;
                 obj->pathLen = pathLen;
-                st->needsInit = 0;
-                st->life = 1;
-                st->age = 0;
-                st->hit = 0;
-                st->unk28 = 0;
-                D_800A8984 = pathLen;
-                D_800A8954 = path;
-                st->unk2C = (obj->pathLen - 1) << 16;
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->age = 0;
+                objState->hit = 0;
+                objState->vars.path.pathPos = 0;
+                g_JetLastPathLen = pathLen;
+                g_JetLastPath = path;
+                objState->vars.path.pathEnd = (obj->pathLen - 1) << 16;
             } else {
-                st->age++;
+                objState->age++;
             }
-            st->unk28 += st->speed;
-            if (st->params.common.loopPath == 1) {
-                st->unk28 %= st->unk2C;
+            objState->vars.path.pathPos += objState->speed;
+            if (objState->params.common.loopPath == 1) {
+                objState->vars.path.pathPos %= objState->vars.path.pathEnd;
             }
-            if (st->unk28 > st->unk2C) {
-                st->life = 0;
+            if (objState->vars.path.pathPos > objState->vars.path.pathEnd) {
+                objState->life = 0;
             }
-            if (st->params.common.endSegment < g_JetTrackSegment) {
-                st->life = 0;
+            if (objState->params.common.endSegment < g_JetTrackSegment) {
+                objState->life = 0;
             }
-            if (st->life == 0) {
+            if (objState->life == 0) {
                 JetObjectFree(obj);
                 break;
             }
-            JetTrackSample(g_JetCameraPathPos + 0x3FFFC, 10, &obj->position, &obj->rotation);
+            JetTrackSample(g_JetCameraPathPos + 4 * JET_TRACK_SEGMENT, 10, &obj->position, &obj->rotation);
             drawMode = 1;
-            if (st->hit) {
+            if (objState->hit) {
                 JetObjectDamage(obj);
             }
             break;
         case JET_OBJ_STALACTITE:
-            if (st->needsInit == 1) {
+            if (objState->needsInit == 1) {
                 SVECTOR* path;
                 s32 pathLen;
                 s32 offset;
 
-                sound = st->params.common.spawnSfx;
+                sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = st->pathIndex & 0xFF;
+                pathIndex = objState->pathIndex & 0xFF;
                 pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
                 offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
                 path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
                 obj->path = path;
                 obj->pathLen = pathLen;
-                st->needsInit = 0;
-                st->life = 1;
-                st->hit = 0;
-                D_800A8984 = pathLen;
-                D_800A8954 = path;
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->hit = 0;
+                g_JetLastPathLen = pathLen;
+                g_JetLastPath = path;
                 JetPathSample(0, obj->path, &obj->position, 0);
             }
             segment = &g_JetTrackSegment;
-            if (st->params.common.endSegment < *segment) {
-                st->life = 0;
+            if (objState->params.common.endSegment < *segment) {
+                objState->life = 0;
             }
-            if (st->params.stalactite.fallSegment < *segment) {
-                st->unk2C += 4;
+            if (objState->params.stalactite.fallSegment < *segment) {
+                objState->vars.stalactite.fallSpeed += 4;
             }
-            if (st->life == 0) {
+            if (objState->life == 0) {
                 JetObjectFree(obj);
                 break;
             }
-            obj->position.vy += st->unk2C;
+            obj->position.vy += objState->vars.stalactite.fallSpeed;
             if (obj->position.vy > 0) {
-                st->life = 0;
+                objState->life = 0;
             }
-            if (st->hit) {
+            if (objState->hit) {
                 JetObjectDamage(obj);
             }
             break;
         case JET_OBJ_SPINNER:
-            if (st->needsInit == 1) {
+            if (objState->needsInit == 1) {
                 SVECTOR* path;
                 s32 pathLen;
                 s32 offset;
 
-                sound = st->params.common.spawnSfx;
+                sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = st->pathIndex & 0xFF;
+                pathIndex = objState->pathIndex & 0xFF;
                 pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
                 offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
                 path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
                 obj->path = path;
                 obj->pathLen = pathLen;
-                st->needsInit = 0;
-                st->life = 1;
-                st->hit = 0;
-                st->unk28 = 0;
-                st->unk2C = (obj->pathLen - 1) << 16;
-                obj->rotation.vx = st->params.spinner.startRot[0];
-                obj->rotation.vy = st->params.spinner.startRot[1];
-                D_800A8984 = pathLen;
-                D_800A8954 = path;
-                obj->rotation.vz = st->params.spinner.startRot[2];
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->hit = 0;
+                objState->vars.path.pathPos = 0;
+                objState->vars.path.pathEnd = (obj->pathLen - 1) << 16;
+                obj->rotation.vx = objState->params.spinner.startRot[0];
+                obj->rotation.vy = objState->params.spinner.startRot[1];
+                g_JetLastPathLen = pathLen;
+                g_JetLastPath = path;
+                obj->rotation.vz = objState->params.spinner.startRot[2];
             }
-            st->unk28 += st->speed;
-            if (st->params.common.loopPath == 1) {
-                st->unk28 %= st->unk2C;
+            objState->vars.path.pathPos += objState->speed;
+            if (objState->params.common.loopPath == 1) {
+                objState->vars.path.pathPos %= objState->vars.path.pathEnd;
             }
-            if (st->unk28 > st->unk2C) {
-                st->life = 0;
+            if (objState->vars.path.pathPos > objState->vars.path.pathEnd) {
+                objState->life = 0;
             }
-            if (st->params.common.endSegment < g_JetTrackSegment) {
-                st->life = 0;
+            if (objState->params.common.endSegment < g_JetTrackSegment) {
+                objState->life = 0;
             }
-            obj->rotation.vx += st->params.spinner.rotStep[0];
-            obj->rotation.vy += st->params.spinner.rotStep[1];
-            obj->rotation.vz += st->params.spinner.rotStep[2];
-            if (st->params.raw[10] == 5) {
-                obj->node->model = g_JetModelTable[91 + st->params.raw[14]];
+            obj->rotation.vx += objState->params.spinner.rotStep[0];
+            obj->rotation.vy += objState->params.spinner.rotStep[1];
+            obj->rotation.vz += objState->params.spinner.rotStep[2];
+            if (objState->params.common.awardMode == 5) {
+                obj->node->model = g_JetModelTable[91 + objState->params.spinner.wasHit];
             }
-            if (st->params.raw[14] == 1) {
-                st->params.raw[14] = 0;
+            if (objState->params.spinner.wasHit == 1) {
+                objState->params.spinner.wasHit = 0;
             }
-            if (st->life) {
-                JetPathSample(st->unk28, obj->path, &obj->position, 0);
-                if (st->hit) {
-                    if (st->params.raw[10] != 5 || g_JetSpeed < 16405) {
+            if (objState->life) {
+                JetPathSample(objState->vars.path.pathPos, obj->path, &obj->position, 0);
+                if (objState->hit) {
+                    if (objState->params.common.awardMode != 5 || g_JetSpeed < 16405) {
                         JetObjectDamage(obj);
                     }
-                    if (st->params.raw[10] == 5) {
-                        st->params.raw[14] = 1;
+                    if (objState->params.common.awardMode == 5) {
+                        objState->params.spinner.wasHit = 1;
                     }
                 }
             } else {
@@ -746,70 +749,71 @@ void JetObjectsUpdate(JetBuffer* db) {
             }
             break;
         case JET_OBJ_BALLOON:
-            if (st->needsInit == 1) {
+            if (objState->needsInit == 1) {
                 SVECTOR* path;
                 s32 pathLen;
                 s32 offset;
 
-                sound = st->params.common.spawnSfx;
+                sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = st->pathIndex & 0xFF;
+                pathIndex = objState->pathIndex & 0xFF;
                 pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
                 offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
                 path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
-                D_800A8984 = pathLen;
-                D_800A8954 = path;
+                g_JetLastPathLen = pathLen;
+                g_JetLastPath = path;
                 obj->path = path;
                 obj->pathLen = pathLen;
-                st->needsInit = 0;
-                st->life = 1;
-                st->hit = 0;
-                st->unk28 = (rand() % st->params.balloon.tiltRange) * 2 - st->params.balloon.tiltRange - 1;
-                st->unk2C = 0;
-                st->unk30 = 0;
-                st->unk34 = (obj->pathLen - 1) << 16;
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->hit = 0;
+                objState->vars.raw[0] =
+                    (rand() % objState->params.balloon.tiltRange) * 2 - objState->params.balloon.tiltRange - 1;
+                objState->vars.raw[1] = 0;
+                objState->vars.balloon.pathPos = 0;
+                objState->vars.balloon.pathEnd = (obj->pathLen - 1) << 16;
                 obj->rotation.vx = 0;
                 obj->rotation.vy = 0;
                 obj->rotation.vz = 0;
                 JetPathSample(0, obj->path, &obj->position, 0);
             }
-            st->unk30 += st->speed;
-            if (st->unk34 < st->unk30) {
-                st->life = 0;
+            objState->vars.balloon.pathPos += objState->speed;
+            if (objState->vars.balloon.pathEnd < objState->vars.balloon.pathPos) {
+                objState->life = 0;
             }
-            if (st->params.common.endSegment < g_JetTrackSegment) {
-                st->life = 0;
+            if (objState->params.common.endSegment < g_JetTrackSegment) {
+                objState->life = 0;
             }
-            if (st->unk2C > st->unk28) {
-                st->unk2C -= 5;
+            if (objState->vars.raw[1] > objState->vars.raw[0]) {
+                objState->vars.raw[1] -= 5;
             }
-            if (st->unk2C < st->unk28) {
-                st->unk2C += 5;
+            if (objState->vars.raw[1] < objState->vars.raw[0]) {
+                objState->vars.raw[1] += 5;
             }
-            obj->rotation.vx = st->unk2C;
-            obj->rotation.vy += st->params.balloon.yawStep;
-            if (st->life == 0) {
+            obj->rotation.vx = objState->vars.raw[1];
+            obj->rotation.vy += objState->params.balloon.yawStep;
+            if (objState->life == 0) {
                 JetObjectFree(obj);
                 break;
             }
-            JetPathSample(st->unk30, obj->path, &obj->position, 0);
-            if (st->hit) {
+            JetPathSample(objState->vars.balloon.pathPos, obj->path, &obj->position, 0);
+            if (objState->hit) {
                 JetObjectDamage(obj);
             }
             break;
         case 230:
-            if (st->needsInit == 1) {
-                st->needsInit = 0;
-                st->life = 1;
-                st->hit = 0;
+            if (objState->needsInit == 1) {
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->hit = 0;
             }
-            if (st->params.common.endSegment < g_JetTrackSegment) {
-                st->life = 0;
+            if (objState->params.common.endSegment < g_JetTrackSegment) {
+                objState->life = 0;
             }
-            if (st->life) {
-                if (st->hit) {
+            if (objState->life) {
+                if (objState->hit) {
                     JetObjectDamage(obj);
                 }
             } else {
@@ -818,41 +822,41 @@ void JetObjectsUpdate(JetBuffer* db) {
             break;
         case 7:
         case 13:
-            if (st->needsInit == 1) {
+            if (objState->needsInit == 1) {
                 SVECTOR* path;
                 s32 pathLen;
                 s32 offset;
 
-                pathIndex = st->pathIndex & 0xFF;
+                pathIndex = objState->pathIndex & 0xFF;
                 pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
                 offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
                 path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
                 obj->path = path;
                 obj->pathLen = pathLen;
-                st->needsInit = 0;
-                st->life = 1;
-                st->hit = 0;
-                obj->rotation.vx = st->params.raw[3];
-                obj->rotation.vy = st->params.raw[4];
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->hit = 0;
+                obj->rotation.vx = objState->params.raw[3];
+                obj->rotation.vy = objState->params.raw[4];
                 obj->rotation.vz = 0;
-                D_800A8984 = pathLen;
-                D_800A8954 = path;
+                g_JetLastPathLen = pathLen;
+                g_JetLastPath = path;
                 JetPathSample(0, obj->path, &obj->position, 0);
-                st->unk28 = 0;
+                objState->vars.raw[0] = 0;
             }
             segment = &g_JetTrackSegment;
-            if (st->params.common.endSegment < *segment) {
-                st->life = 0;
+            if (objState->params.common.endSegment < *segment) {
+                objState->life = 0;
             }
-            if (st->params.raw[5] < *segment) {
-                count = st->unk28;
-                st->unk28 = count + 1;
-                if (count < st->params.raw[7]) {
-                    obj->rotation.vx += st->params.raw[6];
+            if (objState->params.raw[5] < *segment) {
+                count = objState->vars.raw[0];
+                objState->vars.raw[0] = count + 1;
+                if (count < objState->params.raw[7]) {
+                    obj->rotation.vx += objState->params.raw[6];
                 }
             }
-            if (st->life) {
-                if (st->hit) {
+            if (objState->life) {
+                if (objState->hit) {
                     JetObjectDamage(obj);
                 }
             } else {
@@ -861,65 +865,65 @@ void JetObjectsUpdate(JetBuffer* db) {
             break;
         case JET_OBJ_EXPLOSION:
             JetPlaySfx(SFX_FIRAGA);
-            for (j = 0; j < st->params.explosion.debrisCount; j++) {
+            for (j = 0; j < objState->params.explosion.debrisCount; j++) {
                 JetObjectCreateUnscheduled(13382, -10000, 8395, JET_OBJ_DEBRIS, 42);
             }
             JetObjectFree(obj);
             // falls through into the debris behaviour below
         case JET_OBJ_DEBRIS:
-            if (st->needsInit == 1) {
-                st->hit = 0;
-                st->life = 100;
-                st->needsInit = 0;
-                st->age = 0;
-                st->unk28 = rand() % 60 - 30;
-                st->unk2C = -rand() % 200;
-                st->unk30 = rand() % 60 - 30;
+            if (objState->needsInit == 1) {
+                objState->hit = 0;
+                objState->life = 100;
+                objState->needsInit = 0;
+                objState->age = 0;
+                objState->vars.raw[0] = rand() % 60 - 30;
+                objState->vars.raw[1] = -rand() % 200;
+                objState->vars.raw[2] = rand() % 60 - 30;
             } else {
-                st->age++;
+                objState->age++;
             }
-            st->unk2C++;
-            obj->position.vx += st->unk28;
-            obj->position.vy += st->unk2C;
-            obj->position.vz += st->unk30;
+            objState->vars.raw[1]++;
+            obj->position.vx += objState->vars.raw[0];
+            obj->position.vy += objState->vars.raw[1];
+            obj->position.vz += objState->vars.raw[2];
             obj->rotation.vx += 10;
             obj->rotation.vy += 400;
             obj->rotation.vz += 200;
-            st->life--;
-            if (st->life == 0) {
+            objState->life--;
+            if (objState->life == 0) {
                 JetObjectFree(obj);
             }
             break;
         case JET_OBJ_FIREWORK:
-            if (st->needsInit == 1) {
+            if (objState->needsInit == 1) {
                 SVECTOR* path;
                 s32 pathLen;
                 s32 offset;
 
-                pathIndex = st->pathIndex & 0xFF;
+                pathIndex = objState->pathIndex & 0xFF;
                 pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
                 offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
                 path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
                 obj->path = path;
                 obj->pathLen = pathLen;
-                st->needsInit = 0;
-                st->life = 1;
-                st->hit = 0;
-                st->unk28 = 0;
-                D_800A8984 = pathLen;
-                D_800A8954 = path;
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->hit = 0;
+                objState->vars.raw[0] = 0;
+                g_JetLastPathLen = pathLen;
+                g_JetLastPath = path;
                 JetPathSample(0, obj->path, &obj->position, 0);
             }
-            if (st->params.common.endSegment < g_JetTrackSegment) {
-                st->life = 0;
+            if (objState->params.common.endSegment < g_JetTrackSegment) {
+                objState->life = 0;
             }
-            if (st->life == 0) {
+            if (objState->life == 0) {
                 JetObjectFree(obj);
                 break;
             }
-            obj->position.vy -= st->params.firework.riseSpeed;
-            st->params.firework.riseSpeed -= st->params.firework.riseDecel;
-            if (st->params.firework.riseSpeed < 0) {
+            obj->position.vy -= objState->params.firework.riseSpeed;
+            objState->params.firework.riseSpeed -= objState->params.firework.riseDecel;
+            if (objState->params.firework.riseSpeed < 0) {
                 JetPlaySfx(SFX_DETONANTE_ECHO);
                 for (j = 0; j < 20; j++) {
                     s32 x;
@@ -931,58 +935,58 @@ void JetObjectsUpdate(JetBuffer* db) {
                     z = obj->position.vz;
                     JetObjectCreateUnscheduled(x, y, z, JET_OBJ_FIREWORK_SPARK, rand() % 3 + 68);
                 }
-                st->life = 0;
+                objState->life = 0;
             }
             break;
         case JET_OBJ_FIREWORK_SPARK:
-            if (st->needsInit == 1) {
-                st->hit = 0;
-                st->life = 100;
-                st->needsInit = 0;
-                st->age = 0;
-                st->unk28 = rand() % 60 - 30;
-                st->unk2C = rand() % 60 - 30;
-                st->unk30 = rand() % 60 - 30;
+            if (objState->needsInit == 1) {
+                objState->hit = 0;
+                objState->life = 100;
+                objState->needsInit = 0;
+                objState->age = 0;
+                objState->vars.raw[0] = rand() % 60 - 30;
+                objState->vars.raw[1] = rand() % 60 - 30;
+                objState->vars.raw[2] = rand() % 60 - 30;
             } else {
-                st->age++;
+                objState->age++;
             }
-            obj->position.vx += st->unk28;
-            obj->position.vy += st->unk2C;
-            obj->position.vz += st->unk30;
+            obj->position.vx += objState->vars.raw[0];
+            obj->position.vy += objState->vars.raw[1];
+            obj->position.vz += objState->vars.raw[2];
             obj->rotation.vx += 10;
             obj->rotation.vy += 400;
             obj->rotation.vz += 200;
-            st->life--;
-            if (st->life == 0) {
+            objState->life--;
+            if (objState->life == 0) {
                 JetObjectFree(obj);
             }
             break;
         case JET_OBJ_ERUPTION:
-            if (st->needsInit == 1) {
+            if (objState->needsInit == 1) {
                 SVECTOR* path;
                 s32 pathLen;
                 s32 offset;
 
                 JetPlaySfx(SFX_FIRA);
-                pathIndex = st->pathIndex & 0xFF;
+                pathIndex = objState->pathIndex & 0xFF;
                 pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
                 offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
                 path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
                 obj->path = path;
                 obj->pathLen = pathLen;
-                st->needsInit = 0;
-                st->life = 1;
-                st->hit = 0;
-                st->age = 0;
-                st->unk28 = -0x46;
-                D_800A8984 = pathLen;
-                D_800A8954 = path;
+                objState->needsInit = 0;
+                objState->life = 1;
+                objState->hit = 0;
+                objState->age = 0;
+                objState->vars.raw[0] = -0x46;
+                g_JetLastPathLen = pathLen;
+                g_JetLastPath = path;
                 JetPathSample(0, obj->path, &obj->position, 0);
             }
-            st->unk28++;
-            st->age++;
-            if (st->age == 5) {
-                for (j = 0; j < st->params.eruption.debrisCount; j++) {
+            objState->vars.raw[0]++;
+            objState->age++;
+            if (objState->age == 5) {
+                for (j = 0; j < objState->params.eruption.debrisCount; j++) {
                     s32 x;
                     s32 y;
                     s32 z;
@@ -1003,18 +1007,18 @@ void JetObjectsUpdate(JetBuffer* db) {
                     JetObjectCreateUnscheduled(x, y, z, JET_OBJ_ERUPTION_FLAME, 41);
                 }
             }
-            if (st->unk28 < 0) {
+            if (objState->vars.raw[0] < 0) {
                 obj->rotation.vy += 20;
             }
-            if (st->unk28 == 0x50) {
-                st->life = 0;
+            if (objState->vars.raw[0] == 0x50) {
+                objState->life = 0;
             }
-            obj->position.vy += st->unk28;
-            if (st->params.common.endSegment < g_JetTrackSegment) {
-                st->life = 0;
+            obj->position.vy += objState->vars.raw[0];
+            if (objState->params.common.endSegment < g_JetTrackSegment) {
+                objState->life = 0;
             }
-            if (st->life) {
-                if (st->hit) {
+            if (objState->life) {
+                if (objState->hit) {
                     JetObjectDamage(obj);
                 }
             } else {
@@ -1022,45 +1026,45 @@ void JetObjectsUpdate(JetBuffer* db) {
             }
             break;
         case JET_OBJ_ERUPTION_DEBRIS:
-            if (st->needsInit == 1) {
-                st->hit = 0;
-                st->life = 200;
-                st->needsInit = 0;
-                st->age = 0;
-                st->unk28 = rand() % 80 - 40;
-                st->unk2C = rand() % 80 - 40;
-                st->unk30 = -(rand() % 40 + 40);
+            if (objState->needsInit == 1) {
+                objState->hit = 0;
+                objState->life = 200;
+                objState->needsInit = 0;
+                objState->age = 0;
+                objState->vars.raw[0] = rand() % 80 - 40;
+                objState->vars.raw[1] = rand() % 80 - 40;
+                objState->vars.raw[2] = -(rand() % 40 + 40);
             } else {
-                st->age++;
+                objState->age++;
             }
-            st->unk30++;
+            objState->vars.raw[2]++;
             obj->rotation.vx += 480;
             obj->rotation.vy += 40;
             obj->rotation.vz += 610;
-            obj->position.vx += st->unk28;
-            obj->position.vy += st->unk30;
-            obj->position.vz += st->unk2C;
-            st->life--;
-            if (st->life == 0) {
+            obj->position.vx += objState->vars.raw[0];
+            obj->position.vy += objState->vars.raw[2];
+            obj->position.vz += objState->vars.raw[1];
+            objState->life--;
+            if (objState->life == 0) {
                 JetObjectFree(obj);
             }
             break;
         case JET_OBJ_ERUPTION_FLAME:
-            if (st->needsInit == 1) {
-                st->life = 200;
-                st->hit = 0;
-                st->needsInit = 0;
-                st->age = 0;
-                st->unk28 = -0x3C;
+            if (objState->needsInit == 1) {
+                objState->life = 200;
+                objState->hit = 0;
+                objState->needsInit = 0;
+                objState->age = 0;
+                objState->vars.raw[0] = -0x3C;
             } else {
-                st->age++;
+                objState->age++;
             }
-            if (st->age >= 0x15) {
-                obj->position.vy += st->unk28;
-                st->unk28++;
+            if (objState->age >= 0x15) {
+                obj->position.vy += objState->vars.raw[0];
+                objState->vars.raw[0]++;
             }
-            st->life--;
-            if (st->life == 0) {
+            objState->life--;
+            if (objState->life == 0) {
                 JetObjectFree(obj);
             }
             break;
@@ -1074,13 +1078,13 @@ void JetObjectsUpdate(JetBuffer* db) {
             obj->rotation.vz = 0;
             break;
         case 201:
-            if (st->needsInit == 1) {
-                st->life = 0x14;
-                st->needsInit = 0;
-                st->age = 0;
-                st->hit = 0;
+            if (objState->needsInit == 1) {
+                objState->life = 0x14;
+                objState->needsInit = 0;
+                objState->age = 0;
+                objState->hit = 0;
             } else {
-                st->age++;
+                objState->age++;
             }
             {
                 s32 x;
@@ -1092,118 +1096,118 @@ void JetObjectsUpdate(JetBuffer* db) {
                 z = obj->position.vz;
                 JetObjectCreateUnscheduled(x, y, z, JET_OBJ_IMPACT, 42);
             }
-            st->life--;
-            if (st->life == 0) {
+            objState->life--;
+            if (objState->life == 0) {
                 JetObjectFree(obj);
             }
             break;
         case JET_OBJ_IMPACT:
-            if (st->needsInit == 1) {
-                st->hit = 0;
-                st->life = 0x32;
-                st->needsInit = 0;
-                st->age = 0;
-                st->unk28 = rand() % 20 - 10;
-                st->unk2C = rand() % 40 - 20;
-                st->unk30 = rand() % 20 - 10;
+            if (objState->needsInit == 1) {
+                objState->hit = 0;
+                objState->life = 0x32;
+                objState->needsInit = 0;
+                objState->age = 0;
+                objState->vars.raw[0] = rand() % 20 - 10;
+                objState->vars.raw[1] = rand() % 40 - 20;
+                objState->vars.raw[2] = rand() % 20 - 10;
             } else {
-                st->age++;
+                objState->age++;
             }
-            obj->position.vx += st->unk28;
-            obj->position.vy += st->unk2C;
-            obj->position.vz += st->unk30;
+            obj->position.vx += objState->vars.raw[0];
+            obj->position.vy += objState->vars.raw[1];
+            obj->position.vz += objState->vars.raw[2];
             obj->rotation.vx += 10;
             obj->rotation.vy += 100;
             obj->rotation.vz += 20;
-            st->life--;
-            if (st->life == 0) {
+            objState->life--;
+            if (objState->life == 0) {
                 JetObjectFree(obj);
             }
             break;
         case 203:
-            if (st->needsInit == 1) {
-                st->hit = 0;
-                st->life = 0x32;
-                st->needsInit = 0;
-                st->age = 0;
-                st->unk28 = rand() % 200 - 100;
-                st->unk2C = rand() % 200 - 100;
-                st->unk30 = rand() % 200 - 100;
+            if (objState->needsInit == 1) {
+                objState->hit = 0;
+                objState->life = 0x32;
+                objState->needsInit = 0;
+                objState->age = 0;
+                objState->vars.raw[0] = rand() % 200 - 100;
+                objState->vars.raw[1] = rand() % 200 - 100;
+                objState->vars.raw[2] = rand() % 200 - 100;
             } else {
-                st->age++;
+                objState->age++;
             }
-            obj->position.vx += st->unk28;
-            obj->position.vy += st->unk2C;
-            obj->position.vz += st->unk30;
+            obj->position.vx += objState->vars.raw[0];
+            obj->position.vy += objState->vars.raw[1];
+            obj->position.vz += objState->vars.raw[2];
             obj->rotation.vx += 0;
             obj->rotation.vy += 300;
             obj->rotation.vz += 0;
-            st->life--;
-            if (st->life == 0) {
+            objState->life--;
+            if (objState->life == 0) {
                 JetObjectFree(obj);
             }
             break;
         case JET_OBJ_SPEED_CHANGE:
-            if (st->needsInit == 1) {
-                st->needsInit = 0;
-                st->age = 0;
+            if (objState->needsInit == 1) {
+                objState->needsInit = 0;
+                objState->age = 0;
             } else {
-                st->age++;
+                objState->age++;
             }
             {
                 s32* speed;
 
                 speed = &g_JetSpeed;
-                if (*speed > st->params.speedChange.minSpeed) {
-                    *speed -= st->params.speedChange.step;
+                if (*speed > objState->params.speedChange.minSpeed) {
+                    *speed -= objState->params.speedChange.step;
                 }
                 if (*speed < 0) {
                     *speed = 0;
                     JetObjectCreateUnscheduled(0, 0, 0, JET_OBJ_RIDE_END, 29);
                 }
             }
-            if (st->age > st->params.speedChange.frames) {
+            if (objState->age > objState->params.speedChange.frames) {
                 JetObjectFree(obj);
             }
             break;
         case JET_OBJ_STOP:
-            if (st->needsInit == 1) {
-                st->needsInit = 0;
-                st->age = 0;
-                st->unk28 = 0;
-                st->unk2C = VSync(-1);
-                st->unk30 = 0;
+            if (objState->needsInit == 1) {
+                objState->needsInit = 0;
+                objState->age = 0;
+                objState->vars.raw[0] = 0;
+                objState->vars.raw[1] = VSync(-1);
+                objState->vars.raw[2] = 0;
             } else {
-                st->age++;
+                objState->age++;
             }
-            if (st->unk28 == 0) {
+            if (objState->vars.raw[0] == 0) {
                 g_JetSpeed = 0;
             }
-            if (st->unk28 == 1) {
+            if (objState->vars.raw[0] == 1) {
                 s32* speed;
 
                 speed = &g_JetSpeed;
-                *speed += st->params.stop.accel;
-                st->unk30++;
+                *speed += objState->params.stop.accel;
+                objState->vars.raw[2]++;
             }
-            if (st->params.stop.delay < VSync(-1) - st->unk2C) {
-                st->unk28 = 1;
+            if (objState->params.stop.delay < VSync(-1) - objState->vars.raw[1]) {
+                objState->vars.raw[0] = 1;
             }
-            if (st->unk30 > st->params.stop.accelFrames) {
+            if (objState->vars.raw[2] > objState->params.stop.accelFrames) {
                 JetObjectFree(obj);
             }
             break;
         case JET_OBJ_RIDE_START:
-            if (st->needsInit == 1) {
-                st->needsInit = 0;
-                st->age = 0;
+            if (objState->needsInit == 1) {
+                objState->needsInit = 0;
+                objState->age = 0;
                 g_JetSpeed = 0;
                 g_JetDrawEnabled = 1;
                 JetObjectCreateUnscheduled(0, 0, 0, 3, 59);
             } else {
-                st->age++;
+                objState->age++;
             }
-            shade = ~(st->age * 2);
+            shade = ~(objState->age * 2);
             fade = db->prims.g4Cursor;
             setXY4(fade, 0, 0, 320, 0, 0, 240, 320, 240);
             setRGB0(fade, shade, shade, shade);
@@ -1223,21 +1227,21 @@ void JetObjectsUpdate(JetBuffer* db) {
             addPrim(&db->ot2[1], tpagePrim);
             tpagePrim++;
             db->prims.ft4Cursor = tpagePrim;
-            if (st->age >= 0x7E) {
+            if (objState->age >= 0x7E) {
                 JetObjectFree(obj);
                 g_JetSpeed = 16384;
             }
             break;
         case JET_OBJ_RIDE_END:
-            if (st->needsInit == 1) {
-                st->needsInit = 0;
-                st->age = 0;
+            if (objState->needsInit == 1) {
+                objState->needsInit = 0;
+                objState->age = 0;
                 g_JetSpeed = 0;
                 JetAudioFadeOut();
             } else {
-                st->age++;
+                objState->age++;
             }
-            shade = st->age * 2;
+            shade = objState->age * 2;
             fade = db->prims.g4Cursor;
             setXY4(fade, 0, 0, 320, 0, 0, 240, 320, 240);
             setRGB0(fade, shade, shade, shade);
@@ -1257,7 +1261,7 @@ void JetObjectsUpdate(JetBuffer* db) {
             addPrim(&db->ot2[1], tpagePrim);
             tpagePrim++;
             db->prims.ft4Cursor = tpagePrim;
-            if (st->age >= 0x80) {
+            if (objState->age >= 0x80) {
                 JetObjectFree(obj);
                 g_JetSpeed = 16384;
                 g_JetDrawEnabled = 0;
@@ -1265,7 +1269,7 @@ void JetObjectsUpdate(JetBuffer* db) {
             }
             break;
         case JET_OBJ_SCORE_CHECK:
-            if (g_JetScore < st->params.scoreCheck.minScore) {
+            if (g_JetScore < objState->params.scoreCheck.minScore) {
                 JetObject* spawn;
 
                 spawn = &g_JetSpawnTemplate;
@@ -1309,7 +1313,7 @@ void JetObjectsUpdate(JetBuffer* db) {
 }
 
 static void JetObjectDamage(JetObject* object) {
-    JetObjectState* state = &object->state;
+    JetObjectState* objState = &object->state;
     u8 amount;
     s32 x;
     s32 y;
@@ -1319,8 +1323,8 @@ static void JetObjectDamage(JetObject* object) {
     if (amount == 0) {
         amount = 1;
     }
-    state->params.common.health -= amount;
-    if (state->params.common.health < 0) {
+    objState->params.common.health -= amount;
+    if (objState->params.common.health < 0) {
         JetObjectAwardPoints(object);
     } else {
         x = object->position.vx;
@@ -1332,7 +1336,7 @@ static void JetObjectDamage(JetObject* object) {
 
 // Award the score for a hit object and scatter its debris.
 static void JetObjectAwardPoints(JetObject* obj) {
-    JetObjectState* st = &obj->state;
+    JetObjectState* objState = &obj->state;
     s32* score;
     s32* frame;
     SVECTOR* path;
@@ -1341,7 +1345,7 @@ static void JetObjectAwardPoints(JetObject* obj) {
     s32 i;
     s16 modelId;
 
-    if (st->params.raw[10] == 1) {
+    if (objState->params.common.awardMode == 1) {
         s32* score;
         s32 points;
         s32 x;
@@ -1349,9 +1353,9 @@ static void JetObjectAwardPoints(JetObject* obj) {
         s32 z;
 
         score = &g_JetScore;
-        *score += st->params.common.points;
-        JetPlaySfx(st->params.common.deathSfx);
-        st->life = 0;
+        *score += objState->params.common.points;
+        JetPlaySfx(objState->params.common.deathSfx);
+        objState->life = 0;
         for (i = 0; i < 3; i++) {
             x = obj->position.vx;
             y = obj->position.vy;
@@ -1359,13 +1363,13 @@ static void JetObjectAwardPoints(JetObject* obj) {
             JetObjectCreateUnscheduled(x, y, z, JET_OBJ_IMPACT, rand() % 3 + 63);
         }
         g_JetPopupModelId = obj->node->modelId;
-        points = st->params.common.points;
+        points = objState->params.common.points;
         g_JetPopupPoints = points;
         g_JetPopupTimer = 100;
         g_JetScorePopupAlternate = 1;
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
-    if (st->params.raw[10] == 2) {
+    if (objState->params.common.awardMode == 2) {
         s32* score;
         s32 points;
         s32 x;
@@ -1373,9 +1377,9 @@ static void JetObjectAwardPoints(JetObject* obj) {
         s32 z;
 
         score = &g_JetScore;
-        *score += st->params.common.points;
-        JetPlaySfx(st->params.common.deathSfx);
-        st->life = 0;
+        *score += objState->params.common.points;
+        JetPlaySfx(objState->params.common.deathSfx);
+        objState->life = 0;
         for (i = 0; i < 3; i++) {
             x = obj->position.vx;
             y = obj->position.vy;
@@ -1383,36 +1387,36 @@ static void JetObjectAwardPoints(JetObject* obj) {
             JetObjectCreateUnscheduled(x, y, z, 0xCB, rand() % 3 + 60);
         }
         g_JetPopupModelId = obj->node->modelId;
-        points = st->params.common.points;
+        points = objState->params.common.points;
         g_JetPopupPoints = points;
         g_JetPopupTimer = 100;
         g_JetScorePopupAlternate = 1;
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
-    if (st->params.raw[10] == 3) {
+    if (objState->params.common.awardMode == 3) {
         s32* score;
         s32 points;
 
         score = &g_JetScore;
-        *score += st->params.common.points;
-        points = st->params.raw[11];
+        *score += objState->params.common.points;
+        points = objState->params.common.awardTilt;
         obj->rotation.vx += points;
     }
-    if (st->params.raw[10] == 4) {
+    if (objState->params.common.awardMode == 4) {
         s32* score;
         s32 points;
         score = &g_JetScore;
-        *score += st->params.common.points;
-        JetPlaySfx(st->params.common.deathSfx);
-        st->life = 0;
+        *score += objState->params.common.points;
+        JetPlaySfx(objState->params.common.deathSfx);
+        objState->life = 0;
         g_JetPopupModelId = obj->node->modelId;
-        points = st->params.common.points;
+        points = objState->params.common.points;
         g_JetPopupPoints = points;
         g_JetPopupTimer = 100;
         g_JetScorePopupAlternate = 1;
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
-    if (st->params.raw[10] == 5) {
+    if (objState->params.common.awardMode == 5) {
         s32* score;
         s32 points;
         s32 x;
@@ -1420,9 +1424,9 @@ static void JetObjectAwardPoints(JetObject* obj) {
         s32 z;
 
         score = &g_JetScore;
-        *score += st->params.common.points;
-        JetPlaySfx(st->params.common.deathSfx);
-        st->life = 0;
+        *score += objState->params.common.points;
+        JetPlaySfx(objState->params.common.deathSfx);
+        objState->life = 0;
         for (i = 0; i < 100; i++) {
             x = obj->position.vx;
             y = obj->position.vy;
@@ -1430,7 +1434,7 @@ static void JetObjectAwardPoints(JetObject* obj) {
             JetObjectCreateUnscheduled(x, y, z, 0xCB, rand() % 3 + 63);
         }
         g_JetPopupModelId = obj->node->modelId;
-        points = st->params.common.points;
+        points = objState->params.common.points;
         g_JetPopupPoints = points;
         g_JetPopupTimer = 100;
         g_JetScorePopupAlternate = 1;

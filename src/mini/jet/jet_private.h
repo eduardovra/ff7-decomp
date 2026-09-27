@@ -107,7 +107,10 @@ typedef union {
         /* 0x00 */ s32 points;
         /* 0x04 */ s32 loopPath;
         /* 0x08 */ s32 endSegment; // freed once the ride passes this track segment
-        /* 0x0C */ s32 unkC[10];
+        /* 0x0C */ s32 unkC[7];
+        /* 0x28 */ s32 awardMode; // JetObjectAwardPoints' branch once health is below 0
+        /* 0x2C */ s32 awardTilt; // awardMode 3: added to rotation.vx instead of dying
+        /* 0x30 */ s32 unk30;
         /* 0x34 */ s32 health;
         /* 0x38 */ s32 unk38[3];
         /* 0x44 */ s32 spawnSfx;
@@ -127,6 +130,8 @@ typedef union {
         /* 0x00 */ s32 unk0[3];
         /* 0x0C */ s32 startRot[3];
         /* 0x18 */ s32 rotStep[3];
+        /* 0x24 */ s32 unk24[5];
+        /* 0x38 */ s32 wasHit; // awardMode 5: shows model 92 instead of 91 for a frame
     } spinner;
     struct {
         /* 0x00 */ s32 unk0[3];
@@ -167,10 +172,26 @@ typedef struct {
     /* 0x18 */ s32 pathIndex;
     /* 0x1C */ s32 speed;
     /* 0x20 */ char pad20[8];
-    /* 0x28 */ s32 unk28;
-    /* 0x2C */ s32 unk2C;
-    /* 0x30 */ s32 unk30;
-    /* 0x34 */ s32 unk34;
+    /* 0x28 */ union {
+        s32 raw[4];
+        struct {
+            /* 0x0 */ s32 pathPos; // 16.16: path point index and fraction
+            /* 0x4 */ s32 pathEnd;
+        } path;
+        struct {
+            /* 0x0 */ s32 unk0[2];
+            /* 0x8 */ s32 pathPos;
+            /* 0xC */ s32 pathEnd;
+        } balloon;
+        struct {
+            /* 0x0 */ s32 unk0;
+            /* 0x4 */ s32 fallSpeed;
+        } stalactite;
+        struct {
+            /* 0x0 */ s32 step;
+            /* 0x4 */ s32 start[3];
+        } incoming;
+    } vars;
     /* 0x38 */ char pad38[0x18];
     /* 0x50 */ JetObjectParams params;
 } JetObjectState; // size: 0xA0
