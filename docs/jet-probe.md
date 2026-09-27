@@ -28,7 +28,7 @@ Open, in rough order of payoff:
 
 - Types 0, 2, 4, 14 (and 14's children 15, 16): seen or scheduled, not yet
   captured well. Re-run the tour with shorter `--offsets` (e.g. `5,15,30`).
-- 13 shares a case with 7; 3 may be the starfield (not confirmed).
+- 13 shares a case with 7. 203 is still unnamed.
 - 100, 201, 203, 230, 250: no spawns seen in a full ride (250 was confirmed
   by injecting one).
 - `unk50` slots: only `[0]` points, `[0xD]` hit points and `[18]` death
@@ -333,6 +333,30 @@ hides objects beyond ~8000; 3000-5000 works.
   m54 a spinning star target; 17 is m89 a rock chunk, m94 a large slab (and
   m71, a points target); 13 m45 is a downward spotlight (its tilt starts at
   segment 2010, past the captured window), m87 did not render at 3500.
+
+### Model table rendered, 2026-09-27 (native build)
+
+`tools/jet_models.py` stops the native build at the first
+`JetObjectsUpdate`, reads every `g_JetModelTable` entry's triangles through
+gdb and writes flat-shaded contact sheets to `build/jet_models/`. Only
+`tris` is read: `JetDrawModelTris` draws nothing else, and every model has
+`quadCount` 0.
+
+- The ids the code names (`enum JetModelId`): 29 a single tiny triangle,
+  41 flame, 42 ember chunk, 59 scattered dots, 63-65 three sparkle shapes,
+  68-70 red, blue and yellow triangles, 79 two small triangles left and
+  right of the cart, 91 a UFO and 92 the same UFO in white.
+- 59 settles type 3 (`JET_OBJ_STARFIELD`): the dots follow the camera and
+  are drawn with an OT bias of 1000, behind everything.
+- 79 is where the beams start, not a shadow: `JetDrawCartAndProjectBeams`
+  projects vertex 1 of each of its two triangles as a beam origin (vertex 2
+  is stored and never read).
+- 15, 19, 20, 26-29, 85, 86, 93, 95, 98 are 1-triangle placeholders like 29.
+- 30 is a blue plane with a pilot. The schedule (235 spawns over 8564
+  segments, dumped from `g_JetXbinAdr.spawns`) uses it 10 times, always as
+  type 1 with 50-60 points and 8 health. Every scheduled type 255 uses 29;
+  only the type 250 handler passes 30, and no type 250 is scheduled, so
+  that path is dead and 30 there is most likely a slip for 29.
 
 ## What each object type looks like
 

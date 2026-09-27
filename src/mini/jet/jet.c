@@ -326,7 +326,7 @@ void JetDrawCartAndProjectBeams(JetBuffer* db, JetNode* node, s16 otIndex, s32 u
     MATRIX* m;
     MATRIX* wm;
     MATRIX* cam;
-    JetModel** shadow;
+    JetModel** beamOrigins;
     u_long xy1;
     u_long xy2;
     s32 index;
@@ -375,13 +375,13 @@ void JetDrawCartAndProjectBeams(JetBuffer* db, JetNode* node, s16 otIndex, s32 u
     args.ot = &db->ot2[otIndex];
     args.model = node->model;
     db->prims.g3Cursor = JetDrawModelTris(&args);
-    shadow = &g_JetModelTable[79];
-    JetProject3Points(&shadow[index]->tris[0].v0, screen);
+    beamOrigins = &g_JetModelTable[JET_MODEL_BEAM_ORIGINS];
+    JetProject3Points(&beamOrigins[index]->tris[0].v0, screen);
     g_JetBeam0OriginY = screen[1] >> 16;
     g_JetBeam0OriginX = screen[1];
     g_JetBeam0Vertex2Y = screen[2] >> 16;
     g_JetBeam0Vertex2X = screen[2];
-    JetProject3Points(&shadow[index]->tris[1].v0, screen);
+    JetProject3Points(&beamOrigins[index]->tris[1].v0, screen);
     xy1 = screen[1];
     xy2 = screen[2];
     g_JetBeam1OriginY = xy1 >> 16;
@@ -626,7 +626,7 @@ static void JetDrawScorePopup(JetBuffer* db, s16 modelId, s32 rotationX, s32 rot
     s32 index;
     s32 unused;
 
-    if (modelId == 0 || modelId == 0x5B) {
+    if (modelId == 0 || modelId == JET_MODEL_UFO) {
         return;
     }
     alternate = &g_JetScorePopupAlternate;

@@ -72,6 +72,19 @@ typedef struct {
     /* 0x1C */ s32 : 32;
 } JetModel; // size: 0x20
 
+// Indices into g_JetModelTable.
+enum JetModelId {
+    JET_MODEL_PLACEHOLDER = 29,
+    JET_MODEL_FLAME = 41,
+    JET_MODEL_DEBRIS = 42,
+    JET_MODEL_STARFIELD = 59,
+    JET_MODEL_SPARKLE = 63,  // first of three variants
+    JET_MODEL_CONFETTI = 68, // first of three: red, blue, yellow
+    JET_MODEL_BEAM_ORIGINS = 79,
+    JET_MODEL_UFO = 91,
+    JET_MODEL_UFO_HIT = 92,
+};
+
 // Argument block for the GTE renderers in jet_gte.s.
 typedef struct {
     /* 0x0 */ JetTriangle* tris;

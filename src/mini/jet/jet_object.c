@@ -10,7 +10,7 @@ enum JetObjectType {
     JET_OBJ_TUMBLER = 0,          // follows its path, tumbling at a per-axis rate
     JET_OBJ_FLYER = 1,            // follows its path, turned to face along it
     JET_OBJ_BALLOON = 2,          // rises along its path, leaning to a random tilt
-    JET_OBJ_BACKDROP = 3,         // follows the camera, drawn behind everything
+    JET_OBJ_STARFIELD = 3,        // follows the camera, drawn behind everything
     JET_OBJ_STALACTITE = 4,       // hangs still, then falls
     JET_OBJ_SPINNER = 5,          // follows its path, spinning at a fixed rate
     JET_OBJ_SWING = 7,            // holds still, then swings about x once the ride passes a segment
@@ -736,7 +736,7 @@ void JetObjectsUpdate(JetBuffer* db) {
             obj->rotation.vy += objState->params.spinner.rotStep[1];
             obj->rotation.vz += objState->params.spinner.rotStep[2];
             if (objState->params.common.awardMode == 5) {
-                obj->node->model = g_JetModelTable[91 + objState->params.spinner.wasHit];
+                obj->node->model = g_JetModelTable[JET_MODEL_UFO + objState->params.spinner.wasHit];
             }
             if (objState->params.spinner.wasHit == 1) {
                 objState->params.spinner.wasHit = 0;
@@ -873,7 +873,7 @@ void JetObjectsUpdate(JetBuffer* db) {
         case JET_OBJ_EXPLOSION:
             JetPlaySfx(SFX_FIRAGA);
             for (j = 0; j < objState->params.explosion.debrisCount; j++) {
-                JetObjectCreateUnscheduled(13382, -10000, 8395, JET_OBJ_DEBRIS, 42);
+                JetObjectCreateUnscheduled(13382, -10000, 8395, JET_OBJ_DEBRIS, JET_MODEL_DEBRIS);
             }
             JetObjectFree(obj);
             // falls through into the debris behaviour below
@@ -940,7 +940,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                     x = obj->position.vx;
                     y = obj->position.vy;
                     z = obj->position.vz;
-                    JetObjectCreateUnscheduled(x, y, z, JET_OBJ_FIREWORK_SPARK, rand() % 3 + 68);
+                    JetObjectCreateUnscheduled(x, y, z, JET_OBJ_FIREWORK_SPARK, rand() % 3 + JET_MODEL_CONFETTI);
                 }
                 objState->life = 0;
             }
@@ -1001,7 +1001,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                     x = obj->position.vx + rand() % 100 - 50;
                     y = obj->position.vy + 500;
                     z = obj->position.vz + rand() % 100 - 50;
-                    JetObjectCreateUnscheduled(x, y, z, JET_OBJ_ERUPTION_DEBRIS, 42);
+                    JetObjectCreateUnscheduled(x, y, z, JET_OBJ_ERUPTION_DEBRIS, JET_MODEL_DEBRIS);
                 }
                 {
                     s32 x;
@@ -1011,7 +1011,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                     x = obj->position.vx;
                     y = obj->position.vy;
                     z = obj->position.vz;
-                    JetObjectCreateUnscheduled(x, y, z, JET_OBJ_ERUPTION_FLAME, 41);
+                    JetObjectCreateUnscheduled(x, y, z, JET_OBJ_ERUPTION_FLAME, JET_MODEL_FLAME);
                 }
             }
             if (objState->vars.jump.velY < 0) {
@@ -1075,7 +1075,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 JetObjectFree(obj);
             }
             break;
-        case JET_OBJ_BACKDROP:
+        case JET_OBJ_STARFIELD:
             obj->position.vx = g_JetCameraPosCopy.vx;
             obj->position.vy = g_JetCameraPosCopy.vy - 2500;
             obj->position.vz = g_JetCameraPosCopy.vz;
@@ -1101,7 +1101,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 x = obj->position.vx;
                 y = obj->position.vy;
                 z = obj->position.vz;
-                JetObjectCreateUnscheduled(x, y, z, JET_OBJ_IMPACT, 42);
+                JetObjectCreateUnscheduled(x, y, z, JET_OBJ_IMPACT, JET_MODEL_DEBRIS);
             }
             objState->life--;
             if (objState->life == 0) {
@@ -1170,7 +1170,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 }
                 if (*speed < 0) {
                     *speed = 0;
-                    JetObjectCreateUnscheduled(0, 0, 0, JET_OBJ_RIDE_END, 29);
+                    JetObjectCreateUnscheduled(0, 0, 0, JET_OBJ_RIDE_END, JET_MODEL_PLACEHOLDER);
                 }
             }
             if (objState->age > objState->params.speedChange.frames) {
@@ -1210,7 +1210,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 objState->age = 0;
                 g_JetSpeed = 0;
                 g_JetDrawEnabled = 1;
-                JetObjectCreateUnscheduled(0, 0, 0, JET_OBJ_BACKDROP, 59);
+                JetObjectCreateUnscheduled(0, 0, 0, JET_OBJ_STARFIELD, JET_MODEL_STARFIELD);
             } else {
                 objState->age++;
             }
@@ -1337,7 +1337,7 @@ static void JetObjectDamage(JetObject* object) {
         x = object->position.vx;
         y = object->position.vy;
         z = object->position.vz;
-        JetObjectCreateUnscheduled(x, y, z, JET_OBJ_IMPACT, 63);
+        JetObjectCreateUnscheduled(x, y, z, JET_OBJ_IMPACT, JET_MODEL_SPARKLE);
     }
 }
 
@@ -1367,7 +1367,7 @@ static void JetObjectAwardPoints(JetObject* obj) {
             x = obj->position.vx;
             y = obj->position.vy;
             z = obj->position.vz;
-            JetObjectCreateUnscheduled(x, y, z, JET_OBJ_IMPACT, rand() % 3 + 63);
+            JetObjectCreateUnscheduled(x, y, z, JET_OBJ_IMPACT, rand() % 3 + JET_MODEL_SPARKLE);
         }
         g_JetPopupModelId = obj->node->modelId;
         points = objState->params.common.points;
