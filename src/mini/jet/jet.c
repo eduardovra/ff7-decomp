@@ -167,7 +167,7 @@ u16 MINI_Jet(void) {
     g_JetTrackRight = *path;
     JetAudioInit();
     SetFogNearFar(g_JetFog.near, g_JetFog.far, 256);
-    g_JetPopupNode[0] = JetNodeAlloc(30, 0, 0, 1, &g_JetRootNode, 1200, 50, 3000, 0, 1000, 0);
+    g_JetPopupNode[0] = JetNodeAlloc(JET_MODEL_BLUE_PLANE, 0, 0, 1, &g_JetRootNode, 1200, 50, 3000, 0, 1000, 0);
     for (;;) {
         speed = &g_JetSpeed;
         if ((g_JetTrackSegment * 4) > (g_JetTrackPathLength - 0x10) || g_JetExit == 1) {

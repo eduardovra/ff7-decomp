@@ -28,7 +28,8 @@ Open, in rough order of payoff:
 
 - Types 0, 2, 4, 14 (and 14's children 15, 16): seen or scheduled, not yet
   captured well. Re-run the tour with shorter `--offsets` (e.g. `5,15,30`).
-- 13 shares a case with 7.
+- 7 shares 13's case (`JET_OBJ_FLIP`) and is never scheduled: all 20 records are 13
+  (18 × m45 spotlight, m87 and m88 vines), each turning -35 × 64 about x.
 - 100, 201, 203, 230, 250: no spawns seen in a full ride (250 was confirmed
   by injecting one).
 - `unk50` slots: only `[0]` points, `[0xD]` hit points and `[18]` death
@@ -352,7 +353,9 @@ gdb and writes flat-shaded contact sheets to `build/jet_models/`. Only
   projects vertex 1 of each of its two triangles as a beam origin (vertex 2
   is stored and never read).
 - 15, 19, 20, 26-29, 85, 86, 93, 95, 98 are 1-triangle placeholders like 29.
-- 30 is a blue plane with a pilot. The schedule (235 spawns over 8564
+- 30 is a blue plane with a pilot, confirmed in game with
+  `jet_isolate.py 1 --model 30 --follow --dist 700`: flat wings, a vertical
+  tail fin and a goggled pilot. The schedule (235 spawns over 8564
   segments, dumped from `g_JetXbinAdr.spawns`) uses it 10 times, always as
   type 1 with 50-60 points and 8 health. Every scheduled type 255 uses 29;
   only the type 250 handler passes 30, and no type 250 is scheduled, so

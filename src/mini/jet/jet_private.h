@@ -75,6 +75,7 @@ typedef struct {
 // Indices into g_JetModelTable.
 enum JetModelId {
     JET_MODEL_PLACEHOLDER = 29,
+    JET_MODEL_BLUE_PLANE = 30,
     JET_MODEL_FLAME = 41,
     JET_MODEL_DEBRIS = 42,
     JET_MODEL_STARFIELD = 59,
@@ -151,10 +152,10 @@ typedef union {
     struct {
         /* 0x00 */ s32 unk0[3];
         /* 0x0C */ s32 startRot[2];
-        /* 0x14 */ s32 swingSegment;
-        /* 0x18 */ s32 swingStep;
-        /* 0x1C */ s32 swingFrames;
-    } swing;
+        /* 0x14 */ s32 flipSegment;
+        /* 0x18 */ s32 flipStep;
+        /* 0x1C */ s32 flipFrames;
+    } flip;
     struct {
         /* 0x00 */ s32 unk0[3];
         /* 0x0C */ s32 startRot[3];
@@ -225,7 +226,7 @@ typedef struct {
         } incoming;
         struct {
             /* 0x0 */ s32 frame;
-        } swing;
+        } flip;
         struct {
             /* 0x0 */ s32 x;
             /* 0x4 */ s32 y;
