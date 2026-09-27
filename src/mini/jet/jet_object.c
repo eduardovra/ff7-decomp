@@ -7,7 +7,7 @@
 
 // JetObjectState.type selects behaviour; the model sets the look.
 enum JetObjectType {
-    JET_OBJ_TUMBLER = 0,          // follows its path, tumbling at a per-axis rate
+    JET_OBJ_ROTATOR = 0,          // rotates at a fixed per-axis rate, optionally moving along its path
     JET_OBJ_FLYER = 1,            // follows its path, turned to face along it
     JET_OBJ_BALLOON = 2,          // rises along its path, leaning to a random tilt
     JET_OBJ_STARFIELD = 3,        // follows the camera, drawn behind everything
@@ -79,7 +79,7 @@ void JetObjectsInit(void) {
     g_JetObjectCount = 0;
 }
 
-static void JetObjectPathLoad(u8 pathIndex, u8 mode) {
+inline void JetObjectPathLoad(u8 pathIndex, u8 mode) {
     s32* lengths;
     s32* offsets;
     s32 offset;
@@ -358,7 +358,6 @@ void JetObjectsUpdate(JetBuffer* db) {
     JetObjectState* objState;
     POLY_G4* fade;
     POLY_FT4* tpagePrim;
-    s16 pathIndex;
     s32 shade;
     s32 count;
     s32 i;
@@ -390,27 +389,18 @@ void JetObjectsUpdate(JetBuffer* db) {
         switch (obj->state.type) {
         case JET_OBJ_INCOMING:
             if (objState->needsInit == 1) {
-                SVECTOR* path;
-                s32 pathLen;
-                s32 offset;
-
-                pathIndex = objState->pathIndex & 0xFF;
-                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
-                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
-                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
-                obj->path = path;
-                obj->pathLen = pathLen;
+                JetObjectPathLoad(objState->pathIndex, 0);
+                obj->path = g_JetLastPath;
+                obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
                 objState->life = 1;
                 objState->age = 0;
                 objState->hit = 0;
                 objState->params.common.awardMode = 1;
                 objState->vars.incoming.step = 0;
-                objState->vars.incoming.start[0] = obj->position.vx;
-                objState->vars.incoming.start[1] = obj->position.vy;
-                g_JetLastPathLen = pathLen;
-                g_JetLastPath = path;
-                objState->vars.incoming.start[2] = obj->position.vz;
+                objState->vars.incoming.startX = obj->position.vx;
+                objState->vars.incoming.startY = obj->position.vy;
+                objState->vars.incoming.startZ = obj->position.vz;
                 objState->params.common.points = 0;
             } else {
                 objState->age++;
@@ -430,11 +420,11 @@ void JetObjectsUpdate(JetBuffer* db) {
                 step = objState->vars.incoming.step;
                 pathPos = &g_JetCameraPathPos;
                 JetTrackSample(pathPos[0] + 3 * JET_TRACK_SEGMENT, -100, &pos, &rot);
-                x = objState->vars.incoming.start[0];
+                x = objState->vars.incoming.startX;
                 x += (step * (pos.vx - x)) >> 7;
-                y = objState->vars.incoming.start[1];
+                y = objState->vars.incoming.startY;
                 y += (step * (pos.vy - y)) >> 7;
-                z = objState->vars.incoming.start[2];
+                z = objState->vars.incoming.startZ;
                 z += (step * (pos.vz - z)) >> 7;
                 obj->position.vx = x;
                 obj->position.vy = y;
@@ -460,27 +450,18 @@ void JetObjectsUpdate(JetBuffer* db) {
             break;
         case JET_OBJ_TRIGGERED:
             if (objState->needsInit == 1) {
-                SVECTOR* path;
-                s32 pathLen;
-                s32 offset;
-
                 sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = objState->pathIndex & 0xFF;
-                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
-                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
-                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
-                obj->path = path;
-                obj->pathLen = pathLen;
+                JetObjectPathLoad(objState->pathIndex, 0);
+                obj->path = g_JetLastPath;
+                obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
                 objState->life = 1;
                 objState->age = 0;
                 objState->hit = 0;
                 objState->vars.path.pathPos = 0;
-                g_JetLastPathLen = pathLen;
-                g_JetLastPath = path;
                 objState->vars.path.pathEnd = (obj->pathLen - 2) << 16;
             } else {
                 objState->age++;
@@ -506,29 +487,20 @@ void JetObjectsUpdate(JetBuffer* db) {
                 obj->rotation.vz = 0;
             }
             break;
-        case JET_OBJ_TUMBLER:
+        case JET_OBJ_ROTATOR:
             if (objState->needsInit == 1) {
-                SVECTOR* path;
-                s32 pathLen;
-                s32 offset;
-
                 sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = objState->pathIndex & 0xFF;
-                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
-                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
-                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
-                obj->path = path;
-                obj->pathLen = pathLen;
+                JetObjectPathLoad(objState->pathIndex, 0);
+                obj->path = g_JetLastPath;
+                obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
                 objState->life = 1;
                 objState->age = 0;
                 objState->hit = 0;
                 objState->vars.path.pathPos = 0;
-                g_JetLastPathLen = pathLen;
-                g_JetLastPath = path;
                 objState->vars.path.pathEnd = (obj->pathLen - 1) << 16;
             } else {
                 objState->age++;
@@ -548,36 +520,27 @@ void JetObjectsUpdate(JetBuffer* db) {
                 break;
             }
             JetPathSample(objState->vars.path.pathPos, obj->path, &obj->position, 0);
-            obj->rotation.vx += objState->params.tumbler.rotStep[0];
-            obj->rotation.vy += objState->params.tumbler.rotStep[1];
-            obj->rotation.vz += objState->params.tumbler.rotStep[2];
+            obj->rotation.vx += objState->params.rotator.rotStep[0];
+            obj->rotation.vy += objState->params.rotator.rotStep[1];
+            obj->rotation.vz += objState->params.rotator.rotStep[2];
             if (objState->hit) {
                 JetObjectDamage(obj);
             }
             break;
         case JET_OBJ_FLYER:
             if (objState->needsInit == 1) {
-                SVECTOR* path;
-                s32 pathLen;
-                s32 offset;
-
                 sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = objState->pathIndex & 0xFF;
-                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
-                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
-                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
-                obj->path = path;
-                obj->pathLen = pathLen;
+                JetObjectPathLoad(objState->pathIndex, 0);
+                obj->path = g_JetLastPath;
+                obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
                 objState->life = 1;
                 objState->age = 0;
                 objState->hit = 0;
                 objState->vars.path.pathPos = 0;
-                g_JetLastPathLen = pathLen;
-                g_JetLastPath = path;
                 objState->vars.path.pathEnd = (obj->pathLen - 1) << 16;
             } else {
                 objState->age++;
@@ -610,26 +573,18 @@ void JetObjectsUpdate(JetBuffer* db) {
             break;
         case JET_OBJ_CART:
             if (objState->needsInit == 1) {
-                SVECTOR* path;
-                s32 pathLen;
-                s32 offset;
-
                 sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathLen = g_JetXbinAdr.trackPathLengths[0];
-                offset = g_JetXbinAdr.trackPathOffsets[0];
-                path = (SVECTOR*)(g_JetXbinAdr.trackPaths + offset);
-                obj->path = path;
-                obj->pathLen = pathLen;
+                JetObjectPathLoad(0, 1);
+                obj->path = g_JetLastPath;
+                obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
                 objState->life = 1;
                 objState->age = 0;
                 objState->hit = 0;
                 objState->vars.path.pathPos = 0;
-                g_JetLastPathLen = pathLen;
-                g_JetLastPath = path;
                 objState->vars.path.pathEnd = (obj->pathLen - 1) << 16;
             } else {
                 objState->age++;
@@ -656,25 +611,16 @@ void JetObjectsUpdate(JetBuffer* db) {
             break;
         case JET_OBJ_STALACTITE:
             if (objState->needsInit == 1) {
-                SVECTOR* path;
-                s32 pathLen;
-                s32 offset;
-
                 sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = objState->pathIndex & 0xFF;
-                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
-                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
-                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
-                obj->path = path;
-                obj->pathLen = pathLen;
+                JetObjectPathLoad(objState->pathIndex, 0);
+                obj->path = g_JetLastPath;
+                obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
                 objState->life = 1;
                 objState->hit = 0;
-                g_JetLastPathLen = pathLen;
-                g_JetLastPath = path;
                 JetPathSample(0, obj->path, &obj->position, 0);
             }
             segment = &g_JetTrackSegment;
@@ -698,20 +644,13 @@ void JetObjectsUpdate(JetBuffer* db) {
             break;
         case JET_OBJ_SPINNER:
             if (objState->needsInit == 1) {
-                SVECTOR* path;
-                s32 pathLen;
-                s32 offset;
-
                 sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = objState->pathIndex & 0xFF;
-                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
-                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
-                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
-                obj->path = path;
-                obj->pathLen = pathLen;
+                JetObjectPathLoad(objState->pathIndex, 0);
+                obj->path = g_JetLastPath;
+                obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
                 objState->life = 1;
                 objState->hit = 0;
@@ -719,8 +658,6 @@ void JetObjectsUpdate(JetBuffer* db) {
                 objState->vars.path.pathEnd = (obj->pathLen - 1) << 16;
                 obj->rotation.vx = objState->params.spinner.startRot[0];
                 obj->rotation.vy = objState->params.spinner.startRot[1];
-                g_JetLastPathLen = pathLen;
-                g_JetLastPath = path;
                 obj->rotation.vz = objState->params.spinner.startRot[2];
             }
             objState->vars.path.pathPos += objState->speed;
@@ -758,22 +695,13 @@ void JetObjectsUpdate(JetBuffer* db) {
             break;
         case JET_OBJ_BALLOON:
             if (objState->needsInit == 1) {
-                SVECTOR* path;
-                s32 pathLen;
-                s32 offset;
-
                 sound = objState->params.common.spawnSfx;
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                pathIndex = objState->pathIndex & 0xFF;
-                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
-                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
-                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
-                g_JetLastPathLen = pathLen;
-                g_JetLastPath = path;
-                obj->path = path;
-                obj->pathLen = pathLen;
+                JetObjectPathLoad(objState->pathIndex, 0);
+                obj->path = g_JetLastPath;
+                obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
                 objState->life = 1;
                 objState->hit = 0;
@@ -831,24 +759,15 @@ void JetObjectsUpdate(JetBuffer* db) {
         case JET_OBJ_SWING:
         case JET_OBJ_SWING_ALT:
             if (objState->needsInit == 1) {
-                SVECTOR* path;
-                s32 pathLen;
-                s32 offset;
-
-                pathIndex = objState->pathIndex & 0xFF;
-                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
-                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
-                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
-                obj->path = path;
-                obj->pathLen = pathLen;
+                JetObjectPathLoad(objState->pathIndex, 0);
+                obj->path = g_JetLastPath;
+                obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
                 objState->life = 1;
                 objState->hit = 0;
                 obj->rotation.vx = objState->params.swing.startRot[0];
                 obj->rotation.vy = objState->params.swing.startRot[1];
                 obj->rotation.vz = 0;
-                g_JetLastPathLen = pathLen;
-                g_JetLastPath = path;
                 JetPathSample(0, obj->path, &obj->position, 0);
                 objState->vars.swing.frame = 0;
             }
@@ -904,22 +823,13 @@ void JetObjectsUpdate(JetBuffer* db) {
             break;
         case JET_OBJ_FIREWORK:
             if (objState->needsInit == 1) {
-                SVECTOR* path;
-                s32 pathLen;
-                s32 offset;
-
-                pathIndex = objState->pathIndex & 0xFF;
-                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
-                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
-                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
-                obj->path = path;
-                obj->pathLen = pathLen;
+                JetObjectPathLoad(objState->pathIndex, 0);
+                obj->path = g_JetLastPath;
+                obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
                 objState->life = 1;
                 objState->hit = 0;
                 objState->vars.raw[0] = 0;
-                g_JetLastPathLen = pathLen;
-                g_JetLastPath = path;
                 JetPathSample(0, obj->path, &obj->position, 0);
             }
             if (objState->params.common.endSegment < g_JetTrackSegment) {
@@ -971,24 +881,15 @@ void JetObjectsUpdate(JetBuffer* db) {
             break;
         case JET_OBJ_ERUPTION:
             if (objState->needsInit == 1) {
-                SVECTOR* path;
-                s32 pathLen;
-                s32 offset;
-
                 JetPlaySfx(SFX_FIRA);
-                pathIndex = objState->pathIndex & 0xFF;
-                pathLen = g_JetXbinAdr.objectPathLengths[pathIndex];
-                offset = g_JetXbinAdr.objectPathOffsets[pathIndex];
-                path = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
-                obj->path = path;
-                obj->pathLen = pathLen;
+                JetObjectPathLoad(objState->pathIndex, 0);
+                obj->path = g_JetLastPath;
+                obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
                 objState->life = 1;
                 objState->hit = 0;
                 objState->age = 0;
                 objState->vars.jump.velY = -70;
-                g_JetLastPathLen = pathLen;
-                g_JetLastPath = path;
                 JetPathSample(0, obj->path, &obj->position, 0);
             }
             objState->vars.jump.velY++;
@@ -1346,12 +1247,7 @@ static void JetObjectDamage(JetObject* object) {
 static void JetObjectAwardPoints(JetObject* obj) {
     JetObjectState* objState = &obj->state;
     s32* score;
-    s32* frame;
-    SVECTOR* path;
-    s32 pathLen;
-    s32 sound;
     s32 i;
-    s16 modelId;
 
     if (objState->params.common.awardMode == 1) {
         s32* score;

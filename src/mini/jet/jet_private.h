@@ -147,7 +147,7 @@ typedef union {
     struct {
         /* 0x0 */ s32 unk0[3];
         /* 0xC */ s32 rotStep[3];
-    } tumbler;
+    } rotator;
     struct {
         /* 0x00 */ s32 unk0[3];
         /* 0x0C */ s32 startRot[2];
@@ -219,7 +219,9 @@ typedef struct {
         } stalactite;
         struct {
             /* 0x0 */ s32 step;
-            /* 0x4 */ s32 start[3];
+            /* 0x4 */ s32 startX;
+            /* 0x8 */ s32 startY;
+            /* 0xC */ s32 startZ;
         } incoming;
         struct {
             /* 0x0 */ s32 frame;
