@@ -10,14 +10,13 @@ static void JetPrimsInit(JetPrimBuffer* prims);
 static inline void ClearIsbg(u_char* isbg) { *isbg = 0; }
 
 void JetBuffersInit(void) {
-    JetPrimBuffer* prims;
     JetBuffer* db;
 
+    db = g_JetBuffers;
     SetDefDrawEnv(&g_JetBuffers[0].draw, 0, 0, 320, 240);
     SetDefDispEnv(&g_JetBuffers[0].disp, 0, 240, 320, 240);
     SetDefDrawEnv(&g_JetBuffers[1].draw, 0, 240, 320, 240);
     SetDefDispEnv(&g_JetBuffers[1].disp, 0, 0, 320, 240);
-    db = g_JetBuffers;
     ClearIsbg(&db[0].draw.isbg);
     ClearIsbg(&db[1].draw.isbg);
     setRGB0(&g_JetBuffers[0].draw, 0, 0, 8);
@@ -27,10 +26,9 @@ void JetBuffersInit(void) {
     SetDispMask(1);
     SetBackColor(0x80, 0x80, 0x80);
     SetFarColor(0, 0, 8);
-    prims = &g_JetBuffers[0].prims;
-    JetPrimsInit(prims);
+    JetPrimsInit(&g_JetBuffers[0].prims);
     JetPrimsInit(&g_JetBuffers[1].prims);
-    JetPrimCursorsReset(prims);
+    JetPrimCursorsReset(&g_JetBuffers[0].prims);
     JetPrimCursorsReset(&g_JetBuffers[1].prims);
     ClearOTagR(g_JetBuffers[0].ot, LEN(g_JetBuffers[0].ot));
     ClearOTagR(g_JetBuffers[1].ot, LEN(g_JetBuffers[1].ot));
