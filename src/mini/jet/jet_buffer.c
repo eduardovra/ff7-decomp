@@ -1,4 +1,4 @@
-//! PSYQ=3.3 FORCE_MEM=true COMM=true
+//! PSYQ=3.3 FORCE_MEM=true FORCE_ADDR=true COMM=true
 
 #include "jet_private.h"
 
@@ -7,22 +7,17 @@ JetBuffer* g_JetBufferPtr[1];
 
 static void JetPrimsInit(JetPrimBuffer* prims);
 
-static inline void ClearIsbg(u_char* isbg) { *isbg = 0; }
-
 void JetBuffersInit(void) {
-    JetBuffer* db;
-
-    db = g_JetBuffers;
     SetDefDrawEnv(&g_JetBuffers[0].draw, 0, 0, 320, 240);
     SetDefDispEnv(&g_JetBuffers[0].disp, 0, 240, 320, 240);
     SetDefDrawEnv(&g_JetBuffers[1].draw, 0, 240, 320, 240);
     SetDefDispEnv(&g_JetBuffers[1].disp, 0, 0, 320, 240);
-    ClearIsbg(&db[0].draw.isbg);
-    ClearIsbg(&db[1].draw.isbg);
+    g_JetBuffers[0].draw.isbg = 0;
+    g_JetBuffers[1].draw.isbg = 0;
     setRGB0(&g_JetBuffers[0].draw, 0, 0, 8);
     setRGB0(&g_JetBuffers[1].draw, 0, 0, 8);
     SetGeomOffset(160, 160);
-    SetGeomScreen(0x100);
+    SetGeomScreen(256);
     SetDispMask(1);
     SetBackColor(0x80, 0x80, 0x80);
     SetFarColor(0, 0, 8);

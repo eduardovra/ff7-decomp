@@ -1,4 +1,4 @@
-//! PSYQ=3.3 FORCE_MEM=true COMM=true
+//! PSYQ=3.3 FORCE_MEM=true FORCE_ADDR=true COMM=true
 
 #include "jet_private.h"
 #include <libc.h>
@@ -162,33 +162,29 @@ static void JetDrawCursor(JetBuffer* db) {
 static void JetDrawBeams(void) {
     JetBuffer** db;
     POLY_FT4* poly;
-    u8* scroll;
     s32 spread;
-    s16* cursorX;
-    s16* cursorY;
 
     if (g_JetFiring != 1) {
         return;
     }
-    cursorX = &g_JetCursorX;
-    cursorY = &g_JetCursorY;
     db = g_JetBufferPtr;
-    scroll = &g_JetBeamScroll;
     spread = g_JetShotPower >> 3;
     poly = db[0]->prims.ft4Cursor;
-    setXY4(poly, g_JetBeam0OriginX + spread, g_JetBeam0OriginY, *cursorX, *cursorY, g_JetBeam0OriginX - spread,
-           g_JetBeam0OriginY, *cursorX, *cursorY);
+    setXY4(poly, g_JetBeam0OriginX + spread, g_JetBeam0OriginY, g_JetCursorX, g_JetCursorY, g_JetBeam0OriginX - spread,
+           g_JetBeam0OriginY, g_JetCursorX, g_JetCursorY);
     setRGB0(poly, 0x80, 0x80, 0x80);
-    setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
+    setUV4(poly, 0x20 - g_JetBeamScroll, 0, 0x20 - g_JetBeamScroll, 0x40, 0x10 - g_JetBeamScroll, 0,
+           0x10 - g_JetBeamScroll, 0x40);
     poly->tpage = g_JetSpriteTPage[1];
     poly->clut = g_JetSpriteClut[1];
     SetSemiTrans(poly, 1);
     addPrim(&db[0]->ot[1], poly);
     poly++;
-    setXY4(poly, g_JetBeam1OriginX + spread, g_JetBeam1OriginY, *cursorX, *cursorY, g_JetBeam1OriginX - spread,
-           g_JetBeam1OriginY, *cursorX, *cursorY);
+    setXY4(poly, g_JetBeam1OriginX + spread, g_JetBeam1OriginY, g_JetCursorX, g_JetCursorY, g_JetBeam1OriginX - spread,
+           g_JetBeam1OriginY, g_JetCursorX, g_JetCursorY);
     setRGB0(poly, 0x80, 0x80, 0x80);
-    setUV4(poly, 0x20 - *scroll, 0, 0x20 - *scroll, 0x40, 0x10 - *scroll, 0, 0x10 - *scroll, 0x40);
+    setUV4(poly, 0x20 - g_JetBeamScroll, 0, 0x20 - g_JetBeamScroll, 0x40, 0x10 - g_JetBeamScroll, 0,
+           0x10 - g_JetBeamScroll, 0x40);
     poly->tpage = g_JetSpriteTPage[1];
     poly->clut = g_JetSpriteClut[1];
     SetSemiTrans(poly, 1);
@@ -199,12 +195,9 @@ static void JetDrawBeams(void) {
 
 // Allocate an object and its scene node, then initialise its six bounding box face centres.
 static s16 JetObjectAlloc(JetObject* spawn, s16 parentIndex) {
-    s16* count;
     JetObject* obj;
-    JetObject* pool;
     JetObject* parentObj;
     JetObject* box;
-    JetObject* boxPool;
     s16 index;
     s32 rawId;
     s16 modelId;
@@ -215,13 +208,11 @@ static s16 JetObjectAlloc(JetObject* spawn, s16 parentIndex) {
     s16 minZ;
     s16 maxZ;
 
-    count = &g_JetObjectCount;
-    if (*count < 99) {
-        *count = *count + 1;
+    if (g_JetObjectCount < 99) {
+        g_JetObjectCount = g_JetObjectCount + 1;
         index = JetObjectIndexAlloc();
         g_JetObjects[index] = *spawn;
-        pool = g_JetObjects;
-        obj = &pool[index];
+        obj = &g_JetObjects[index];
         rawId = spawn->state.modelId;
         modelId = rawId;
         obj->active = 1;
@@ -230,7 +221,7 @@ static s16 JetObjectAlloc(JetObject* spawn, s16 parentIndex) {
             obj->node = JetNodeAlloc(rawId, 0, 0, 1, &g_JetRootNode, spawn->position.vx, spawn->position.vy,
                                      spawn->position.vz, spawn->rotation.vx, spawn->rotation.vy, spawn->rotation.vz);
         } else {
-            parentObj = &pool[parentIndex];
+            parentObj = &g_JetObjects[parentIndex];
             obj->node = JetNodeAlloc(rawId, 0, 0, 1, parentObj->node, spawn->position.vx, spawn->position.vy,
                                      spawn->position.vz, spawn->rotation.vx, spawn->rotation.vy, spawn->rotation.vz);
         }
@@ -240,8 +231,7 @@ static s16 JetObjectAlloc(JetObject* spawn, s16 parentIndex) {
         maxY = g_JetModelInfo[modelId].boundsMax.vy;
         minZ = g_JetModelInfo[modelId].boundsMin.vz;
         maxZ = g_JetModelInfo[modelId].boundsMax.vz;
-        boxPool = g_JetObjects;
-        box = &boxPool[index];
+        box = &g_JetObjects[index];
         setVector(&box->boxFaceCentres[0], (maxX + minX) >> 1, (maxY + minY) >> 1, maxZ);
         setVector(&box->boxFaceCentres[1], (maxX + minX) >> 1, (maxY + minY) >> 1, minZ);
         setVector(&box->boxFaceCentres[2], (maxX + minX) >> 1, maxY, (maxZ + minZ) >> 1);
@@ -253,11 +243,9 @@ static s16 JetObjectAlloc(JetObject* spawn, s16 parentIndex) {
 }
 
 static void JetObjectRelease(JetObject* object) {
-    s16* count;
 
     if (object->index != -1) {
-        count = &g_JetObjectCount;
-        *count -= 1;
+        g_JetObjectCount -= 1;
         JetNodeFree(object->node);
         JetObjectIndexFree(object->index);
         object->index = -1;
@@ -266,24 +254,20 @@ static void JetObjectRelease(JetObject* object) {
 }
 
 static s16 JetObjectIndexAlloc(void) {
-    u16* head;
     s16 index;
 
-    head = &g_JetNextFreeObject;
-    index = *head;
-    *head = g_JetObjectFreeList[index];
+    index = g_JetNextFreeObject;
+    g_JetNextFreeObject = g_JetObjectFreeList[index];
 
     return index;
 }
 
 static void JetObjectIndexFree(s16 index) {
-    u16* head;
     u16* slot;
 
     slot = &g_JetObjectFreeList[index];
-    head = &g_JetNextFreeObject;
-    *slot = *head;
-    *head = index;
+    *slot = g_JetNextFreeObject;
+    g_JetNextFreeObject = index;
 }
 
 // Spawn the objects scheduled for every track segment reached this frame.
@@ -365,9 +349,6 @@ void JetObjectsUpdate(JetBuffer* db) {
     s32 dx;
     s32 dy;
     s32 dz;
-    s32* score;
-    s32* segment;
-    s32* speed;
     s32 sound;
     u8 order;
     u8 drawMode;
@@ -413,14 +394,12 @@ void JetObjectsUpdate(JetBuffer* db) {
             }
             {
                 s32 step;
-                s32* pathPos;
                 s32 x;
                 s32 y;
                 s32 z;
 
                 step = objState->vars.incoming.step;
-                pathPos = &g_JetCameraPathPos;
-                JetTrackSample(pathPos[0] + 3 * JET_TRACK_SEGMENT, -100, &pos, &rot);
+                JetTrackSample(g_JetCameraPathPos + 3 * JET_TRACK_SEGMENT, -100, &pos, &rot);
                 x = objState->vars.incoming.startX;
                 x += (step * (pos.vx - x)) >> 7;
                 y = objState->vars.incoming.startY;
@@ -430,18 +409,17 @@ void JetObjectsUpdate(JetBuffer* db) {
                 obj->position.vx = x;
                 obj->position.vy = y;
                 obj->position.vz = z;
-                JetTrackSample(pathPos[0] + 4 * JET_TRACK_SEGMENT, -100, &pos, &rot);
+                JetTrackSample(g_JetCameraPathPos + 4 * JET_TRACK_SEGMENT, -100, &pos, &rot);
             }
             dx = obj->position.vx - pos.vx;
             dy = obj->position.vy - pos.vy;
             dz = obj->position.vz - pos.vz;
             SquareRoot0(dx * dx + dy * dy + dz * dz);
             if (objState->age >= 129) {
-                score = &g_JetScore;
-                if (*score > 5) {
-                    *score -= 5;
+                if (g_JetScore > 5) {
+                    g_JetScore -= 5;
                 } else {
-                    *score = 0;
+                    g_JetScore = 0;
                 }
                 objState->life = 0;
             }
@@ -467,11 +445,10 @@ void JetObjectsUpdate(JetBuffer* db) {
             } else {
                 objState->age++;
             }
-            segment = &g_JetTrackSegment;
-            if (objState->params.triggered.startSegment < *segment) {
+            if (objState->params.triggered.startSegment < g_JetTrackSegment) {
                 objState->vars.path.pathPos += objState->speed;
             }
-            if (objState->params.common.endSegment < *segment) {
+            if (objState->params.common.endSegment < g_JetTrackSegment) {
                 objState->life = 0;
             }
             if (objState->life == 0) {
@@ -624,11 +601,10 @@ void JetObjectsUpdate(JetBuffer* db) {
                 objState->hit = 0;
                 JetPathSample(0, obj->path, &obj->position, 0);
             }
-            segment = &g_JetTrackSegment;
-            if (objState->params.common.endSegment < *segment) {
+            if (objState->params.common.endSegment < g_JetTrackSegment) {
                 objState->life = 0;
             }
-            if (objState->params.stalactite.fallSegment < *segment) {
+            if (objState->params.stalactite.fallSegment < g_JetTrackSegment) {
                 objState->vars.stalactite.fallSpeed += 4;
             }
             if (objState->life == 0) {
@@ -772,11 +748,10 @@ void JetObjectsUpdate(JetBuffer* db) {
                 JetPathSample(0, obj->path, &obj->position, 0);
                 objState->vars.flip.frame = 0;
             }
-            segment = &g_JetTrackSegment;
-            if (objState->params.common.endSegment < *segment) {
+            if (objState->params.common.endSegment < g_JetTrackSegment) {
                 objState->life = 0;
             }
-            if (objState->params.flip.flipSegment < *segment) {
+            if (objState->params.flip.flipSegment < g_JetTrackSegment) {
                 count = objState->vars.flip.frame;
                 objState->vars.flip.frame = count + 1;
                 if (count < objState->params.flip.flipFrames) {
@@ -1037,12 +1012,11 @@ void JetObjectsUpdate(JetBuffer* db) {
             } else {
                 objState->age++;
             }
-            speed = &g_JetSpeed;
-            if (*speed > objState->params.speedChange.minSpeed) {
-                *speed -= objState->params.speedChange.step;
+            if (g_JetSpeed > objState->params.speedChange.minSpeed) {
+                g_JetSpeed -= objState->params.speedChange.step;
             }
-            if (*speed < 0) {
-                *speed = 0;
+            if (g_JetSpeed < 0) {
+                g_JetSpeed = 0;
                 JetObjectCreateUnscheduled(0, 0, 0, JET_OBJ_RIDE_END, JET_MODEL_PLACEHOLDER);
             }
             if (objState->age > objState->params.speedChange.frames) {
@@ -1063,10 +1037,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 g_JetSpeed = 0;
             }
             if (objState->vars.stop.accelerating == 1) {
-                s32* speed;
-
-                speed = &g_JetSpeed;
-                *speed += objState->params.stop.accel;
+                g_JetSpeed += objState->params.stop.accel;
                 objState->vars.stop.accelFrame++;
             }
             if (objState->params.stop.delay < VSync(-1) - objState->vars.stop.startVsync) {
@@ -1149,12 +1120,10 @@ void JetObjectsUpdate(JetBuffer* db) {
             break;
         case JET_OBJ_SCORE_CHECK:
             if (g_JetScore < objState->params.scoreCheck.minScore) {
-                JetObject* spawn;
 
-                spawn = &g_JetSpawnTemplate;
-                spawn->state.params.speedChange.step = 300;
-                spawn->state.params.speedChange.frames = 400;
-                spawn->state.params.speedChange.minSpeed = 0;
+                g_JetSpawnTemplate.state.params.speedChange.step = 300;
+                g_JetSpawnTemplate.state.params.speedChange.frames = 400;
+                g_JetSpawnTemplate.state.params.speedChange.minSpeed = 0;
                 JetObjectCreateUnscheduled(
                     obj->position.vx, obj->position.vy, obj->position.vz, JET_OBJ_SPEED_CHANGE, JET_MODEL_BLUE_PLANE);
             }
@@ -1203,15 +1172,12 @@ static void JetObjectDamage(JetObject* object) {
 // Award the score for a hit object and scatter its debris.
 static void JetObjectAwardPoints(JetObject* obj) {
     JetObjectState* objState = &obj->state;
-    s32* score;
     s32 i;
 
     if (objState->params.common.awardMode == 1) {
-        s32* score;
         s32 points;
 
-        score = &g_JetScore;
-        *score += objState->params.common.points;
+        g_JetScore += objState->params.common.points;
         JetPlaySfx(objState->params.common.deathSfx);
         objState->life = 0;
         for (i = 0; i < 3; i++) {
@@ -1226,11 +1192,9 @@ static void JetObjectAwardPoints(JetObject* obj) {
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
     if (objState->params.common.awardMode == 2) {
-        s32* score;
         s32 points;
 
-        score = &g_JetScore;
-        *score += objState->params.common.points;
+        g_JetScore += objState->params.common.points;
         JetPlaySfx(objState->params.common.deathSfx);
         objState->life = 0;
         for (i = 0; i < 3; i++) {
@@ -1245,19 +1209,15 @@ static void JetObjectAwardPoints(JetObject* obj) {
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
     if (objState->params.common.awardMode == 3) {
-        s32* score;
         s32 points;
 
-        score = &g_JetScore;
-        *score += objState->params.common.points;
+        g_JetScore += objState->params.common.points;
         points = objState->params.common.awardTilt;
         obj->rotation.vx += points;
     }
     if (objState->params.common.awardMode == 4) {
-        s32* score;
         s32 points;
-        score = &g_JetScore;
-        *score += objState->params.common.points;
+        g_JetScore += objState->params.common.points;
         JetPlaySfx(objState->params.common.deathSfx);
         objState->life = 0;
         g_JetPopupModelId = obj->node->modelId;
@@ -1268,11 +1228,9 @@ static void JetObjectAwardPoints(JetObject* obj) {
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
     if (objState->params.common.awardMode == 5) {
-        s32* score;
         s32 points;
 
-        score = &g_JetScore;
-        *score += objState->params.common.points;
+        g_JetScore += objState->params.common.points;
         JetPlaySfx(objState->params.common.deathSfx);
         objState->life = 0;
         for (i = 0; i < 100; i++) {
@@ -1286,8 +1244,7 @@ static void JetObjectAwardPoints(JetObject* obj) {
         g_JetScorePopupAlternate = 1;
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
-    score = &g_JetScore;
-    if (*score > 9999) {
-        *score = 9999;
+    if (g_JetScore > 9999) {
+        g_JetScore = 9999;
     }
 }

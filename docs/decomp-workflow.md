@@ -163,9 +163,10 @@ sh    $v0, %lo(sym)($at)         sh    $v1, 0($v0)
 ```
 
 A read-modify-write on a named global therefore pays for the address twice.
-A pointer local asks for it once, so the shape in the target is evidence of
-the original source, not a decomp hack (see the struct note below for the
-other source that produces it). The shape is toolchain-invariant: in `jet.c` `func_800A4400` the direct form
+A pointer local asks for it once. Before reaching for one, check whether the
+whole file shows the shape: if it does, the file was built with
+`-fforce-addr`, and plain globals match (see "Pointer locals across a file
+mean `-fforce-addr`" below). The struct note below is the third source. The shape is toolchain-invariant: in `jet.c` `func_800A4400` the direct form
 scores 615 or more under all five cc1/aspsx pairings the build offers, so a
 diff of this shape is a source problem, never an annotation problem.
 `func_800A442C`, `func_800A8238` and `func_800A8264` are the same idiom.
@@ -177,9 +178,9 @@ a register: used more than once it becomes `la`/`0($reg)`, used once it
 folds like a scalar. Each member is its own constant, so two members of one
 struct in the same function still get separate `lui` pairs, never a shared
 base plus offsets -- a big context struct and separate one-field wrappers
-compile identically. No qualifier or flag moves a scalar: `volatile`,
-`static`, `-O1`/`-O3`, `-G8`, `-fpic`, `-mabicalls` and `-membedded-pic`
-were all tried with cc1-psx-26. So `extern struct { s32 v; } g_JetPadDir;`
+compile identically. Of `volatile`, `static`, `-O1`/`-O3`, `-G8`, `-fpic`,
+`-mabicalls`, `-membedded-pic` and `-fforce-addr`, only `-fforce-addr` moves
+a scalar (cc1-psx-26). So `extern struct { s32 v; } g_JetPadDir;`
 matches with direct `g_JetPadDir.v = 4` writes, in place of the pointer
 local. Whether the target was really a struct is a layout question: jet's
 bss puts every 1- and 2-byte global in its own 4-byte slot with unreferenced
@@ -204,8 +205,9 @@ isbg = &db[1].draw.isbg;      /* jet.c func_800A7C88 */
 
 Neither a chained assignment, a volatile pointer, an index variable nor a
 `DRAWENV*` to the second buffer works: each leaves a `reg + 0x18` address
-that CSE folds. The pattern is unique in the tree, so treat it as a
-last-resort explanation, not a first guess.
+that CSE folds. Superseded: the file was built with `-fforce-addr`, and under
+it the plain `g_JetBuffers[1].draw.isbg = 0` matches with no `db` at all.
+Everything above in this paragraph is only true without the flag.
 
 **A commutative operator's operand order follows what the operands were at
 expansion time.** `global + local` puts the local first (`addu v0,local,base`):
@@ -222,6 +224,27 @@ add, so the pointer sum keeps base-first order, where the target's index-first
 order is the memory-address path. Indexing the global directly at each use
 restored it. Applying the flag tree-wide breaks six other overlays, so it is
 per file, not a default.
+
+**Pointer locals across a file mean `-fforce-addr`.** When function after
+function needs `p = &g_X; *p ...` to match, the file was built with
+`-fforce-addr`, which puts a global's address in a register before using it.
+That is the pointer local's shape, produced by plain `g_X` code. All six jet
+files carry `FORCE_ADDR=true`. Turning it on changed 13 functions in `jet.c`,
+`jet_object.c` and `jet_node.c`, and every one came back to 0 with the pointer
+locals removed, often simpler than before (`JetUpdateLaserSfx` lost a
+duplicated branch). Test it the cheap way: build the file with and without the flag and
+diff the per-function disassembly -- functions the flag leaves identical need
+no work. What still needed care under the flag:
+
+- A struct field at a nonzero offset still folds into `%lo`; offset 0 gets the
+  register form. `g_JetFog.far` only matched as its own global, `g_JetFogFar`.
+- A `volatile T* p = &g_X` becomes a `volatile` declaration of `g_X`.
+- The flag loads the base before the index for `&array[i]`. Where the target
+  is index-first, an earlier read of `array[i]` fixes the order:
+  `JetTriangleListAppend` needs two dead reads of `prev`/`next`, which the PC
+  port also has.
+- A local that re-derives an address after a call (`box` in
+  `JetObjectAlloc`, `m` in the matrix functions) is still real.
 
 **A value stored to an array and reused was read back from the array, not kept
 in a local.** cse forwards the store, so `xs[i] = word; if (minX > xs[i]) minX
@@ -373,7 +396,8 @@ compiler, parsed by `tools/ninja/gen.py`.
 No annotation defaults to cc1-psx-272 / 2.34.
 
 `FORCE_MEM=true` adds `-fforce-mem` to cc1 for that file (see the operand
-order gotcha above). `G=`, `O=`, `COMM=`, `g=` and `gcoff=` are the other
+order gotcha above). `FORCE_ADDR=true` adds `-fforce-addr` (see the pointer
+locals gotcha above). `G=`, `O=`, `COMM=`, `g=` and `gcoff=` are the other
 keys `parse_compiler_params` accepts.
 
 `CC1=2.6.3` / `CC1=2.7.2` overrides the cc1 the `PSYQ=` row selected and

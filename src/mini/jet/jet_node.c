@@ -1,4 +1,4 @@
-//! PSYQ=3.3 FORCE_MEM=true COMM=true
+//! PSYQ=3.3 FORCE_MEM=true FORCE_ADDR=true COMM=true
 
 #include "jet_private.h"
 
@@ -83,40 +83,32 @@ void JetNodeFree(JetNode* node) {
 }
 
 static s16 JetNodeIndexAlloc(void) {
-    s16* head;
     s16 index;
 
-    head = &g_JetNextFreeNode;
-    index = *head;
-    *head = g_JetNodeFreeList[index];
+    index = g_JetNextFreeNode;
+    g_JetNextFreeNode = g_JetNodeFreeList[index];
 
     return index;
 }
 
 static void JetNodeIndexFree(s16 index) {
-    s16* head;
     s16* slot;
 
     slot = &g_JetNodeFreeList[index];
-    head = &g_JetNextFreeNode;
-    *slot = *head;
-    *head = index;
+    *slot = g_JetNextFreeNode;
+    g_JetNextFreeNode = index;
 }
 
 static void JetNodeLink(JetNode* node, JetNode* parent) {
-    JetNode* last;
-    JetNode* tail;
     s16 depth;
 
     node->parent = parent;
     depth = parent->depth + 1;
     node->depth = depth;
-    tail = &g_JetNodeListTails[depth];
-    last = tail->prev;
-    node->prev = last;
-    node->next = last->next;
-    tail->prev->next = node;
-    tail->prev = node;
+    node->prev = g_JetNodeListTails[depth].prev;
+    node->next = node->prev->next;
+    g_JetNodeListTails[depth].prev->next = node;
+    g_JetNodeListTails[depth].prev = node;
 }
 
 static void JetNodeUnlink(JetNode* node) {
