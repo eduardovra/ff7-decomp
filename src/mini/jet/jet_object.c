@@ -378,7 +378,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 objState->life = 1;
                 objState->age = 0;
                 objState->hit = 0;
-                objState->params.common.awardMode = 1;
+                objState->params.common.awardMode = JET_AWARD_SPARKLE_BURST;
                 objState->vars.incoming.step = 0;
                 objState->vars.incoming.startX = obj->position.vx;
                 objState->vars.incoming.startY = obj->position.vy;
@@ -650,7 +650,7 @@ void JetObjectsUpdate(JetBuffer* db) {
             obj->rotation.vx += objState->params.spinner.rotStep[0];
             obj->rotation.vy += objState->params.spinner.rotStep[1];
             obj->rotation.vz += objState->params.spinner.rotStep[2];
-            if (objState->params.common.awardMode == 5) {
+            if (objState->params.common.awardMode == JET_AWARD_SPARKLE_SHOWER) {
                 obj->node->model = g_JetModelTable[JET_MODEL_UFO + objState->params.spinner.wasHit];
             }
             if (objState->params.spinner.wasHit == 1) {
@@ -659,10 +659,10 @@ void JetObjectsUpdate(JetBuffer* db) {
             if (objState->life) {
                 JetPathSample(objState->vars.path.pathPos, obj->path, &obj->position, 0);
                 if (objState->hit) {
-                    if (objState->params.common.awardMode != 5 || g_JetSpeed < 16405) {
+                    if (objState->params.common.awardMode != JET_AWARD_SPARKLE_SHOWER || g_JetSpeed < 16405) {
                         JetObjectDamage(obj);
                     }
-                    if (objState->params.common.awardMode == 5) {
+                    if (objState->params.common.awardMode == JET_AWARD_SPARKLE_SHOWER) {
                         objState->params.spinner.wasHit = 1;
                     }
                 }
@@ -1174,7 +1174,7 @@ static void JetObjectAwardPoints(JetObject* obj) {
     JetObjectState* objState = &obj->state;
     s32 i;
 
-    if (objState->params.common.awardMode == 1) {
+    if (objState->params.common.awardMode == JET_AWARD_SPARKLE_BURST) {
         s32 points;
 
         g_JetScore += objState->params.common.points;
@@ -1191,7 +1191,7 @@ static void JetObjectAwardPoints(JetObject* obj) {
         g_JetScorePopupAlternate = 1;
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
-    if (objState->params.common.awardMode == 2) {
+    if (objState->params.common.awardMode == JET_AWARD_SHARD_BURST) {
         s32 points;
 
         g_JetScore += objState->params.common.points;
@@ -1208,14 +1208,14 @@ static void JetObjectAwardPoints(JetObject* obj) {
         g_JetScorePopupAlternate = 1;
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
-    if (objState->params.common.awardMode == 3) {
+    if (objState->params.common.awardMode == JET_AWARD_TILT) {
         s32 points;
 
         g_JetScore += objState->params.common.points;
         points = objState->params.common.awardTilt;
         obj->rotation.vx += points;
     }
-    if (objState->params.common.awardMode == 4) {
+    if (objState->params.common.awardMode == JET_AWARD_NO_DEBRIS) {
         s32 points;
         g_JetScore += objState->params.common.points;
         JetPlaySfx(objState->params.common.deathSfx);
@@ -1227,7 +1227,7 @@ static void JetObjectAwardPoints(JetObject* obj) {
         g_JetScorePopupAlternate = 1;
         setVector(&g_JetPopupRot, 0, 0, 0);
     }
-    if (objState->params.common.awardMode == 5) {
+    if (objState->params.common.awardMode == JET_AWARD_SPARKLE_SHOWER) {
         s32 points;
 
         g_JetScore += objState->params.common.points;

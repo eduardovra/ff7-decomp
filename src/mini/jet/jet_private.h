@@ -116,6 +116,14 @@ typedef struct JetNode {
 } JetNode; // size: 0x38
 
 // Per-type parameters, copied from the spawn record.
+enum JetObjectAwardMode {
+    JET_AWARD_SPARKLE_BURST = 1,  // Spawns three sparkle impacts.
+    JET_AWARD_SHARD_BURST = 2,    // Spawns three shard fragments.
+    JET_AWARD_TILT = 3,           // Adds points and tilts the surviving target.
+    JET_AWARD_NO_DEBRIS = 4,      // Removes the target without spawning debris.
+    JET_AWARD_SPARKLE_SHOWER = 5, // Spawns 100 sparkles; also flashes the UFO.
+};
+
 typedef union {
     s32 raw[0x14];
     struct {
@@ -123,8 +131,8 @@ typedef union {
         /* 0x04 */ s32 loopPath;
         /* 0x08 */ s32 endSegment; // freed once the ride passes this track segment
         /* 0x0C */ s32 unkC[7];
-        /* 0x28 */ s32 awardMode; // JetObjectAwardPoints' branch once health is below 0
-        /* 0x2C */ s32 awardTilt; // awardMode 3: added to rotation.vx instead of dying
+        /* 0x28 */ enum JetObjectAwardMode awardMode;
+        /* 0x2C */ s32 awardTilt;
         /* 0x30 */ s32 unk30;
         /* 0x34 */ s32 health;
         /* 0x38 */ s32 unk38[3];
@@ -161,7 +169,7 @@ typedef union {
         /* 0x0C */ s32 startRot[3];
         /* 0x18 */ s32 rotStep[3];
         /* 0x24 */ s32 unk24[5];
-        /* 0x38 */ s32 wasHit; // awardMode 5: shows model 92 instead of 91 for a frame
+        /* 0x38 */ s32 wasHit;
     } spinner;
     struct {
         /* 0x00 */ s32 unk0[3];
