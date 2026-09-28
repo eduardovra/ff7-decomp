@@ -3,8 +3,8 @@
 #include "jet_private.h"
 
 JetNode g_JetNodeListHeads[10];
-JetNode g_JetNodePool[0xC8];
-s16 g_JetNodeFreeList[0xC8];
+JetNode g_JetNodePool[200];
+s16 g_JetNodeFreeList[200];
 s16 g_JetNextFreeNode;
 JetNode g_JetNodeListTails[10];
 JetNode g_JetRootNode;
