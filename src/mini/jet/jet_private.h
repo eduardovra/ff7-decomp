@@ -281,7 +281,7 @@ typedef struct {
 
 // XBINADR.BIN: pointers to the xbin streams in the decompressed XBIN2.BIN.
 typedef struct {
-    /* 0x00 */ u_long unk0; // sound data, handed to Akao opcode 0x10
+    /* 0x00 */ u_long musicData;
     /* 0x04 */ JetModelInfo* modelInfo;
     /* 0x08 */ u16* trackAdds;
     /* 0x0C */ u16* trackRemoves;
