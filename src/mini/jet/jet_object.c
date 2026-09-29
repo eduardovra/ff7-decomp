@@ -349,6 +349,10 @@ void JetObjectsUpdate(JetBuffer* db) {
     s32 dx;
     s32 dy;
     s32 dz;
+    s32 step;
+    s32 x;
+    s32 y;
+    s32 z;
     s32 sound;
     u8 order;
     u8 drawMode;
@@ -392,25 +396,18 @@ void JetObjectsUpdate(JetBuffer* db) {
                 JetObjectFree(obj);
                 break;
             }
-            {
-                s32 step;
-                s32 x;
-                s32 y;
-                s32 z;
-
-                step = objState->vars.incoming.step;
-                JetTrackSample(g_JetCameraPathPos + 3 * JET_TRACK_SEGMENT, -100, &pos, &rot);
-                x = objState->vars.incoming.startX;
-                x += (step * (pos.vx - x)) >> 7;
-                y = objState->vars.incoming.startY;
-                y += (step * (pos.vy - y)) >> 7;
-                z = objState->vars.incoming.startZ;
-                z += (step * (pos.vz - z)) >> 7;
-                obj->position.vx = x;
-                obj->position.vy = y;
-                obj->position.vz = z;
-                JetTrackSample(g_JetCameraPathPos + 4 * JET_TRACK_SEGMENT, -100, &pos, &rot);
-            }
+            step = objState->vars.incoming.step;
+            JetTrackSample(g_JetCameraPathPos + 3 * JET_TRACK_SEGMENT, -100, &pos, &rot);
+            x = objState->vars.incoming.startX;
+            x += (step * (pos.vx - x)) >> 7;
+            y = objState->vars.incoming.startY;
+            y += (step * (pos.vy - y)) >> 7;
+            z = objState->vars.incoming.startZ;
+            z += (step * (pos.vz - z)) >> 7;
+            obj->position.vx = x;
+            obj->position.vy = y;
+            obj->position.vz = z;
+            JetTrackSample(g_JetCameraPathPos + 4 * JET_TRACK_SEGMENT, -100, &pos, &rot);
             dx = obj->position.vx - pos.vx;
             dy = obj->position.vy - pos.vy;
             dz = obj->position.vz - pos.vz;
