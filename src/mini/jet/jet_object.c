@@ -36,6 +36,11 @@ enum JetObjectType {
     JET_OBJ_SPEED_CHANGE = 255,   // ends the ride if g_JetSpeed drops below 0
 };
 
+enum JetPathType {
+    JET_PATH_OBJECT,
+    JET_PATH_TRACK,
+};
+
 SVECTOR* g_JetLastPath;
 s32 g_JetLastPathLen;
 s32 g_JetNextSpawnSegment;
@@ -84,14 +89,14 @@ inline void JetObjectPathLoad(u8 pathIndex, u8 mode) {
     s32* offsets;
     s32 offset;
 
-    if (mode == 0) {
+    if (mode == JET_PATH_OBJECT) {
         lengths = g_JetXbinAdr.objectPathLengths;
         offsets = g_JetXbinAdr.objectPathOffsets;
         g_JetLastPathLen = lengths[pathIndex];
         offset = offsets[pathIndex];
         g_JetLastPath = (SVECTOR*)(g_JetXbinAdr.objectPaths + offset);
     }
-    if (mode == 1) {
+    if (mode == JET_PATH_TRACK) {
         lengths = g_JetXbinAdr.trackPathLengths;
         offsets = g_JetXbinAdr.trackPathOffsets;
         g_JetLastPathLen = lengths[pathIndex];
@@ -375,7 +380,7 @@ void JetObjectsUpdate(JetBuffer* db) {
         switch (obj->state.type) {
         case JET_OBJ_INCOMING:
             if (objState->needsInit == 1) {
-                JetObjectPathLoad(objState->pathIndex, 0);
+                JetObjectPathLoad(objState->pathIndex, JET_PATH_OBJECT);
                 obj->path = g_JetLastPath;
                 obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
@@ -430,7 +435,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                JetObjectPathLoad(objState->pathIndex, 0);
+                JetObjectPathLoad(objState->pathIndex, JET_PATH_OBJECT);
                 obj->path = g_JetLastPath;
                 obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
@@ -468,7 +473,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                JetObjectPathLoad(objState->pathIndex, 0);
+                JetObjectPathLoad(objState->pathIndex, JET_PATH_OBJECT);
                 obj->path = g_JetLastPath;
                 obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
@@ -508,7 +513,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                JetObjectPathLoad(objState->pathIndex, 0);
+                JetObjectPathLoad(objState->pathIndex, JET_PATH_OBJECT);
                 obj->path = g_JetLastPath;
                 obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
@@ -552,7 +557,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                JetObjectPathLoad(0, 1);
+                JetObjectPathLoad(0, JET_PATH_TRACK);
                 obj->path = g_JetLastPath;
                 obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
@@ -590,7 +595,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                JetObjectPathLoad(objState->pathIndex, 0);
+                JetObjectPathLoad(objState->pathIndex, JET_PATH_OBJECT);
                 obj->path = g_JetLastPath;
                 obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
@@ -622,7 +627,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                JetObjectPathLoad(objState->pathIndex, 0);
+                JetObjectPathLoad(objState->pathIndex, JET_PATH_OBJECT);
                 obj->path = g_JetLastPath;
                 obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
@@ -673,7 +678,7 @@ void JetObjectsUpdate(JetBuffer* db) {
                 if (sound) {
                     JetPlaySfx(sound);
                 }
-                JetObjectPathLoad(objState->pathIndex, 0);
+                JetObjectPathLoad(objState->pathIndex, JET_PATH_OBJECT);
                 obj->path = g_JetLastPath;
                 obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
@@ -733,7 +738,7 @@ void JetObjectsUpdate(JetBuffer* db) {
         case JET_OBJ_FLIP_UNUSED:
         case JET_OBJ_FLIP:
             if (objState->needsInit == 1) {
-                JetObjectPathLoad(objState->pathIndex, 0);
+                JetObjectPathLoad(objState->pathIndex, JET_PATH_OBJECT);
                 obj->path = g_JetLastPath;
                 obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
@@ -796,7 +801,7 @@ void JetObjectsUpdate(JetBuffer* db) {
             break;
         case JET_OBJ_FIREWORK:
             if (objState->needsInit == 1) {
-                JetObjectPathLoad(objState->pathIndex, 0);
+                JetObjectPathLoad(objState->pathIndex, JET_PATH_OBJECT);
                 obj->path = g_JetLastPath;
                 obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
@@ -849,7 +854,7 @@ void JetObjectsUpdate(JetBuffer* db) {
         case JET_OBJ_ERUPTION:
             if (objState->needsInit == 1) {
                 JetPlaySfx(SFX_FIRA);
-                JetObjectPathLoad(objState->pathIndex, 0);
+                JetObjectPathLoad(objState->pathIndex, JET_PATH_OBJECT);
                 obj->path = g_JetLastPath;
                 obj->pathLen = g_JetLastPathLen;
                 objState->needsInit = 0;
