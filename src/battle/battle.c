@@ -1354,7 +1354,21 @@ void func_800A85B4(void) {
     }
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle", BattleActionType15);
+void BattleActionType15(void) {
+    u16 allowedTargetsMask;
+
+    // Don't continue if this actor is a party member
+    if (g_CurrentAction->actorId < NUM_PARTY) {
+        g_CurrentAction->unk20 = -1;
+    } else {
+        g_CurrentAction->unkC = 1;
+        g_CurrentAction->targetFlags = 0;
+        allowedTargetsMask = BattleOpcodeGetRndBit((u16)g_CurrentAction->allowedTargetsMask);
+        g_CurrentAction->allowedTargetsMask = allowedTargetsMask;
+        g_CurrentAction->actorId = SysGetLsbNumber(allowedTargetsMask);
+        g_CurrentAction->unk20 = 0x2F;
+    }
+}
 
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle", BattleActionType16);
 
@@ -3096,4 +3110,23 @@ static s32 BattleOpcodeCountActiveBits(u16 arg0) {
     return count;
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle", BattleOpcodeGetRndBit);
+// Returns the value of a randomly selected set bit in arg0
+s32 BattleOpcodeGetRndBit(u16 arg0) {
+    u16 bit = 0;
+
+    // Count the set bits in arg0
+    s32 n = BattleOpcodeCountActiveBits(arg0);
+    if (n != 0) {
+        // Get a random index within the range of set bits
+        n = func_800B2F30() % n;
+
+        // Loop through each bit of arg0 until we find the random one
+        for (bit = 1; bit != 0; bit <<= 1) {
+            // Count down on each set bit, stop at the chosen one
+            if (arg0 & bit && --n < 0) {
+                break;
+            }
+        }
+    }
+    return bit;
+}

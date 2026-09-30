@@ -153,7 +153,7 @@ u16 MINI_Jet(void) {
     JetBuffer* current;
 
     JetInitialize();
-    SetDrawMode(&g_JetDrawMode, 0, 1, GetTPage(1, 1, 768, 0) & 0xFFFF, NULL);
+    SetDrawMode(&g_JetDrawMode, 0, 1, GetTPage(1, 1, 768, 0), NULL);
     g_JetTrackRot = g_JetXbinAdr.trackRotations;
     JetTrackPathLoad(0, 0);
     g_JetTrackLeft = g_JetTrackPath;
@@ -162,7 +162,7 @@ u16 MINI_Jet(void) {
     JetAudioInit();
     SetFogNearFar(g_JetFogNear, g_JetFogFar, 256);
     g_JetPopupNode[0] = JetNodeAlloc(JET_MODEL_BLUE_PLANE, 0, 0, 1, &g_JetRootNode, 1200, 50, 3000, 0, 1000, 0);
-    for (;;) {
+    while (1) {
         if ((g_JetTrackSegment * 4) > (g_JetTrackPathLength - 0x10) || g_JetExit == 1) {
             break;
         }
@@ -210,7 +210,7 @@ u16 MINI_Jet(void) {
             next++;
         }
         g_JetBufferPtr[0] = next;
-        ClearOTagR(next->ot, 0x1000);
+        ClearOTagR(g_JetBufferPtr[0]->ot, LEN(g_JetBufferPtr[0]->ot));
         ClearOTagR(g_JetBufferPtr[0]->ot2, LEN(g_JetBufferPtr[0]->ot2));
         JetPrimCursorsReset(&g_JetBufferPtr[0]->prims);
     }
@@ -969,7 +969,7 @@ static void JetCameraUpdate(void) {
         }
     }
     if (step < 0) {
-        if (g_JetSpeed <= 119999) {
+        if (g_JetSpeed < 120000) {
             g_JetSpeed -= step;
         }
     }
