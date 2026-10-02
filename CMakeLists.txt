@@ -111,7 +111,6 @@ endforeach()
 
 add_subdirectory(tools/psyz/psyz)
 target_include_directories(psyz PUBLIC tools/psyz/psyz/include)
-target_compile_definitions(psyz PRIVATE __psyz)
 
 # Battle, world and field all load at 0x800A, so symbols named after that
 # address collide when they are linked into one native binary. The names
@@ -170,5 +169,5 @@ if(FF7_PC)
         tools/psyz/psyz/include)
     target_link_libraries(ff7_pc PRIVATE ${PROJECT_NAME} psyz)
     # Routes calls past PSY-Z functions that are still empty stubs.
-    target_link_options(ff7_pc PRIVATE -Wl,--wrap=VectorNormal,--wrap=OpenTIM,--wrap=ReadTIM)
+    target_link_options(ff7_pc PRIVATE -Wl,--wrap=OpenTIM,--wrap=ReadTIM)
 endif()

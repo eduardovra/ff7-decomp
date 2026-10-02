@@ -28,8 +28,8 @@ size_t g_PcCdChainBytes; // byte length of the pending read
 void func_80034420(void);
 void SystemLzsDecompress(u8* src, u8* dst);
 
-// PSY-Z has no CdRead; it serves ReadN sector by sector through CdReady and
-// CdGetSector, the header first and then the 2048 data bytes.
+// Reads sector by sector through CdReady and CdGetSector, the header first and
+// then the 2048 data bytes, rather than through CdRead.
 // The PS1 transfers whole sectors, overrunning small destinations into
 // whatever follows them; a native link puts different data there, so the last
 // sector is cut to the requested length.

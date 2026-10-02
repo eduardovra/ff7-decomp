@@ -1,7 +1,6 @@
 // PSY-Q libgte functions PSY-Z does not provide yet, which jet needs.
 
 #include <libgte.h>
-#include <math.h>
 
 // Rz * Ry * Rx, following PSY-Z's RotMatrixYXZ, which composes Ry * Rx * Rz.
 MATRIX* RotMatrixZYX(SVECTOR* r, MATRIX* m) {
@@ -42,29 +41,4 @@ MATRIX* CompMatrix(SVECTOR* rot, VECTOR* trans, MATRIX* m) {
     }
     *m = r;
     return m;
-}
-
-VECTOR* OuterProduct0(VECTOR* v0, VECTOR* v1, VECTOR* v2) {
-    int x = v0->vy * v1->vz - v0->vz * v1->vy;
-    int y = v0->vz * v1->vx - v0->vx * v1->vz;
-    int z = v0->vx * v1->vy - v0->vy * v1->vx;
-
-    v2->vx = x;
-    v2->vy = y;
-    v2->vz = z;
-    return v2;
-}
-
-// PSY-Z has VectorNormal as an empty stub, so the link wraps it with this.
-void __wrap_VectorNormal(VECTOR* v0, VECTOR* v1) {
-    double x = v0->vx, y = v0->vy, z = v0->vz;
-    double length = sqrt(x * x + y * y + z * z);
-
-    if (length == 0) {
-        v1->vx = v1->vy = v1->vz = 0;
-        return;
-    }
-    v1->vx = (long)(x * 4096 / length);
-    v1->vy = (long)(y * 4096 / length);
-    v1->vz = (long)(z * 4096 / length);
 }

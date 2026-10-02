@@ -9,13 +9,11 @@
     int name(void) { return 0; }
 #define STUB_DATA(name, size) __attribute__((aligned(8))) unsigned char name[size]
 
-// 996 globals
+// 1000 globals
 STUB_DATA(D_8003623C, 256);
 STUB_DATA(D_80062F19, 256);
 STUB_DATA(D_80062F1A, 256);
 STUB_DATA(D_80062F1B, 256);
-STUB_DATA(D_80062F24, 256);
-STUB_DATA(D_80062F3C, 256);
 STUB_DATA(D_80062F50, 256);
 STUB_DATA(D_80062F88, 256);
 STUB_DATA(D_80063048, 256);
@@ -32,7 +30,6 @@ STUB_DATA(D_800707C0, 256);
 STUB_DATA(D_800707C4, 256);
 STUB_DATA(D_800708C4, 3584);
 STUB_DATA(D_800716C8, 256);
-STUB_DATA(D_800716CC, 256);
 STUB_DATA(D_800716D0, 256);
 STUB_DATA(D_8007173C, 256);
 STUB_DATA(D_80071744, 256);
@@ -42,11 +39,9 @@ STUB_DATA(D_80071A64, 256);
 STUB_DATA(D_80071C0C, 256);
 STUB_DATA(D_80071E24, 256);
 STUB_DATA(D_80071E28, 256);
-STUB_DATA(D_80071E30, 256);
 STUB_DATA(D_80071E40, 256);
 STUB_DATA(D_800722C8, 256);
 STUB_DATA(D_800722CC, 3588);
-STUB_DATA(D_800756F8, 256);
 STUB_DATA(D_80075D00, 256);
 STUB_DATA(D_80075D04, 256);
 STUB_DATA(D_80075D08, 256);
@@ -80,7 +75,6 @@ STUB_DATA(D_80095DD8, 256);
 STUB_DATA(D_80095DDC, 256);
 STUB_DATA(D_800965E4, 256);
 STUB_DATA(D_80099FFC, 256);
-STUB_DATA(D_8009A024, 256);
 STUB_DATA(D_8009A044, 256);
 STUB_DATA(D_8009A048, 256);
 STUB_DATA(D_8009A060, 256);
@@ -466,6 +460,9 @@ STUB_DATA(D_80109D68, 256);
 STUB_DATA(D_80109D6C, 256);
 STUB_DATA(D_80109D70, 256);
 STUB_DATA(D_80109D74, 256);
+STUB_DATA(D_80109E54, 256);
+STUB_DATA(D_80109F34, 256);
+STUB_DATA(D_8010AC54, 256);
 STUB_DATA(D_8010AD34, 256);
 STUB_DATA(D_8010AD38, 256);
 STUB_DATA(D_8010AD3C, 256);
@@ -477,6 +474,7 @@ STUB_DATA(D_8010AD50, 256);
 STUB_DATA(D_8010AD54, 256);
 STUB_DATA(D_8010AD58, 256);
 STUB_DATA(D_8010AD5C, 256);
+STUB_DATA(D_8010AD60, 256);
 STUB_DATA(D_8010AD64, 256);
 STUB_DATA(D_8010AD68, 256);
 STUB_DATA(D_8010AD6C, 256);
@@ -490,9 +488,7 @@ STUB_DATA(D_8010ADEC, 256);
 STUB_DATA(D_8010ADF0, 256);
 STUB_DATA(D_8010ADF4, 256);
 STUB_DATA(D_8010AE24, 256);
-STUB_DATA(D_8010AE28, 256);
 STUB_DATA(D_8010AE2C, 256);
-STUB_DATA(D_8010AE30, 256);
 STUB_DATA(D_8010AE34, 256);
 STUB_DATA(D_8010AE4C, 256);
 STUB_DATA(D_8010AE50, 256);
@@ -564,6 +560,7 @@ STUB_DATA(D_80114458, 256);
 STUB_DATA(D_80114478, 256);
 STUB_DATA(D_8011447C, 256);
 STUB_DATA(D_80114498, 256);
+STUB_DATA(D_801144D4, 256);
 STUB_DATA(D_801159BC, 256);
 STUB_DATA(D_801159DC, 256);
 STUB_DATA(D_801159E0, 256);
@@ -714,11 +711,6 @@ STUB_DATA(D_801D4ED0, 256);
 STUB_DATA(D_801DEEDC, 256);
 STUB_DATA(D_801DEEF4, 256);
 STUB_DATA(D_801DEEFC, 256);
-STUB_DATA(D_801E3650, 256);
-STUB_DATA(D_801E3668, 256);
-STUB_DATA(D_801E3684, 256);
-STUB_DATA(D_801E368C, 256);
-STUB_DATA(D_801E3698, 256);
 STUB_DATA(D_801E36A0, 256);
 STUB_DATA(D_801E36A4, 256);
 STUB_DATA(D_801E36A8, 256);
@@ -733,31 +725,15 @@ STUB_DATA(D_801E3854, 256);
 STUB_DATA(D_801E3858, 256);
 STUB_DATA(D_801E3860, 256);
 STUB_DATA(D_801E3864, 256);
-STUB_DATA(D_801E3D54, 256);
-STUB_DATA(D_801E3D58, 256);
-STUB_DATA(D_801E3D5C, 256);
-STUB_DATA(D_801E3D60, 256);
-STUB_DATA(D_801E3D80, 12216);
-STUB_DATA(D_801E3DEC, 256);
-STUB_DATA(D_801E3E34, 256);
-STUB_DATA(D_801E3EEC, 256);
-STUB_DATA(D_801E3F14, 256);
-STUB_DATA(D_801E3F18, 256);
-STUB_DATA(D_801E3F1C, 256);
-STUB_DATA(D_801E3F20, 256);
-STUB_DATA(D_801E3F2C, 256);
-STUB_DATA(D_801E4538, 256);
-STUB_DATA(D_801E8F38, 256);
-STUB_DATA(D_801E8F44, 256);
 STUB_DATA(SavedScriptIds, 384);
 STUB_DATA(g_AccessoryTable, 520);
 STUB_DATA(g_ActiveCharacters, 9796);
 STUB_DATA(g_ActiveCharsHPMPInited, 1508);
 STUB_DATA(g_ActiveEncounter, 172);
 STUB_DATA(g_AkaoCdVol, 16);
-STUB_DATA(g_AkaoCdVolSlideStep, 24);
+STUB_DATA(g_AkaoCdVolSlideStep, 16);
 STUB_DATA(g_AkaoCdVolSlideSteps, 8);
-STUB_DATA(g_AkaoCmd, 88);
+STUB_DATA(g_AkaoCmd, 36);
 STUB_DATA(g_AkaoCommandQueue, 1152);
 STUB_DATA(g_AkaoCommandQueueId, 4);
 STUB_DATA(g_AkaoControlFlags, 8);
@@ -781,7 +757,7 @@ STUB_DATA(g_AkaoPitchMulMusic, 4);
 STUB_DATA(g_AkaoPitchMulMusicSlideStep, 4);
 STUB_DATA(g_AkaoPitchMulMusicSlideSteps, 4);
 STUB_DATA(g_AkaoReverbMask, 4);
-STUB_DATA(g_AkaoReverbMul, 20);
+STUB_DATA(g_AkaoReverbMul, 12);
 STUB_DATA(g_AkaoReverbPan, 4);
 STUB_DATA(g_AkaoSavedChannelConfig0, 4);
 STUB_DATA(g_AkaoSavedChannelConfig1, 4);
@@ -803,7 +779,7 @@ STUB_DATA(g_AkaoStreamVoice16UpdateMask, 264);
 STUB_DATA(g_AkaoStreamVoice17UpdateMask, 1624);
 STUB_DATA(g_AkaoStreamVol, 256);
 STUB_DATA(g_AkaoTempoMulMusic, 44);
-STUB_DATA(g_AkaoTempoMulMusicSlideStep, 16);
+STUB_DATA(g_AkaoTempoMulMusicSlideStep, 12);
 STUB_DATA(g_AkaoTempoMulMusicSlideSteps, 20);
 STUB_DATA(g_AkaoVoiceAttrAMode, 4);
 STUB_DATA(g_AkaoVoiceAttrAddr, 4);
@@ -840,6 +816,7 @@ STUB_DATA(g_BattleEffectSlots, 3220);
 STUB_DATA(g_BattleHitFormulaOffs, 4700);
 STUB_DATA(g_BattleHitFormulaOpcodeStream, 48);
 STUB_DATA(g_BattleItemsEarned, 24);
+STUB_DATA(g_BattleLock, 4);
 STUB_DATA(g_BattleMode, 6);
 STUB_DATA(g_BattleModels, 30700);
 STUB_DATA(g_BattleMovementCallbacks, 52);
@@ -876,7 +853,7 @@ STUB_DATA(g_CharacterLock, 4);
 STUB_DATA(g_CurrentEntity, 8);
 STUB_DATA(g_CurrentFieldIndex, 108);
 STUB_DATA(g_DebugLevel, 8);
-STUB_DATA(g_DebugMessageBuffer, 80);
+STUB_DATA(g_DebugMessageBuffer, 32);
 STUB_DATA(g_DebugText, 36);
 STUB_DATA(g_EncounterBannerActive, 4);
 STUB_DATA(g_EncounterBannerStringId, 5236);
@@ -904,7 +881,7 @@ STUB_DATA(g_FieldLineCount, 68);
 STUB_DATA(g_FieldLines, 1004);
 STUB_DATA(g_FieldMapVars, 260);
 STUB_DATA(g_FieldModelAnimId, 16);
-STUB_DATA(g_FieldModelAnimStatus, 1552);
+STUB_DATA(g_FieldModelAnimStatus, 16);
 STUB_DATA(g_FieldModelBaseAnimSpeed, 36);
 STUB_DATA(g_FieldModelCount, 4);
 STUB_DATA(g_FieldModelData, 4);
@@ -925,7 +902,7 @@ STUB_DATA(g_FieldScriptSyncWaitEntity, 384);
 STUB_DATA(g_FieldScripts, 4);
 STUB_DATA(g_FieldState, 308);
 STUB_DATA(g_FieldText, 4);
-STUB_DATA(g_FieldTriggers, 16);
+STUB_DATA(g_FieldTriggers, 8);
 STUB_DATA(g_FieldTriggersP, 8);
 STUB_DATA(g_FieldWaitCounter, 100);
 STUB_DATA(g_FireTexture, 65696);
@@ -947,10 +924,15 @@ STUB_DATA(g_MabariaPrimBuffer, 131072);
 STUB_DATA(g_MateriaData, 2000);
 STUB_DATA(g_MateriaPriority, 1836);
 STUB_DATA(g_MateriaStealLoot, 256);
+STUB_DATA(g_MemCardSlotStatus, 8);
+STUB_DATA(g_MemcardEvents, 256);
 STUB_DATA(g_MenuRenderBufferIndex, 4);
 STUB_DATA(g_MenuTutorial, 16);
+STUB_DATA(g_MovieLock, 8);
+STUB_DATA(g_PartyPortraitClut, 131072);
 STUB_DATA(g_PartyUpdatedByFieldScript, 4);
 STUB_DATA(g_PlayerModelId, 8);
+STUB_DATA(g_PolyPtr, 4);
 STUB_DATA(g_PosCursorDisabled, 8);
 STUB_DATA(g_PosCursorPrimId, 76);
 STUB_DATA(g_PosCursorPrims, 80);
@@ -965,14 +947,21 @@ STUB_DATA(g_RefrecBufferPtr, 256);
 STUB_DATA(g_RefrecPrimBuffer, 131072);
 STUB_DATA(g_ReverbAttr, 20);
 STUB_DATA(g_ReverbMode, 14);
+STUB_DATA(g_SaveAvatarVramBackup, 256);
+STUB_DATA(g_SaveCharClutBackup, 1548);
 STUB_DATA(g_SaveFile, 512);
-STUB_DATA(g_SaveFileData, 7688);
+STUB_DATA(g_SaveFileData, 7680);
 STUB_DATA(g_SaveFileHeader, 512);
-STUB_DATA(g_SaveIcons, 15320);
-STUB_DATA(g_SaveSlot, 48);
-STUB_DATA(g_SaveWriteRemaining, 256);
+STUB_DATA(g_SaveFontVramBackup, 10240);
+STUB_DATA(g_SaveIcons, 15316);
+STUB_DATA(g_SaveLevelLabel, 8);
+STUB_DATA(g_SaveSlot, 4);
+STUB_DATA(g_SaveSlotMask, 4);
+STUB_DATA(g_SaveSlotWindowRects, 24);
+STUB_DATA(g_SaveWriteRemaining, 4);
 STUB_DATA(g_SavedFieldScriptPC, 780);
 STUB_DATA(g_ShiftJisTable, 536);
+STUB_DATA(g_SplitJoinOrigMoveSpeed, 48);
 STUB_DATA(g_SpuCommonAttr, 40);
 STUB_DATA(g_ThunderBufferPtr, 256);
 STUB_DATA(g_ThunderModel, 1300);
@@ -980,11 +969,26 @@ STUB_DATA(g_ThunderPrimBuffer, 131072);
 STUB_DATA(g_ThunderRenderData0, 148);
 STUB_DATA(g_ThunderRenderData1, 200);
 STUB_DATA(g_ThunderTexture, 65740);
+STUB_DATA(g_TitleActiveOT, 4);
+STUB_DATA(g_TitleBufferIndex, 4);
+STUB_DATA(g_TitleButtonTables, 72);
+STUB_DATA(g_TitleDefaultWindowColors, 12);
+STUB_DATA(g_TitleDispEnv, 40);
+STUB_DATA(g_TitleDrawEnv, 184);
+STUB_DATA(g_TitleFadeState, 4);
+STUB_DATA(g_TitleMenuTables, 108);
+STUB_DATA(g_TitleOrderingTable, 32);
+STUB_DATA(g_TitleResult, 260);
+STUB_DATA(g_TitleScanFileIndex, 12);
+STUB_DATA(g_TitleScanInitial, 4);
+STUB_DATA(g_TitleScanUnk, 4);
+STUB_DATA(g_TitleTimer, 4);
+STUB_DATA(g_TitleWindowRect, 28);
 STUB_DATA(g_TutorialActive, 20);
 STUB_DATA(g_WeaponTable, 5632);
 STUB_DATA(g_WindowBuffer, 64);
 STUB_DATA(g_WindowBufferPos, 256);
-STUB_DATA(g_WindowCount, 8);
+STUB_DATA(g_WindowCount, 4);
 STUB_DATA(g_WindowData, 192);
 STUB_DATA(g_WindowExtraRows, 8);
 STUB_DATA(g_WindowFastForwardLevel, 8);
@@ -1004,10 +1008,10 @@ STUB_DATA(g_dbIndex, 64);
 STUB_DATA(g_modelScreenPos, 120);
 STUB_DATA(g_pFieldState, 4);
 STUB_DATA(menus, 1460);
-STUB_DATA(s_PadBuffers, 256);
+STUB_DATA(s_PadBuffers, 49228);
 STUB_DATA(transform_matrix, 1640);
 
-// 527 functions
+// 412 functions
 STUB_FUNC(AddBackgroundToRender)
 STUB_FUNC(AddStrNextDebugRow)
 STUB_FUNC(AkaoCmd_15_PlayMusicSwapSaved)
@@ -1105,8 +1109,6 @@ STUB_FUNC(BattleMenuDrawSlotNameList)
 STUB_FUNC(BattleMenuIsMateriaColorBanned)
 STUB_FUNC(BattleModelReadAnimStream)
 STUB_FUNC(BattleOpcodeCycle)
-STUB_FUNC(BattleOpcodeGetRndBit)
-STUB_FUNC(BattleOpcodeLoadVal)
 STUB_FUNC(BattleParseEnemyModels)
 STUB_FUNC(BattlePlayerModelsUpdateBonesPos)
 STUB_FUNC(BattleQueue1Execute)
@@ -1122,7 +1124,12 @@ STUB_FUNC(DSCHANGE_WaitDiskLoop)
 STUB_FUNC(D_800F7DE4)
 STUB_FUNC(D_801D3890)
 STUB_FUNC(DebugRunEveryLoop)
-STUB_FUNC(FetchMemCardStatus)
+STUB_FUNC(EndingInsertNode)
+STUB_FUNC(EndingOpcode01)
+STUB_FUNC(EndingOpcode02)
+STUB_FUNC(EndingOpcode15)
+STUB_FUNC(EndingOpcode1C)
+STUB_FUNC(EndingOpcode1D)
 STUB_FUNC(FieldArrowsAddToRender)
 STUB_FUNC(FieldArrowsInit)
 STUB_FUNC(FieldBGScrollUpdate)
@@ -1135,6 +1142,7 @@ STUB_FUNC(FieldDebugPageSetColor)
 STUB_FUNC(FieldDebugPageSetPosSize)
 STUB_FUNC(FieldEntityBgTriggerInit)
 STUB_FUNC(FieldEntityCheckTalk)
+STUB_FUNC(FieldEntityDirByVec)
 STUB_FUNC(FieldEntityGetDirVectorY)
 STUB_FUNC(FieldEntityInitPos)
 STUB_FUNC(FieldEntityLineClear)
@@ -1153,125 +1161,21 @@ STUB_FUNC(MAGIC_Thundera)
 STUB_FUNC(MulMatrix0)
 STUB_FUNC(MulMatrix2)
 STUB_FUNC(MulRotMatrix0)
-STUB_FUNC(OpcodeFuncAdpal)
-STUB_FUNC(OpcodeFuncAdpal2)
-STUB_FUNC(OpcodeFuncAnimb)
-STUB_FUNC(OpcodeFuncAnimw)
-STUB_FUNC(OpcodeFuncAsk)
-STUB_FUNC(OpcodeFuncAsped)
-STUB_FUNC(OpcodeFuncAxyzi)
-STUB_FUNC(OpcodeFuncBgclr)
-STUB_FUNC(OpcodeFuncBgdph)
-STUB_FUNC(OpcodeFuncBgoff)
-STUB_FUNC(OpcodeFuncBgon)
-STUB_FUNC(OpcodeFuncBgrol)
-STUB_FUNC(OpcodeFuncBgrol2)
-STUB_FUNC(OpcodeFuncBgscr)
-STUB_FUNC(OpcodeFuncCanim)
-STUB_FUNC(OpcodeFuncCanmEx)
 STUB_FUNC(OpcodeFuncChmph)
 STUB_FUNC(OpcodeFuncChmst)
-STUB_FUNC(OpcodeFuncCkitm)
-STUB_FUNC(OpcodeFuncCmove)
-STUB_FUNC(OpcodeFuncCmtra)
-STUB_FUNC(OpcodeFuncCppal)
-STUB_FUNC(OpcodeFuncCppal2)
-STUB_FUNC(OpcodeFuncDir)
-STUB_FUNC(OpcodeFuncDira)
-STUB_FUNC(OpcodeFuncDlitm)
-STUB_FUNC(OpcodeFuncDmtra)
-STUB_FUNC(OpcodeFuncFade)
-STUB_FUNC(OpcodeFuncFadew)
-STUB_FUNC(OpcodeFuncFcfix)
-STUB_FUNC(OpcodeFuncFmove)
-STUB_FUNC(OpcodeFuncGetai)
-STUB_FUNC(OpcodeFuncGetaxy)
 STUB_FUNC(OpcodeFuncGetpc)
-STUB_FUNC(OpcodeFuncGtdir)
-STUB_FUNC(OpcodeFuncGwcol)
 STUB_FUNC(OpcodeFuncHmpmx)
 STUB_FUNC(OpcodeFuncHpMinus)
 STUB_FUNC(OpcodeFuncHpPlus)
-STUB_FUNC(OpcodeFuncIdlck)
-STUB_FUNC(OpcodeFuncJoin)
-STUB_FUNC(OpcodeFuncJump)
-STUB_FUNC(OpcodeFuncLader)
-STUB_FUNC(OpcodeFuncLdpal)
-STUB_FUNC(OpcodeFuncLdpls)
-STUB_FUNC(OpcodeFuncLstmp)
-STUB_FUNC(OpcodeFuncMes)
 STUB_FUNC(OpcodeFuncMhmmx)
-STUB_FUNC(OpcodeFuncMova)
-STUB_FUNC(OpcodeFuncMove)
-STUB_FUNC(OpcodeFuncMovie)
 STUB_FUNC(OpcodeFuncMpMinus)
 STUB_FUNC(OpcodeFuncMpPlus)
 STUB_FUNC(OpcodeFuncMpara)
-STUB_FUNC(OpcodeFuncMpjpo)
-STUB_FUNC(OpcodeFuncMpnam)
-STUB_FUNC(OpcodeFuncMppal)
-STUB_FUNC(OpcodeFuncMppal2)
 STUB_FUNC(OpcodeFuncMpra2)
-STUB_FUNC(OpcodeFuncMsped)
-STUB_FUNC(OpcodeFuncMvief)
-STUB_FUNC(OpcodeFuncNfade)
-STUB_FUNC(OpcodeFuncOfstd)
-STUB_FUNC(OpcodeFuncOfstw)
-STUB_FUNC(OpcodeFuncPdira)
-STUB_FUNC(OpcodeFuncPgtdr)
-STUB_FUNC(OpcodeFuncPmova)
-STUB_FUNC(OpcodeFuncPmvie)
-STUB_FUNC(OpcodeFuncPtura)
-STUB_FUNC(OpcodeFuncPxyzi)
-STUB_FUNC(OpcodeFuncRtpal)
-STUB_FUNC(OpcodeFuncRtpal2)
-STUB_FUNC(OpcodeFuncScr2d)
-STUB_FUNC(OpcodeFuncScr2dc)
-STUB_FUNC(OpcodeFuncScr2dl)
-STUB_FUNC(OpcodeFuncScrcc)
-STUB_FUNC(OpcodeFuncScrla)
-STUB_FUNC(OpcodeFuncScrlc)
-STUB_FUNC(OpcodeFuncScrlp)
-STUB_FUNC(OpcodeFuncScrlw)
-STUB_FUNC(OpcodeFuncShake)
-STUB_FUNC(OpcodeFuncSldr2)
-STUB_FUNC(OpcodeFuncSlidr)
-STUB_FUNC(OpcodeFuncSmtra)
-STUB_FUNC(OpcodeFuncSpcal)
-STUB_FUNC(OpcodeFuncSplit)
-STUB_FUNC(OpcodeFuncStitm)
-STUB_FUNC(OpcodeFuncStpal)
-STUB_FUNC(OpcodeFuncStpls)
-STUB_FUNC(OpcodeFuncSwcol)
-STUB_FUNC(OpcodeFuncTalkr)
-STUB_FUNC(OpcodeFuncTlkr2)
-STUB_FUNC(OpcodeFuncTura)
-STUB_FUNC(OpcodeFuncTurn)
-STUB_FUNC(OpcodeFuncTurnr)
-STUB_FUNC(OpcodeFuncTurnw)
-STUB_FUNC(OpcodeFuncVwoft)
-STUB_FUNC(OpcodeFuncWclsEx)
-STUB_FUNC(OpcodeFuncWclse)
-STUB_FUNC(OpcodeFuncWmode)
-STUB_FUNC(OpcodeFuncWmove)
-STUB_FUNC(OpcodeFuncWrest)
-STUB_FUNC(OpcodeFuncWrow)
-STUB_FUNC(OpcodeFuncWsize)
-STUB_FUNC(OpcodeFuncWsizw)
-STUB_FUNC(OpcodeFuncXyi)
-STUB_FUNC(OpcodeFuncXyz)
-STUB_FUNC(OpcodeFuncXyzi)
-STUB_FUNC(OuterProduct12)
-STUB_FUNC(PopMatrix)
-STUB_FUNC(PushMatrix)
+STUB_FUNC(SaveHandleScrollCursor)
 STUB_FUNC(SetDebugStrRowColor)
 STUB_FUNC(SetFogNearFar)
 STUB_FUNC(SetMem)
-STUB_FUNC(SpuGetReverbModeParam)
-STUB_FUNC(SpuSetIRQ)
-STUB_FUNC(SpuSetIRQAddr)
-STUB_FUNC(SpuSetTransferCallback)
-STUB_FUNC(SpuSetVoiceLoopStartAddr)
 STUB_FUNC(SysAddCommandToTemp)
 STUB_FUNC(SysAddMagicSummonSkillToUnitStructure)
 STUB_FUNC(SysAddMateria00)
@@ -1300,6 +1204,8 @@ STUB_FUNC(SysMenuDrawMainMenu)
 STUB_FUNC(SysMenuDrawMenuList)
 STUB_FUNC(SysMenuHandleButtons)
 STUB_FUNC(SysMenuInitInput)
+STUB_FUNC(SysMenuRemoveItem)
+STUB_FUNC(SysMenuSearchItem)
 STUB_FUNC(SysMenuSetMenuListAnimation)
 STUB_FUNC(SysMenuShow)
 STUB_FUNC(SysMovieAbortPlay)
@@ -1311,28 +1217,26 @@ STUB_FUNC(SystemMenuAddMpByPartyId)
 STUB_FUNC(SystemMenuAddPartyGold)
 STUB_FUNC(SystemMenuDrawDialog)
 STUB_FUNC(SystemMenuRemovePartyGold)
-STUB_FUNC(WmApplyModelLightingToPacket)
+STUB_FUNC(WmApplyPolyLightingToPacket)
 STUB_FUNC(WmCalculateBoneMatrixes)
 STUB_FUNC(WmCalculateModelLighting)
+STUB_FUNC(WmCreatePacketForModelPart)
 STUB_FUNC(WmFadeInit)
 STUB_FUNC(WmFadeRender)
 STUB_FUNC(WmGetModelDataByModelId)
 STUB_FUNC(WmHandleButtons)
-STUB_FUNC(WmInitAllEntityStructs)
-STUB_FUNC(WmLoadModelPacketAndScale)
-STUB_FUNC(WmLoadTexturesToVram)
 STUB_FUNC(WmLoadTxzDataAndInit)
+STUB_FUNC(WmMoveActorByDistance)
 STUB_FUNC(WmMovePcEntityByDistance)
 STUB_FUNC(WmRenderAll)
+STUB_FUNC(WmScaleModelAnimations)
 STUB_FUNC(WmScriptOpcode300Handle)
 STUB_FUNC(WmStartLoadingMapFileBlock)
 STUB_FUNC(WmUiMapCreate)
 STUB_FUNC(WmUiMapUpdate)
 STUB_FUNC(WmUpdateLightingFromPoints)
-STUB_FUNC(WmUpdatePartTransparency)
 STUB_FUNC(buster_tim)
 STUB_FUNC(delete)
-STUB_FUNC(func_8001117C)
 STUB_FUNC(func_800112E8)
 STUB_FUNC(func_80014804)
 STUB_FUNC(func_800148A0)
@@ -1356,19 +1260,13 @@ STUB_FUNC(func_800A0448)
 STUB_FUNC(func_800A0514)
 STUB_FUNC(func_800A0C58)
 STUB_FUNC(func_800A12AC)
-STUB_FUNC(func_800A14BC)
 STUB_FUNC(func_800A1630)
-STUB_FUNC(func_800A17C0)
-STUB_FUNC(func_800A19A4)
 STUB_FUNC(func_800A19FC)
-STUB_FUNC(func_800A1EEC)
 STUB_FUNC(func_800A1F40)
-STUB_FUNC(func_800A1F48)
 STUB_FUNC(func_800A272C)
 STUB_FUNC(func_800A28D8)
 STUB_FUNC(func_800A2974)
 STUB_FUNC(func_800A2BD4)
-STUB_FUNC(func_800A3178)
 STUB_FUNC(func_800A34A8)
 STUB_FUNC(func_800A3534)
 STUB_FUNC(func_800A358C)
@@ -1387,7 +1285,6 @@ STUB_FUNC(func_800A806C)
 STUB_FUNC(func_800A835C)
 STUB_FUNC(func_800A8AE8)
 STUB_FUNC(func_800A8E84)
-STUB_FUNC(func_800A9520)
 STUB_FUNC(func_800A9828)
 STUB_FUNC(func_800A9D94)
 STUB_FUNC(func_800AA304)
@@ -1396,11 +1293,9 @@ STUB_FUNC(func_800AAB18)
 STUB_FUNC(func_800AB308)
 STUB_FUNC(func_800AB480)
 STUB_FUNC(func_800AB830)
-STUB_FUNC(func_800ABA68)
 STUB_FUNC(func_800AC554)
 STUB_FUNC(func_800AD0FC)
 STUB_FUNC(func_800AD9D8)
-STUB_FUNC(func_800ADB30)
 STUB_FUNC(func_800AE42C)
 STUB_FUNC(func_800AE534)
 STUB_FUNC(func_800AE82C)
@@ -1518,7 +1413,6 @@ STUB_FUNC(func_801D080C)
 STUB_FUNC(func_801D131C)
 STUB_FUNC(func_801D1A6C)
 STUB_FUNC(func_801D2D74)
-STUB_FUNC(func_801D2DA8)
 STUB_FUNC(func_801D2E84)
 STUB_FUNC(func_801D2F00)
 STUB_FUNC(func_801D3018)
@@ -1529,9 +1423,4 @@ STUB_FUNC(g_AkaoVoiceAttr)
 STUB_FUNC(g_BattleActionQueue)
 STUB_FUNC(g_BattleEffectCount)
 STUB_FUNC(getScratchAddr)
-STUB_FUNC(gte_readflg)
-STUB_FUNC(gte_rt)
-STUB_FUNC(gte_stflg)
-STUB_FUNC(gte_stlvnl)
 STUB_FUNC(gte_stsxy2)
-STUB_FUNC(gte_stsxy3_g3)

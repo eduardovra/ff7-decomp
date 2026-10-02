@@ -83,7 +83,7 @@ def read_objects(offsets: dict[str, int], size: int) -> dict[int, dict]:
             continue
         points = []
         for k in range(BOX_POINTS):
-            packed = struct.unpack_from("<Q", obj, offsets["unk11C"] + 8 * k)[0]
+            packed = struct.unpack_from("<Q", obj, offsets["boxFaceScreenXY"] + 8 * k)[0]
             x = to_s16(packed & 0xFFFF)
             y = to_s16((packed >> 16) & 0xFFFF)
             points.append((x, y))
@@ -121,7 +121,7 @@ def save_capture(frame: Image.Image, obj: dict, name: str) -> None:
 
 
 def tour(config: dict) -> None:
-    fields = ("active", "node", "unk11C")
+    fields = ("active", "node", "boxFaceScreenXY")
     offsets = {name: field_offset(name) for name in fields}
     offsets["type"] = field_offset("state.type")
     offsets["model"] = field_offset("state.modelId")

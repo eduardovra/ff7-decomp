@@ -4,38 +4,8 @@
 #include <libgte.h>
 
 #ifdef VERSION_PC
-#include <libgte.h>
-
-// the pc build has no gte, so every macro defined below needs a stand in here or a file
-// that includes this header fails with an implicit declaration. inline_o.h already does this.
-#define gte_ldv0(r0)
-#define gte_ldv3(r0, r1, r2)
-#define gte_ldv3c(r0)
-#define gte_ldrgb(r0)
-#define gte_strgb(r0)
-#define gte_SetGeomScreen(r0)
-#define gte_SetRotMatrix(r0)
-#define gte_SetTransMatrix(r0)
-#define gte_SetLightMatrix(r0)
-#define gte_SetColorMatrix(r0)
-#define gte_SetBackColor(r0, r1, r2)
-#define gte_rtps()
-#define gte_rtpt()
-#define gte_rt()
-#define gte_rtv0()
-#define gte_nclip()
-#define gte_nccs()
-#define gte_stsxy(r0)
-#define gte_stsxy3(r0, r1, r2)
-#define gte_stsxy3_g3(r0)
+// PSY-Z's libgte.h supplies the rest.
 #define gte_stsxy2(r0)
-#define gte_stsz(r0)
-#define gte_stsz3(r0, r1, r2)
-#define gte_stszotz(r0)
-#define gte_stflg(r0)
-#define gte_readflg(r0)
-#define gte_stopz(r0)
-#define gte_stlvnl(r0)
 #else
 
 /*
