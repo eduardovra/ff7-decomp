@@ -81,6 +81,7 @@ extern SVECTOR (*D_800E4274)[3];
 extern DRAWENV D_80113F2C[2];
 extern s16 D_801142C8;
 extern u8 D_80114498[48];
+extern u8 g_PosCursorDisabled;
 
 extern char g_FieldDebugActorLabel[8];
 extern char g_FieldDebugWordLabel[8];
@@ -101,6 +102,7 @@ void FieldBackgroundInitPackets(SPRT_16* bg1, SPRT* bg2, u16* animation, DR_MODE
 void AddBackgroundToRender(struct FieldRenderData* renderData);
 s32 FieldCalcWorldToScreenPos(SVECTOR* worldPos, SVECTOR* screenPos);
 s32 FieldEntityGetDirVectorY(u8 angle);
+u8 FieldEntityDirByVec(VECTOR* start, VECTOR* target, s32* distance);
 void FieldEntityLineClear(FieldLine* lines);
 void DebugRunEveryLoop(void);
 void FieldRainInit(struct FieldRenderData* renderData);
