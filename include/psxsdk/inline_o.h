@@ -188,25 +188,6 @@
   __asm__ volatile ("swc2  $11,8($12)": : :"$12","$13","$14","$15","memory"); \
 }
 
-#else
-// PSY-Z's libgte.h supplies the common macros; the rest drive its GTE emulator.
-#include <psyz/gte.h>
-
-#define gte_rtir() Psyz_GteCommand(0x4A49E012)
-
-#define gte_ldlv0(r1)                                                                                                  \
-    {                                                                                                                  \
-        unsigned short* _v = (unsigned short*)(r1);                                                                    \
-        Psyz_GteDataWrite(0, _v[0] | ((unsigned int)_v[2] << 16));                                                     \
-        Psyz_GteDataWrite(1, *(unsigned int*)&_v[4]);                                                                  \
-    }
-
-#define gte_stlvl(r1)                                                                                                  \
-    {                                                                                                                  \
-        ((unsigned int*)(r1))[0] = Psyz_GteDataRead(9);                                                                \
-        ((unsigned int*)(r1))[1] = Psyz_GteDataRead(10);                                                               \
-        ((unsigned int*)(r1))[2] = Psyz_GteDataRead(11);                                                               \
-    }
 #endif
 
 #endif

@@ -129,7 +129,7 @@ endif()
 add_library(${PROJECT_NAME} ${FF7_STR_SOURCES})
 if(FF7_PC)
     # Native stand-ins for code and data still in assembly.
-    target_sources(${PROJECT_NAME} PRIVATE src/pc/cdchain.c src/pc/jet_gte.c src/pc/libgpu_ext.c src/pc/libgte_ext.c)
+    target_sources(${PROJECT_NAME} PRIVATE src/pc/cdchain.c src/pc/jet_gte.c src/pc/libgpu_ext.c)
 endif()
 psyz_strip_file_prefix(${PROJECT_NAME})
 psyz_title(${PROJECT_NAME} "Final Fantasy VII")
