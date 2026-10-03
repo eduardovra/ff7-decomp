@@ -8,6 +8,13 @@
 #include "bgm.h"
 #include "akao.h"
 
+#ifdef PLATFORM_PSYZ
+#include <psyz.h>
+#include <psyz/log.h>
+#else
+#define INFOF(...) (void)0
+#endif
+
 #ifndef FF7_STR
 #define _S(x) x       // check the usage of 'bin/str' to see how this works
 #define _SL(len, x) x // same as _S, but for fixed-length strings with padding
@@ -17,10 +24,33 @@
 #define NUM_PARTY 3
 #define NUM_CHARACTERS 9
 #define NUM_MATERIA_ROW 8 // maximum amount of materia per row (weapon or armor)
+#define NUM_BATTLE_COMMANDS 16
+#define NUM_MAGICS 56
+#define NUM_MAGICS_ALL (NUM_MAGICS + 40)
 #define MAX_INVENTORY_COUNT 320
 #define MAX_MATERIA_COUNT 200
 #define NUM_MENU_COLOR 12
 #define LABEL_SIZE 12
+
+enum PadButtons {
+    PAD_NONE = 0x0000,
+    PAD_L2 = 0x0001,
+    PAD_R2 = 0x0002,
+    PAD_L1 = 0x0004,
+    PAD_R1 = 0x0008,
+    PAD_TRIANGLE = 0x0010,
+    PAD_CIRCLE = 0x0020,
+    PAD_CROSS = 0x0040,
+    PAD_SQUARE = 0x0080,
+    PAD_SELECT = 0x0100,
+    PAD_L3 = 0x0200,
+    PAD_R3 = 0x0400,
+    PAD_START = 0x0800,
+    PAD_UP = 0x1000,
+    PAD_RIGHT = 0x2000,
+    PAD_DOWN = 0x4000,
+    PAD_LEFT = 0x8000,
+};
 
 typedef unsigned char ff7s[];
 
@@ -88,6 +118,7 @@ typedef struct {
 } Yamada;
 
 typedef enum {
+    LBA_SYSTEM_CNF = 23,         // SYSTEM.CNF
     LBA_SOUND_INSTR_ALL = 219,   // SOUND/INSTR.ALL
     LBA_SOUND_EFFECT = 455,      // SOUND/EFFECT.ALL
     LBA_SOUND_INSTR_DAT = 480,   // SOUND/INSTR.DAT
@@ -105,9 +136,25 @@ typedef enum {
     LBA_ENEMY6_SEFFECT = 30046,  // ENEMY6/SEFFECT.LZS
     LBA_ENEMY6_OVER2 = 30694,    // ENEMY6/OVER2.SND
     LBA_ENEMY6_FAN2 = 30695,     // ENEMY6/FAN2.SND
+    LBA_MENU_ITEMMENU = 53977,   // MENU/ITEMMENU.MNU
+    LBA_MENU_MGICMENU = 53986,   // MENU/MGICMENU.MNU
+    LBA_MENU_EQIPMENU = 53992,   // MENU/EQIPMENU.MNU
+    LBA_MENU_STATMENU = 54039,   // MENU/STATMENU.MNU
+    LBA_MENU_CHNGMENU = 54051,   // MENU/CHNGMENU.MNU
+    LBA_MENU_LIMTMENU = 54052,   // MENU/LIMTMENU.MNU
+    LBA_MENU_CNFGMENU = 54057,   // MENU/CNFGMENU.MNU
+    LBA_MENU_BGINMENU = 54062,   // MENU/BGINMENU.MNU
+    LBA_MENU_SHOPMENU = 54064,   // MENU/SHOPMENU.MNU
+    LBA_MENU_PATYMENU = 54095,   // MENU/PATYMENU.MNU
+    LBA_MENU_NAMEMENU = 54110,   // MENU/NAMEMENU.MNU
+    LBA_MENU_FORMMENU = 54135,   // MENU/FORMMENU.MNU
+    LBA_MENU_SAVEMENU = 54165,   // MENU/SAVEMENU.MNU
     LBA_FIELD_FIELD = 55000,     // FIELD/FIELD.BIN
     LBA_FIELD_DSCHANGE = 126886, // FIELD/DSCHANGE.X
     LBA_FIELD_ENDING = 126889,   // FIELD/ENDING.X
+    LBA_MOVIE_STAFF = 128825,    // MOVIE/STAFF.BIN
+    LBA_MOVIE_STAFF2 = 129036,   // MOVIE/STAFF2.BIN
+    LBA_MOVIE_OPENING = 129179,  // MOVIE/OPENING.BIN
 } Lba;
 
 typedef enum {
@@ -263,20 +310,20 @@ typedef struct {
 } LinePos;
 
 typedef struct {
-    s16 colOffset;       // Horizontal scroll offset (left visible column).
-    s16 rowOffset;       // Vertical scroll offset (top visible row).
-    s16 numTotalColumns; // Total columns in table.
-    s16 numTotalRows;    // Total rows in table.
-    s16 scrolling;       // Scroll animation direction / active state (0=idle).
-    s8 column;           // Selected column index.
-    s8 row;              // Selected row index.
-    s8 numColumns;       // Visible columns per page.
-    s8 numRowsPerPage;   // Visible rows per page.
-    s8 scrollAnimX;      // Horizontal scroll animation pixel offset.
-    s8 scrollAnimY;      // Vertical smooth-scroll animation pixel offset.
-    s8 wrapModeX;        // Horizontal wrap mode (0=clamp, 1=wrap column, 2=wrap row).
-    s8 wrapModeY;        // Vertical scroll/wrap mode (0=scroll, 1/2=wrap, 3+=infinite).
-} MenuTable;             // size: 0x12
+    /* 0x00 */ s16 colOffset;       // Horizontal scroll offset (left visible column).
+    /* 0x02 */ s16 rowOffset;       // Vertical scroll offset (top visible row).
+    /* 0x04 */ s16 numTotalColumns; // Total columns in table.
+    /* 0x06 */ s16 numTotalRows;    // Total rows in table.
+    /* 0x08 */ s16 scrolling;       // Scroll animation direction / active state (0=idle).
+    /* 0x0A */ s8 column;           // Selected column index.
+    /* 0x0B */ s8 row;              // Selected row index.
+    /* 0x0C */ s8 numColumns;       // Visible columns per page.
+    /* 0x0D */ s8 numRowsPerPage;   // Visible rows per page.
+    /* 0x0E */ s8 scrollAnimX;      // Horizontal scroll animation pixel offset.
+    /* 0x0F */ s8 scrollAnimY;      // Vertical smooth-scroll animation pixel offset.
+    /* 0x10 */ s8 wrapModeX;        // Horizontal wrap mode (0=clamp, 1=wrap column, 2=wrap row).
+    /* 0x11 */ s8 wrapModeY;        // Vertical scroll/wrap mode (0=scroll, 1/2=wrap, 3+=infinite).
+} MenuTable;                        // size: 0x12
 
 typedef struct {
     /* 0x0 */ s16 visibleRows; // rows shown at once, sets slider length
@@ -575,6 +622,23 @@ typedef struct {
 } CurrentCharMagicCommand; // size: 0x5
 
 typedef struct {
+    /* 0x00 */ s16 id;
+    /* 0x02 */ s16 coverChance;
+    /* 0x04 */ s16 strength;
+    /* 0x06 */ s16 vitality;
+    /* 0x08 */ s16 magic;
+    /* 0x0A */ s16 spirit;
+    /* 0x0C */ s16 dexterity;
+    /* 0x0E */ s16 luck;
+    /* 0x10 */ s16 physAttack;
+    /* 0x12 */ s16 physDefence;
+    /* 0x14 */ s16 magAttack;
+    /* 0x16 */ s16 magDefence;
+    /* 0x18 */ s16 baseHp;
+    /* 0x1A */ s16 baseMp;
+} CurrentCharStats; // size: 0x1C
+
+typedef struct {
     u8 id;
     u8 allCount;
     u8 materiaEffectFlags;
@@ -791,9 +855,9 @@ typedef struct {
     u16 absorbedElements;
     u32 physicalAttackStatuses;
     u32 immuneStatuses;
-    ActiveCharCommandMenu commandMenu[16];
+    ActiveCharCommandMenu commandMenu[NUM_BATTLE_COMMANDS];
     BattleLimitData limits;
-    MagicRecord enabledMagic[96];
+    MagicRecord enabledMagic[NUM_MAGICS_ALL];
     WeaponRecord weapon;
     s16 unk434;
     u8 unk436;
@@ -1150,7 +1214,6 @@ typedef struct {
     u16 prevFieldId;
     u8 unk66;
     u8 unk67;
-    // Uses PADx macros in libetc.h
     // Raw states ignore custom key mapping set by player.
     s32 activeKeysRaw;     // Currently active keys.
     s32 activeKeysPrevRaw; // activeKeysRaw from last frame.
@@ -1238,10 +1301,19 @@ typedef struct {
     s32 params[6];
 } AkaoCmd;
 
+typedef struct {
+    /* 0x00 */ u8 unk0;
+    /* 0x01 */ u8 unk1;
+    /* 0x02 */ s16 unk2;
+    /* 0x04 */ u8 unk4[16];
+    /* 0x14 */ u8 unk14;
+} Unk8009D7BC;
+
 extern u8* D_8003623C;
-extern u16 g_Pad1Keys;
-extern u16 g_Pad1KeysPressed;
-extern u16 g_Pad1KeysRepeat;
+extern u8* D_80036240;
+extern u16 g_Pad0Keys;
+extern u16 g_Pad0KeysPressed;
+extern u16 g_Pad0KeysRepeat;
 
 // Map between battle character IDs and index into character record array.
 // Battle characters have IDs 0-10. 9 and 10 are young Cloud and Sephiroth from
@@ -1257,6 +1329,7 @@ extern u8 D_80062D98; // global pause; nonzero freezes effect frame advance and 
 extern volatile u8 g_SavemapBusy;
 extern s32 D_80062DCC;
 extern u8 _D_80062DFD;
+extern u8 D_80062F18;
 extern u8 D_80062F19; // Enemy Lure/Away Modifier
 extern u8 D_80062F1A;
 extern u8 D_80062F1B;
@@ -1285,8 +1358,9 @@ extern MATRIX* D_80071E40;
 extern u8 g_PartyUpdatedByFieldScript;
 extern u8 g_CurrentEntity; // entity owning the currently executing script
 extern MateriaData g_MateriaData[100];
-extern CurrentCharBattleMenuCommand D_80069508[16];
-extern CurrentCharMagicCommand D_80069554[56];
+extern CurrentCharBattleMenuCommand D_80069508[NUM_BATTLE_COMMANDS];
+extern CurrentCharStats D_80069538;
+extern CurrentCharMagicCommand D_80069554[NUM_MAGICS];
 extern u8* D_800707C0;
 extern BattleCommandData D_800707C4[32];
 extern AttackData D_800708C4[];
@@ -1357,6 +1431,7 @@ extern SaveWork Savemap;          // 0x8009C6E4
 extern u8 g_DebugLevel;           // field debug related
 extern CharacterLevelData g_CharacterLevelData[3];
 extern u8 D_8009D824;
+extern Unk8009D7BC D_8009D7BC;
 extern s16 g_FieldModelBaseAnimSpeed[16]; // per-model base animation speed
 extern BattleItemReward g_BattleItemsEarned[4];
 extern ActiveCharacterData g_ActiveCharacters[9];
@@ -1390,11 +1465,13 @@ void func_800262D8();
 void SysMenuSetCursorMovement(MenuTable* table, s32 column, s32 row, s32 numColumns, s32 numRowsPerPage, s32 colOffset,
                               s32 rowOffset, s32 numTotalColumns, s32 numTotalRows, s32 scrollAnimX, s32 scrollAnimY,
                               s32 wrapModeX, s32 wrapModeY, u16 scrolling);
+void SysMenuHandleButtons(MenuTable* table);
 void SysMenuSetPoly(void* poly);
 void SysMenuSavePoly(void);
 void SysMenuRestorePoly(void);
 void SysMenuSetOtag(OT_TYPE* otag);
 u8 SysMenuIsWindowActive(void);
+void SysMenuDrawAddWindow(void);
 void SysMenuStoreAvatarVram(u_long* image);
 void SysMenuRestoreAvatarVram(u_long* image);
 void SysMenuStoreFontVram(u_long* image);
@@ -1420,7 +1497,7 @@ void SysMoviePlay(void* ptr, s16);
 void* SysCdromGetPackPointer(void* ptr, s32);
 void SysCdromSetLzsExtract(void* src, void* dst);
 s32 func_80034D5C(void);
-void func_80036244(void* anim, u16 frame);
+s32 func_80036244(void* anim, u16 frame);
 void func_800354CC(void);
 void MENU_LoadTim(u_long* addr, s32 px, s32 py, s32 cx, s32 cy);
 void MENU_SetWindowColors(u8* menuColors);

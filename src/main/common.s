@@ -144,7 +144,7 @@
 /* 80069558 */ glabel D_80069558;                           .space 0x114
 /* 8006966C */ glabel D_8006966C;                           .space 0x20
 /* 8006968C */ glabel D_8006968C;                           .space 0x20
-/* 800696AC */ glabel s_PadBuffers;                         .space 0x44  # input.c (InputInit, InputReadPad1Raw, InputReadPadsRaw)
+/* 800696AC */ glabel s_PadBuffers;                         .space 0x44  # input.c (InputInit, InputReadPad0Raw, InputReadPadsRaw)
 /* 800696F0 */ glabel D_800696F0;                           .space 0xc   # 1CDA4.c (SysMenuStoreWindowColor, SysMenuRestoreWindowColor)
 /* 800696FC */ glabel D_800696FC;                           .space 0x50
 /* 8006974C */ glabel g_MenuOrderingTables;                 .space 0xa0
@@ -169,17 +169,14 @@
 /* 80069834 */ glabel D_80069834;                           .space 0x1
 /* 80069835 */ glabel D_80069835;                           .space 0xf
 /* 80069844 */ glabel D_80069844;                           .space 0xa0
-/* 800698E4 */ glabel D_800698E4;                           .space 0x1
-/* 800698E5 */ glabel D_800698E5;                           .space 0x1
-/* 800698E6 */ glabel D_800698E6;                           .space 0x1
-/* 800698E7 */ glabel D_800698E7;                           .space 0x1
+/* 800698E4 */ glabel D_800698E4;                           .space 0x4  # 33B70.c (func_80033C20)
 /* 800698E8 */ glabel D_800698E8;                           .space 0x4  # 33B70.c (SysCdromStartLoadLzs)
-/* 800698EC */ glabel D_800698EC;                           .space 0x4
+/* 800698EC */ glabel D_800698EC;                           .space 0x4  # 33B70.c (CdOp_SeekWait, CdOp_ReadSeekWait, CdOp_LzsSeekWait)
 /* 800698F0 */ glabel D_800698F0;                           .space 0x7  # 33B70.c (ReadDiskNo, SysCdromStartLoadLzs)
 /* 800698F7 */ glabel D_800698F7;                           .space 0x47f9  # 33B70.c (ReadDiskNo)
-/* 8006E0F0 */ glabel D_8006E0F0;                           .space 0x4  # 33B70.c (func_80034A90)
-/* 8006E0F4 */ glabel D_8006E0F4;                           .space 0x4  # 33B70.c (func_80034A58, func_80034A90)
-/* 8006E0F8 */ glabel D_8006E0F8;                           .space 0x4
+/* 8006E0F0 */ glabel D_8006E0F0;                           .space 0x4  # 33B70.c (CdOp_PauseWait)
+/* 8006E0F4 */ glabel D_8006E0F4;                           .space 0x4  # 33B70.c (CdOp_Pause, CdOp_PauseWait)
+/* 8006E0F8 */ glabel D_8006E0F8;                           .space 0x4  # 33B70.c (CdOp_LzsRead)
 /* 8006E0FC */ glabel D_8006E0FC;                           .space 0x4
 /* 8006E100 */ glabel D_8006E100;                           .space 0x4
 /* 8006E104 */ glabel D_8006E104;                           .space 0x4

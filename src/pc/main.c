@@ -1,208 +1,124 @@
-// Native PSY-Z entry point.
-//
-// The PS1 build reaches battle through the overlay loader at a fixed address;
-// linked natively the overlays are ordinary symbols, called directly. Most of
-// the game is still a generated stub, so -battle is expected to misbehave.
-
-#include <psyz.h>
-#include <psyz/cd.h>
-#include <libcd.h>
-#include <libgpu.h>
-#include <libgte.h>
-#include <libetc.h>
+#include <game.h>
+#include <psyz/dbgserver.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 240
-#define OTSIZE 8
+#define DEFAULT_DISK_CUE "disks/Final Fantasy VII (USA) (Disc 1).cue"
+
+static void ReserveAddrRam(uintptr_t addr, size_t size) {
+    void* p = mmap((void*)addr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+    if (p == MAP_FAILED) {
+        ERRORF("failed to reserve 0x%08X with len 0x%x", addr, size);
+        exit(1);
+    }
+}
+
+static void ReservePsxRam(void) {
+    ReserveAddrRam(0x80010000, 0x1F0000);
+    ReserveAddrRam(0x1F800000, 0x400);
+}
+
+unsigned char g_FileBufCmp[0x80000];
+unsigned char g_FileBufDec[0x80000];
+
+static void LoadFile(const char* filename, void* dst, size_t len) {
+    FILE* f = fopen(filename, "rb");
+    if (!f) {
+        ERRORF("failed to load '%s'", filename);
+        exit(1);
+    }
+    fread(dst, 1, len, f);
+    fclose(f);
+}
+
+extern u8* D_800707C0;
+extern s8 D_80062DFC;
 
 typedef struct {
-    DRAWENV draw;
-    DISPENV disp;
-    OT_TYPE ot[OTSIZE];
-} DoubleBuffer;
+    s32 tableBase;
+    s32 rowBase;
+    s32 vAdd;
+    s32 clutRow;
+} GlyphMode;
 
-// Decompiled game code, declared here so this file stays clear of the PS1
-// headers: game.h and the PSY-Z headers disagree about u_long.
-extern int SysCountActiveBits(unsigned int value);
-extern int SysGetLsbNumber(unsigned int value);
-extern void SysMemCopy32(void* dst, const void* src, const int len);
-extern void func_800148B4(void);
-extern void func_80014934(void);
-extern void BATINI_Main(int sceneID);
-extern void BATTLE_RunFrame(void);
-extern unsigned short MINI_Jet(void);
-extern void InputInit(void);
-
-#define PS1_RAM_BASE 0x80000000
-#define PS1_RAM_SIZE 0x00200000
-#define PS1_SCRATCHPAD_BASE 0x1F800000
-#define PS1_SCRATCHPAD_SIZE 0x1000
-#define DEFAULT_DISK "disks/Final Fantasy VII (USA) (Disc 1).cue"
-
-static DoubleBuffer db[2];
-static DoubleBuffer* cdb;
-
-static int MapAt(unsigned long base, unsigned long size) {
-    void* p = mmap((void*)base, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
-
-    if (p == MAP_FAILED) {
-        return 0;
-    }
-    return p == (void*)base;
-}
-
-// Casts like (u8*)0x801B0000 survive all over the decompiled C, so map the
-// PS1's 2MB of RAM and its 1KB scratchpad where the console had them.
-static int MapPs1Ram(void) {
-    return MapAt(PS1_RAM_BASE, PS1_RAM_SIZE) && MapAt(PS1_SCRATCHPAD_BASE, PS1_SCRATCHPAD_SIZE);
-}
-
-static void InitGraphics(void) {
-    int i;
-
-    for (i = 0; i < 2; i++) {
-        SetDefDrawEnv(&db[i].draw, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-        SetDefDispEnv(&db[i].disp, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-    }
-    SetVideoMode(MODE_NTSC);
-    ResetGraph(0);
-    PutDrawEnv(&db[0].draw);
-    PutDispEnv(&db[0].disp);
-    ClearOTag(db[0].ot, OTSIZE);
-    ClearOTag(db[1].ot, OTSIZE);
-    SetDispMask(1);
-    cdb = &db[0];
-}
-
-static void Display(void) {
-    if (cdb == &db[0]) {
-        cdb = &db[1];
-    } else {
-        cdb = &db[0];
-    }
-    FntFlush(-1);
-    ClearOTag(cdb->ot, OTSIZE);
-    DrawSync(0);
-    VSync(0);
-    ClearImage(&cdb->draw.clip, 0, 0, 40);
-    DrawOTag(&cdb->ot[0]);
-}
-
-// Runs three pure routines out of src/main/btlinit.c, so the screen is
-// showing real decompiled game code rather than PSY-Z alone.
-static void SelfTest(int* activeBits, int* lsb, unsigned int* copied) {
-    static const unsigned int source[4] = {0x11111111, 0x22222222, 0x33333333, 0x44444444};
-
-    *activeBits = SysCountActiveBits(0xF0F0);
-    *lsb = SysGetLsbNumber(0x80);
-    memset(copied, 0, sizeof(unsigned int) * 4);
-    SysMemCopy32(copied, source, sizeof(source));
-}
-
-static void DrawSelfTest(void) {
-    unsigned int copied[4];
-    int activeBits;
-    int lsb;
-
-    SelfTest(&activeBits, &lsb, copied);
-    FntPrint("FF7 PSY-Z PROTOTYPE\n\n");
-    FntPrint("SysCountActiveBits(0xF0F0) = %d\n", activeBits);
-    FntPrint("SysGetLsbNumber(0x80)      = %d\n", lsb);
-    FntPrint("SysMemCopy32 last word     = %08x\n", copied[3]);
-}
-
-// No window, no GPU: enough to prove the decompiled code links and runs, and
-// the only mode that works over a plain ssh session or in CI.
-static int RunHeadless(void) {
-    unsigned int copied[4];
-    int activeBits;
-    int lsb;
-
-    SelfTest(&activeBits, &lsb, copied);
-    printf("SysCountActiveBits(0xF0F0) = %d\n", activeBits);
-    printf("SysGetLsbNumber(0x80)      = %d\n", lsb);
-    printf("SysMemCopy32 last word     = %08x\n", copied[3]);
-    return 0;
-}
-
-int main(int argc, char* argv[]) {
-    int frameLimit = 0;
-    int intoBattle = 0;
-    int intoJet = 0;
-    int headless = 0;
-    int sceneID = 0;
-    int frame = 0;
-    int i;
-
-    for (i = 1; i < argc; i++) {
-        if (!strcmp(argv[i], "-frames") && i + 1 < argc) {
-            frameLimit = atoi(argv[++i]);
-        } else if (!strcmp(argv[i], "-headless")) {
-            headless = 1;
-        } else if (!strcmp(argv[i], "-jet")) {
-            intoJet = 1;
-        } else if (!strcmp(argv[i], "-battle")) {
-            intoBattle = 1;
-        } else if (!strcmp(argv[i], "-scene") && i + 1 < argc) {
-            sceneID = atoi(argv[++i]);
-        }
-    }
-
-    if (headless) {
-        return RunHeadless();
-    }
-
-    InitGraphics();
-    FntLoad(960, 256);
-    SetDumpFnt(FntOpen(16, 16, SCREEN_WIDTH - 32, SCREEN_HEIGHT - 32, 0, 512));
-
-    if (intoJet) {
-        // The ride runs its own frame loop and returns the score when it ends.
-        if (!MapPs1Ram()) {
-            printf("could not map PS1 RAM at %08x\n", PS1_RAM_BASE);
-            return 1;
-        }
-        // What main's boot init does before any overlay runs.
-        InitGeom();
-        Psyz_CdSetDiskPath(DEFAULT_DISK);
-        CdInit();
-        InputInit();
-        printf("jet result %d\n", MINI_Jet());
-        return 0;
-    }
-
-    if (intoBattle && !MapPs1Ram()) {
-        printf("could not map PS1 RAM at %08x\n", PS1_RAM_BASE);
-        return 1;
-    }
-
-    if (intoBattle) {
-        // func_800148B4 is the boot init: it loads the LBA table and every
-        // KERNEL.BIN section, including the weapon, armor and materia tables
-        // that BATINI_Main reads. func_80014934 then reseeds Savemap.party
-        // from the kernel's new-game blob.
-        printf("booting into scene %d\n", sceneID);
-        func_800148B4();
-        func_80014934();
-        BATINI_Main(sceneID);
-    }
-
-    while (!Psyz_QuitRequested()) {
-        if (intoBattle) {
-            BATTLE_RunFrame();
-        } else {
-            DrawSelfTest();
-            FntPrint("\nframe %d\n", frame);
-        }
-        Display();
-        if (frameLimit && ++frame >= frameLimit) {
+extern u8 D_80063048[];
+void func_80014804(void) {
+    SysGzipSetDataBlock((u8*)0x801B0000);
+    for (;;) {
+        u16 kind = SysGzipGetType();
+        if (kind == 0xFFFF) {
             break;
         }
+        if (kind == 0) {
+            SysGzipPackDecompressNextBlock((u8*)0x801C0000);
+            SysLoadDrawSync();
+            SysLoadUncompressImg((u8*)0x801C0000);
+        } else if (kind == 1) {
+            SysGzipPackDecompressNextBlock(D_80063048);
+        }
     }
-    printf("ran %d frames\n", frame);
+}
+
+extern s32 D_80062F88;
+extern u8 D_80063048[];
+
+void func_800148A0(void) {
+    D_80062F88 = 0;
+    g_BattleMode = 0;
+}
+
+extern s32 D_80062F90;
+void InputInit(void);
+void func_80026258(void) {
+    s32 i;
+
+    D_80062F90 = 0;
+    InputInit();
+    D_8009D7BC.unk0 = 0x80;
+    D_8009D7BC.unk1 = 0x80;
+    D_8009D7BC.unk14 = 0x80;
+    D_8009D7BC.unk2 = 0x41;
+    for (i = 0; i < 16; i++) {
+        D_8009D7BC.unk4[i] = i;
+    }
+}
+
+void SysLoadUncompressImg(u8* tim) {
+    if (*(u32*)(tim + 4) & 8) {
+        LoadImage((RECT*)(tim + 0xC), (u_long*)(tim + 0x14));
+        tim += (*(u32*)(tim + 8) >> 2) << 2;
+    }
+    LoadImage((RECT*)(tim + 0xC), (u_long*)(tim + 0x14));
+}
+
+void* SysCdromGetPackPointer(void* ptr, s32 idx) { return (u8*)ptr + ((s32*)ptr)[idx]; }
+
+u8* D_8003623C; // header of the selected frame
+u8* D_80036240; // parts of the selected frame
+s32 func_80036244(void* anim, u16 frame) {
+    u8* base = anim;
+    s16 frameTableOff = *(s16*)(base + 2);
+    u8* hdr = base + frame * 8 + frameTableOff * 4 + 4;
+    u8* parts = base + *(s32*)(base + *(s16*)(hdr + 2) * 4 + 4);
+
+    D_8003623C = hdr;
+    D_80036240 = parts + 4;
+    return *(s32*)parts;
+}
+
+extern void GameMain(void);
+
+int main(int argc, char* argv[]) {
+    setvbuf(stdout, NULL, _IONBF, 0);
+    Psyz_DebugServer(8081);
+    ReservePsxRam();
+    if (Psyz_CdSetDiskPath(DEFAULT_DISK_CUE) < 0) {
+        ERRORF("failed to open disk image '%s'", DEFAULT_DISK_CUE);
+        return 1;
+    }
+    GameMain();
     return 0;
 }

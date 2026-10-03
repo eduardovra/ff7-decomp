@@ -3,7 +3,7 @@
 #define INLINE_C_H
 #include <libgte.h>
 
-#ifdef VERSION_PC
+#ifdef PLATFORM_PSYZ
 // PSY-Z's libgte.h supplies the rest.
 #define gte_stsxy2(r0)
 #else

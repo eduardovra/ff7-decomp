@@ -25,7 +25,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BUILD_DIR = REPO_ROOT / "build-pc"
-BINARY = BUILD_DIR / "ff7_pc"
+BINARY = BUILD_DIR / "ff7_jet"
 STRD_JET = BUILD_DIR / "strd" / "src" / "mini" / "jet"
 OUT_ROOT = REPO_ROOT / "build" / "jet_isolate"
 
@@ -255,7 +255,7 @@ def launch(argv: list[str]) -> int:
         "-ex", "break JetObjectsUpdate",
         "-ex", "run",
         "-x", __file__,
-        "--args", str(BINARY), "-jet",
+        "--args", str(BINARY),
     ]  # fmt: skip
 
     cmake_build()  # sync the strd copies with src/ before patching them

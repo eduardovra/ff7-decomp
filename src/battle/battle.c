@@ -663,7 +663,16 @@ void func_800A4E40(void) {
     }
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle", BattleEnableLimitToPlayerWithSpeed);
+void BattleEnableLimitToPlayerWithSpeed(s32 index) {
+    u16* p;
+
+    if (g_BattleWork.party[index].limitLevel != 0xFF) {
+        p = &D_80163762; // Suggests this is part of a larger undiscovered struct (BattleSceneData?)
+        *p |= (1 << index);
+        g_BattleWork.turn[index].limitSpeedFlag |= 1;
+        g_BattleWork.turn[index].hasLimitBreak |= 1;
+    }
+}
 
 static void BattleEnableLimitToPlayerWithoutSpeed(s32 turnIdx) {
     g_BattleWork.turn[turnIdx].limitSpeedFlag &= ~1;
@@ -2339,7 +2348,9 @@ void BattleLowerFunc0a(void) {
 }
 
 // White Wind "damage" formula. Restores HP equal to caster's HP to all allies.
-void func_800ADFC0(void) { g_CurrentAction->tmpDamage = *(u16*)(&g_BattleWork.turn[g_CurrentAction->actorId].prevHP); }
+void func_battle_800ADFC0(void) {
+    g_CurrentAction->tmpDamage = *(u16*)(&g_BattleWork.turn[g_CurrentAction->actorId].prevHP);
+}
 
 void BattleSetTmpDmgAsMaxHpMinusCurrentHp(void) {
     s32 index = g_CurrentAction->actorId;
@@ -2576,7 +2587,7 @@ void BattleRestoreBattleActionIfCan(s32 arg0, s32 arg1, s32 arg2) {
 }
 
 void BattleQueueEvent(s32, s32, s32, s32);
-void func_800AF1A8(s32 arg0) { BattleQueueEvent(0, arg0, 8, 0); }
+void func_battle_800AF1A8(s32 arg0) { BattleQueueEvent(0, arg0, 8, 0); }
 
 void BattleRestoreBattleActionIfCan(s32, s32, s32);
 

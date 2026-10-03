@@ -34,8 +34,8 @@ disks/us: disks/Final\ Fantasy\ VII\ (USA)\ (Disc\ 1).iso
 disks/betaus: disks/Final\ Fantasy\ VII\ (USA)\ (Interactive\ Sampler\ CD).iso
 	7z x "$<" -o$@
 
-pc: build
-	cmake -B build/pc -GNinja && cmake --build build/pc
+psyz: build
+	cmake -B build/psyz -GNinja && cmake --build build/psyz
 
 .PHONY: clean
 clean:
@@ -47,7 +47,7 @@ format:
 
 .PHONY: lint
 lint: bin/cc1-psx-26 bin/cc1-psx-272 bin/str
-	@./mako.sh lint --min-overlaps 7
+	@./mako.sh lint --min-overlaps 6
 
 .PHONY: rebuild
 rebuild:

@@ -1,6 +1,11 @@
 //! PSYQ=3.3 G=0
 #include "main_private.h"
 #include "unzip.h"
+
+#ifdef PLATFORM_PSYZ
+#define main GameMain
+#endif
+
 static Yamada yama_sound_instr_all = {LBA_SOUND_INSTR_ALL, 483232};
 static Yamada yama_sound_effect = {LBA_SOUND_EFFECT, 51200};
 static Yamada yama_sound_instr_dat = {LBA_SOUND_INSTR_DAT, 8192};
@@ -26,6 +31,7 @@ extern u8 D_8009C6D8;
 extern u16 D_8007173C;
 extern s32 D_80095DDC; // Battle mode flags from world map
 extern s32 D_80071E28; // Which module to transition to from world map
+extern s32 D_800730CC; // Field the world map was entered from
 extern u8* g_MenuTutorial;
 extern s32 SYS_GetDiskNo(void);
 extern s32 SysMenuShow(u8*);
@@ -73,7 +79,37 @@ static void func_80011274(void) {
     AkaoLoadInstr2((u32*)0x800A0000, (u32*)0x800E0000);
 }
 
-INCLUDE_ASM("asm/us/main/nonmatchings/110B8", func_800112E8);
+s32 WORLD_Main(s32* exitAction, s32* fieldId, s32* battleFlags, s32 resume);
+void func_800112E8(void) {
+    if (g_PrevGameState == GAMESTATE_BATTLE) {
+        while (SystemCdromReadChain()) {
+        }
+        SysGzipBinDecompress((GzHeader*)0x801C0000, (u8*)0x800A0000);
+    } else {
+        while (SystemCdromReadChain()) {
+        }
+        SystemLoadFileBySector(yama_world_world.loc, yama_world_world.len, (u_long*)0x80180000, NULL);
+        while (SystemCdromReadChain()) {
+        }
+        SysGzipBinDecompress((GzHeader*)0x80180000, (u8*)0x800A0000);
+    }
+    if (D_80071E28 != 2) {
+        if (g_PrevGameState == GAMESTATE_BATTLE) {
+            D_80071E28 = 1;
+        } else {
+            D_80071E28 = 0;
+        }
+        D_800730CC = g_CurrentFieldIndex;
+    }
+    if (g_CurrentFieldIndex != D_80071A5C || g_CurrentFieldIndex == 0) {
+        D_80075DEC = WORLD_Main(&D_80071E28, &D_800730CC, &D_80095DDC, 0);
+    } else {
+        D_80075DEC = WORLD_Main(&D_80071E28, &D_800730CC, &D_80095DDC, 0x801B0000);
+        D_80071A5C = 0;
+        g_IsFieldLoading = 0;
+    }
+    g_CurrentFieldIndex = g_FieldState.eventCmdParam;
+}
 
 INCLUDE_ASM("asm/us/main/nonmatchings/110B8", SysBgFadeRender);
 
@@ -143,7 +179,6 @@ static void SysInitDispenvDrawenv(void) {
 void FIELD_Main(void);
 void FIELD_Init(void);
 static void HandleField(void) {
-#ifndef VERSION_PC
     if (g_PrevGameState != GAMESTATE_MENU && g_PrevGameState != GAMESTATE_MENU_COMMANND) {
         if (g_PrevGameState != GAMESTATE_BATTLE) {
             SystemLoadFileBySector(yama_field_field.loc, yama_field_field.len, (u_long*)0x80180000, NULL);
@@ -162,7 +197,6 @@ static void HandleField(void) {
             SysGzipBinDecompress((GzHeader*)0x801C0000, (u8*)0x800A0000);
         }
     }
-#endif
     FIELD_Init();
     FIELD_Main();
 }
@@ -227,7 +261,18 @@ static void InitFieldFromSavemap(void) {
     D_8009AD2C = Savemap.step_offset;
 }
 
-INCLUDE_ASM("asm/us/main/nonmatchings/110B8", SysInitNewGame);
+void SysInitNewGame(void) {
+    Savemap.memory_bank_4[0] = 1;
+    Savemap.worldmap_exit_action = 0;
+    Savemap.current_module = 1;
+    Savemap.current_location_id = 0x74;
+    Savemap.field_x = 0;
+    Savemap.field_y = 0;
+    Savemap.field_triangle = 0;
+    Savemap.field_direction = 0;
+    Savemap.step_id = 0;
+    Savemap.step_offset = 0;
+}
 
 void main(void) {
     char name[9] = "battle.x";
@@ -238,7 +283,9 @@ void main(void) {
     SysInitBase();
     SysCdromInit();
     SysCdromLoadFile(yama_field_ending.loc, yama_field_ending.len, (u_long*)0x800A0000, NULL);
+#ifndef PLATFORM_PSYZ
     ENDING_SceaLoop();
+#endif
     func_800148B4();
     while (1) {
         g_FieldState.battleMode2 = 0;
@@ -394,15 +441,15 @@ void main(void) {
                     }
                     switch (g_FieldState.eventCmd) {
                     case EVTCMD_CHAR_NAME_ENTRY:
-                        func_80024D88(g_FieldState.eventCmdParam);
+                        HandleNameMenu(g_FieldState.eventCmdParam);
                         break;
                     case EVTCMD_PARTY_SELECT:
-                        func_80024DD4(g_FieldState.eventCmdParam);
+                        HandlePartySelectMenu(g_FieldState.eventCmdParam);
                         func_800260DC();
                         func_80026090();
                         break;
                     case EVTCMD_SHOP:
-                        func_80024E18(g_FieldState.eventCmdParam);
+                        HandleShopMenu(g_FieldState.eventCmdParam);
                         break;
                     case EVTCMD_PARTY_MENU:
                         if (g_FieldState.eventCmdParam == 1) {
@@ -416,10 +463,10 @@ void main(void) {
                         HandleSaveMenu();
                         break;
                     case EVTCMD_UNK12:
-                        func_80024FC4(g_FieldState.eventCmdParam);
+                        HandleBackupCharacterMateria(g_FieldState.eventCmdParam);
                         break;
                     case EVTCMD_UNK13:
-                        func_80024F80(g_FieldState.eventCmdParam);
+                        HandleRestoreCharacterMateria(g_FieldState.eventCmdParam);
                         break;
                     }
                     FIELD_Init();
@@ -431,22 +478,22 @@ void main(void) {
                     InitWorldFromSavemap();
                     switch (g_FieldState.eventCmd) {
                     case EVTCMD_YUFFIE_STEALS_MATERIA:
-                        func_80024ECC();
+                        HandleStealAllMateria();
                         break;
                     case EVTCMD_YUFFIE_RETURNS_MATERIA:
-                        func_80024F04();
+                        HandleReturnStolenMateria();
                         break;
                     case EVTCMD_REMOVE_CHARS_MATERIA_ACCESSORY:
-                        func_80024F3C(g_FieldState.eventCmdParam);
+                        HandleUnequipCharacterMateria(g_FieldState.eventCmdParam);
                         break;
                     case EVTCMD_UNK15:
-                        func_800250B4();
+                        HandleScalePartyHp();
                         break;
                     case EVTCMD_MASTER_MATERIA_CHECK:
-                        func_800250EC(g_FieldState.eventCmdParam);
+                        HandleMasterMateriaCheck(g_FieldState.eventCmdParam);
                         break;
                     case EVTCMD_ADD_MASTER_MATERIA:
-                        func_80025130(g_FieldState.eventCmdParam);
+                        HandleAddMasterMateria(g_FieldState.eventCmdParam);
                         break;
                     case EVTCMD_JENOVA_SYNTH_COPY_LEVELS:
                         SnapshotPartyLevels();

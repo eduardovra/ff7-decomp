@@ -25,6 +25,12 @@ __asm__(".include \"macro.inc\"\n");
 #define INCLUDE_ASM(FOLDER, NAME)
 #endif
 
+#if !defined(SKIP_ASM) || defined(PLATFORM_PSYZ)
+#define INCLUDE_DATA(PATH) __asm__(".include \"asm/us/" PATH ".s\"\n")
+#else
+#define INCLUDE_DATA(PATH)
+#endif
+
 typedef signed char s8;
 typedef unsigned char u8;
 typedef signed short s16;

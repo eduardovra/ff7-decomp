@@ -56,19 +56,19 @@ typedef struct {
     s32 unk4;
 } GzHeader;
 
+extern u16 g_Pad0KeysPrev;
+extern u16 g_Pad1Keys;
 extern u16 g_Pad1KeysPrev;
-extern u16 g_Pad2Keys;
-extern u16 g_Pad2KeysPrev;
-extern u16 g_Pad2KeysPressed;
-extern u16 g_Pad2KeysRepeat;
+extern u16 g_Pad1KeysPressed;
+extern u16 g_Pad1KeysRepeat;
+extern u16 g_Pad0BattleKeys;
+extern u16 g_Pad0BattleKeysPrev;
+extern u16 g_Pad0BattleKeysPressed;
+extern u16 g_Pad0BattleKeysRepeat;
 extern u16 g_Pad1BattleKeys;
 extern u16 g_Pad1BattleKeysPrev;
 extern u16 g_Pad1BattleKeysPressed;
 extern u16 g_Pad1BattleKeysRepeat;
-extern u16 g_Pad2BattleKeys;
-extern u16 g_Pad2BattleKeysPrev;
-extern u16 g_Pad2BattleKeysPressed;
-extern u16 g_Pad2BattleKeysRepeat;
 
 extern Yamada D_80048F60[17];
 extern Yamada D_80048FE8[15];
@@ -81,6 +81,7 @@ extern u_long* g_CurrentMenuOrderingTable;
 extern s32 g_PartyMenuListState;
 extern s32 g_PartyMenuPreviousMenuId;
 extern s32 g_PartyMenuListTransitionFactor;
+extern s32 D_80062F90;
 extern s32 g_PartyMenuSelectedMenuId;
 extern u32 D_8006966C[16];
 extern s16 g_RewardMenuState;

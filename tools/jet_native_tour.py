@@ -1,6 +1,6 @@
 """Capture jet objects of chosen types in the native build, under gdb.
 
-Runs ./build-pc/ff7_pc -jet with no input for one whole ride and saves the
+Runs ./build-pc/ff7_jet with no input for one whole ride and saves the
 displayed frame whenever an object of a target type reaches one of the given
 ages, with its projected box drawn in magenta. Needs no emulator and no save
 state; a full ride takes seconds. Writes PNGs into build/jet_native_tour/.
@@ -23,7 +23,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = REPO_ROOT / "build" / "jet_native_tour"
-BINARY = REPO_ROOT / "build-pc" / "ff7_pc"
+BINARY = REPO_ROOT / "build-pc" / "ff7_jet"
 CONFIG_ENV = "JET_NATIVE_TOUR"
 POOL_SIZE = 100
 # The game projects only the first five box points; the sixth stays stale.
@@ -54,7 +54,7 @@ def launch(argv: list[str]) -> int:
         "-ex", "break JetObjectsUpdate",
         "-ex", "run",
         "-x", __file__,
-        "--args", str(BINARY), "-jet",
+        "--args", str(BINARY),
     ]  # fmt: skip
     result = subprocess.run(command, cwd=REPO_ROOT, env=env)
     return result.returncode

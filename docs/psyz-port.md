@@ -325,30 +325,20 @@ need just **four** functions, all in `src/battle/battle2.c`:
 
 ## The prototype
 
-It exists and it runs. `tools/psyz` is a submodule, and the repo's existing
-modern-compiler target -- which already builds every decompiled `.c` with
-`SKIP_ASM=1` into `libff7.a` -- links against it behind an opt-in CMake flag.
+Upstream's PsyZ support (#167) superseded the prototype described below; its
+`ff7` executable boots `GameMain`. Jet still runs on its own through
+`ff7_jet`, an opt-in target that links the real jet sources ahead of
+upstream's `src/pc/stubs.c`.
 
 ```shell
 git submodule update --init --depth 1 tools/psyz
 git -C tools/psyz submodule update --init --depth 1 external/SDL
 
-cmake -B build-pc -DFF7_PC=ON -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-pc --target ff7 psyz -j8      # pass 1: the libraries
-tools/gen_pc_stubs.py --psyz build-pc/psyz/libpsyz.a \
-    build-pc/libff7.a \
-    build-pc/CMakeFiles/ff7_pc.dir/src/pc/main.c.o
-cmake --build build-pc -j8                        # pass 2: the executable
+cmake -B build-pc -DFF7_JET=ON -DCMAKE_BUILD_TYPE=Debug
+cmake --build build-pc -j8
 
-./build-pc/ff7_pc -headless                       # no window, CI-friendly
-./build-pc/ff7_pc -frames 600                     # the PSY-Z render loop
-./build-pc/ff7_pc -battle -scene 100              # the boot path, still dies
+./build-pc/ff7_jet                                # the jet minigame
 ```
-
-Two passes because the stub set comes from the link itself: build the
-libraries, ask the linker what is missing, generate a placeholder for each,
-link. `src/pc/stubs.c` is generated and committed; regenerate it whenever a
-function lands.
 
 ### What it measures
 
@@ -433,7 +423,7 @@ clang/gcc with `-g -O0`, not gcc 2.6.3.
 (gdb) break BATTLE_RunFrame           # then `finish` to step frame by frame
 ```
 
-`rr record ./build-pc/ff7_pc` then `rr replay` gives reverse execution, which
+`rr record ./build-pc/ff7_jet` then `rr replay` gives reverse execution, which
 is the fast way to find what wrote a bad value in `g_BattleState`.
 
 **You do not have to finish all 262 before debugging**, and the prototype above

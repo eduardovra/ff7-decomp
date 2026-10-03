@@ -23,8 +23,6 @@ u8 g_DialogDigitCharacters[16] = {
     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26,
 };
 
-extern u8 g_WindowReplaceBank[4][8];
-extern u16 g_WindowReplaceBankAddr[4][8];
 extern s16 g_WindowWaitTime[4];
 extern u8* g_WindowStringPtr[4];
 extern u8 g_WindowString[4][256];
@@ -205,7 +203,7 @@ s32 FieldDialogMessageUpdateStates(u8 window, u8 message) {
         DialogScrollTextDuringOk(window);
         break;
     case WSTATE_PAUSE_TXT_UNTIL_OK:
-        if (g_pFieldState->pressedKeys & PADRright) {
+        if (g_pFieldState->pressedKeys & PAD_CIRCLE) {
             g_WindowData[window].state = WSTATE_TXT;
         }
         break;
@@ -217,7 +215,7 @@ s32 FieldDialogMessageUpdateStates(u8 window, u8 message) {
         }
         break;
     case WSTATE_WAIT_ROW:
-        if (g_pFieldState->pressedKeys & PADRright) {
+        if (g_pFieldState->pressedKeys & PAD_CIRCLE) {
             if (g_WindowData[window].currentRow ==
                 (g_WindowData[window].height - 9) / 16 - 1 + g_WindowExtraRows[window]) {
                 g_WindowData[window].state = WSTATE_SCROLL_ROW;
@@ -227,18 +225,18 @@ s32 FieldDialogMessageUpdateStates(u8 window, u8 message) {
         }
         break;
     case WSTATE_TXT_DONE:
-        if (!(g_WindowData[window].preventClose & 1) && (g_pFieldState->pressedKeys & PADRright)) {
+        if (!(g_WindowData[window].preventClose & 1) && (g_pFieldState->pressedKeys & PAD_CIRCLE)) {
             g_WindowData[window].state = WSTATE_CLOSING;
             FieldDialogWindowDecrease(window);
         }
         break;
     case WSTATE_WAIT_NEXT_WINDOW:
-        if (g_pFieldState->pressedKeys & PADRright) {
+        if (g_pFieldState->pressedKeys & PAD_CIRCLE) {
             FieldDialogWindowInitNext(window);
         }
         break;
     case WSTATE_PAUSE_TXT_SCROLL_UNTIL_OK:
-        if (g_pFieldState->pressedKeys & PADRright) {
+        if (g_pFieldState->pressedKeys & PAD_CIRCLE) {
             g_WindowData[window].state = WSTATE_SCROLL_TXT_WHILE_OK;
             g_WindowTotalRowsHeight[window] = g_WindowData[window].currentRow * 16 + 17;
             g_WindowData[window].textScrolling -= 2;
@@ -287,7 +285,7 @@ s32 FieldDialogAskUpdateStates(u8 window, u8 message, u8 first, u8 last, s16* se
         DialogScrollTextDuringOk(window);
         break;
     case WSTATE_PAUSE_TXT_UNTIL_OK:
-        if (g_pFieldState->pressedKeys & PADRright) {
+        if (g_pFieldState->pressedKeys & PAD_CIRCLE) {
             g_WindowData[window].state = WSTATE_TXT;
         }
         break;
@@ -299,7 +297,7 @@ s32 FieldDialogAskUpdateStates(u8 window, u8 message, u8 first, u8 last, s16* se
         }
         break;
     case WSTATE_WAIT_ROW:
-        if (g_pFieldState->pressedKeys & PADRright) {
+        if (g_pFieldState->pressedKeys & PAD_CIRCLE) {
             if (g_WindowData[window].currentRow ==
                 (g_WindowData[window].height - 9) / 16 - 1 + g_WindowExtraRows[window]) {
                 g_WindowData[window].state = WSTATE_SCROLL_ROW;
@@ -314,13 +312,13 @@ s32 FieldDialogAskUpdateStates(u8 window, u8 message, u8 first, u8 last, s16* se
         if (!(g_WindowData[window].preventClose & 1)) {
             g_WindowData[window].pointerEnabled = 1;
 
-            if (g_pFieldState->pressedKeysRaw & PADLup) {
+            if (g_pFieldState->pressedKeysRaw & PAD_UP) {
                 if (first < *selectedLine) {
                     PlayWindowPointerClickSound();
                 }
                 (*selectedLine)--;
             }
-            if (g_pFieldState->pressedKeysRaw & PADLdown) {
+            if (g_pFieldState->pressedKeysRaw & PAD_DOWN) {
                 if (*selectedLine < last) {
                     PlayWindowPointerClickSound();
                 }
@@ -337,7 +335,7 @@ s32 FieldDialogAskUpdateStates(u8 window, u8 message, u8 first, u8 last, s16* se
             g_WindowData[window].pointerY = *selectedLine * 16 + 6;
 
             // User has pressed OK to choose an option.
-            if (g_pFieldState->pressedKeys & PADRright) {
+            if (g_pFieldState->pressedKeys & PAD_CIRCLE) {
                 PlayWindowPointerClickSound();
                 g_WindowData[window].state = WSTATE_CLOSING;
                 FieldDialogWindowDecrease(window);
@@ -345,12 +343,12 @@ s32 FieldDialogAskUpdateStates(u8 window, u8 message, u8 first, u8 last, s16* se
         }
         break;
     case WSTATE_WAIT_NEXT_WINDOW:
-        if (g_pFieldState->pressedKeys & PADRright) {
+        if (g_pFieldState->pressedKeys & PAD_CIRCLE) {
             FieldDialogWindowInitNext(window);
         }
         break;
     case WSTATE_PAUSE_TXT_SCROLL_UNTIL_OK:
-        if (g_pFieldState->pressedKeys & PADRright) {
+        if (g_pFieldState->pressedKeys & PAD_CIRCLE) {
             g_WindowData[window].state = WSTATE_SCROLL_TXT_WHILE_OK;
             g_WindowTotalRowsHeight[window] = g_WindowData[window].currentRow * 16 + 17;
             g_WindowData[window].textScrolling -= 2;
@@ -497,7 +495,7 @@ static void FieldDialogCopyTextFromField(s16 window) {
         SaveWork* save;
 
         // Holding OK down increases text and scrolling speed.
-        if (g_pFieldState->activeKeys & PADRright) {
+        if (g_pFieldState->activeKeys & PAD_CIRCLE) {
             g_WindowFastForwardLevel[window]++;
             if (g_WindowFastForwardLevel[window] > 128) {
                 g_WindowFastForwardLevel[window] = 128;
@@ -855,7 +853,7 @@ static void DialogScrollTextDuringOk(s16 window) {
 
     if (g_WindowData[window].textScrolling + g_WindowTotalRowsHeight[window] > 0) {
         g_WindowData[window].textScrolling -= g_WindowFastForwardLevel[window] >> 2;
-        if (g_pFieldState->activeKeys & PADRright) {
+        if (g_pFieldState->activeKeys & PAD_CIRCLE) {
             g_WindowFastForwardLevel[window]++;
             if (g_WindowFastForwardLevel[window] > 128) {
                 g_WindowFastForwardLevel[window] = 128;

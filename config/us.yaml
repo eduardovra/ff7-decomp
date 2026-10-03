@@ -33,7 +33,7 @@ overlays:
       - [0xB14, .rodata, 1F6B4]
       - [0xB60, .rodata, 26B70]
       - [0xB94, rodata, akao_rodata]
-      - [0xC38, .rodata, 33B70]
+      - [0xC38, .rodata, cd]
       - [0xC9C, .rodata, 34F3C]
       - [0xCB4, rodata, psxsdk/libspu/spu]
       - [0xCFC, rodata, psxsdk/libspu/s_si]
@@ -71,7 +71,7 @@ overlays:
       - [0x16C08, c, menutable]
       - [0x171C0, c, 26B70]
       - [0x19BD0, c, akao]
-      - [0x24290, c, 33B70]
+      - [0x24290, c, cd]
       - [0x254F0, hasm, lzss]
       - [0x2573C, c, 34F3C]
       - [0x26A98, asm, psxsdk/libspu/s_i]
@@ -267,7 +267,7 @@ overlays:
       - [0x39BA8, .data, ovl]
       - [0x39D38, .data, akao]
       - [0x3AE2C, data, 3AE2C]
-      - [0x3AE34, data, 34F3C]
+      - [0x3AE34, .data, cd]
       - [0x3AE88, data, psxsdk/libspu/s_ini]
       - [0x3B2F4, data, psxsdk/libspu/spu]
       - [0x3B350, data, psxsdk/libspu/s_m]
@@ -505,13 +505,14 @@ overlays:
       - [0x3B8, .rodata, title]
       - [0x408, c, savemenu]
       - [0x2B58, c, title]
-      - [0x4EC4, data]
-      - [0x4EDC, tim, buster]
-      - [0xEEDC, data]
-      - [0xF10C, saveicons, 15]
+      - [0x4EC4, .data, savemenu]
+      - [0x4EDC, tim, buster, savemenu]
+      - [0xEEDC, .data, savemenu]
+      - [0xF10C, saveicons, 15, savemenu]
       - [0x12C78, .data, savemenu]
-      - [0x13650, data]
-      - [0x13698, bss]
+      - [0x13650, .data, title]
+      - [0x13698, .bss, title]
+      - [0x13F2C, .bss, savemenu]
   - name: itemmenu
     disk_path: disks/us/MENU/ITEMMENU.MNU
     sha1: baf50a4ab2d364d0a712b9f74ee69029db0b3b5c
@@ -524,7 +525,7 @@ overlays:
     segments:
       - [0x0, .rodata, itemmenu]
       - [0x1E8, c, itemmenu]
-      - [0x3834, data, itemmenu]
+      - [0x3260, data, itemmenu]
       - [0x4020, bss]
   - name: world
     disk_path: disks/us/WORLD/WORLD.BIN.dec
@@ -751,7 +752,9 @@ overlays:
     segments:
       - [0, .rodata, choco0]
       - [0x38, c, choco0]
-      - [0x2074, data, choco0_model]
+      - [0x2074, tim, choco0_texture]
+      - [0x22354, .data, choco0_frames]
+      - [0x2267C, data, choco0_model]
       - [0x35754, .data, choco0]
       - [0x35978, .bss, choco0]
   # THUNDERA.BIN -- "Bolt2", the tier-2 lightning spell
