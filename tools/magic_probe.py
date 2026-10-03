@@ -42,7 +42,7 @@ BATTLE_MODEL_STRIDE = 0xB9C
 BATTLE_MODEL_COUNT = 7
 COMMAND_ID_OFFSET = 0x22
 COMMAND_TYPE_OFFSET = 0x23
-FORCE_SITES = ("func_800D1110", "func_800D0C80")
+FORCE_SITES = [0x800D1110, 0x800D0C80]
 SYMBOL_RE = re.compile(r"^\s*(\w+)\s*=\s*(0x[0-9A-Fa-f]+)\s*;")
 LUA_TABLE = "FF7Probe"
 
@@ -355,7 +355,7 @@ def main(argv: list[str] | None = None) -> int:
         print(eval_lua(source=script, host=args.host))
     if args.force is not None:
         command_type, command_id = parse_force(args.force)
-        sites = [symbols[name] for name in FORCE_SITES]
+        sites = FORCE_SITES
         script = build_force_script(
             command_type=command_type,
             command_id=command_id,
