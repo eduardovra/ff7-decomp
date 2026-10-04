@@ -20,14 +20,13 @@
 .align 2
 
 /* 80062F00 */ glabel g_AkaoStreamMask;                           .space 4     # !!GP!! akao.c (AkaoInitData)
-/* 80062F04 */ glabel D_80062F04;                           .space 4   
+/* 80062F04 */ glabel g_AkaoMusicSlot;                      .space 4   
 /* 80062F08 */ glabel g_AkaoStreamLoopSize;                    .space 4     # akao.c (AkaoStreamIrqCallback*)   
 /* 80062F0C */ glabel g_PartyMenuPreviousMenuId;            .space 4     # !!GP!! 1F6B4.c
 /* 80062F10 */ glabel D_80062F10;                           .space 4     # !!GP!! 17238.c (SysGetMateriaActivatedStars)
 /* 80062F14 */ glabel D_80062F14;                           .space 4     # !!GP!! 14C70.c (func_800155A4, func_800155B0)
 /* 80062F18 */ glabel D_80062F18;                           .space 4   
-/* 80062F1C */ glabel D_80062F1C;                           .space 2   
-/* 80062F1E */ glabel g_AkaoStreamPitch;                       .space 2   
+/* 80062F1C */ glabel g_AkaoStreamFormat;                     .space 4   
 /* 80062F20 */ glabel g_PartyMenuListTransitionFactor;      .space 4     # !!GP!! 1F6B4.c
 /* 80062F24 */ glabel g_PolyPtr;                       .space 4   
 /* 80062F28 */ glabel g_AkaoPitchMulMusicSlideStep;         .space 4   
@@ -43,11 +42,11 @@
 /* 80062F5C */ glabel g_AkaoVolMulMusic;                    .space 4     # !!GP!! akao.c (AkaoInitData)
 /* 80062F60 */ glabel D_80062F60;                           .space 4     # !!GP!! 14C70.c (func_800155B0)
 /* 80062F64 */ glabel D_80062F64;                           .space 4     # !!GP!! 1F6B4.c
-/* 80062F68 */ glabel D_80062F68;                           .space 4     # !!GP!! akao.c (AkaoInitData)
+/* 80062F68 */ glabel g_Channel2VoiceMask;                  .space 4     # !!GP!! akao.c (AkaoInitData)
 /* 80062F6C */ glabel D_80062F6C;                           .space 4     # !!GP!! 1F6B4.c
 /* 80062F70 */ glabel g_AkaoReverbPan;                           .space 4     # !!GP!! akao.c (AkaoInitData)
 /* 80062F74 */ glabel g_AkaoEffectsAll;                           .space 4     # !!GP!! akao.c (AkaoStart, AkaoLoadEffect)
-/* 80062F78 */ glabel D_80062F78;                           .space 4     # !!GP!! akao.c (AkaoInitData)
+/* 80062F78 */ glabel g_AkaoLastHcount;                     .space 4     # !!GP!! akao.c (AkaoInitData)
 /* 80062F7C */ glabel D_80062F7C;                           .space 4     # !!GP!! 17238.c
 /* 80062F80 */ glabel D_80062F80;                           .space 4     # !!GP!! 1F6B4.c
 /* 80062F84 */ glabel g_AkaoEffectsAllSeq;                           .space 4     # !!GP!! akao.c (AkaoStart)
