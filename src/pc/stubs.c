@@ -522,7 +522,7 @@ u8 g_AkaoVolMulMusicSlideStep[0x4] __attribute__((aligned(4)));
 u8 g_AkaoVolMulMusicSlideSteps[0x2] __attribute__((aligned(2)));
 u8 g_Channel1[0x22c0] __attribute__((aligned(8)));
 u8 g_Channel2VoiceMask[0x4] __attribute__((aligned(4)));
-u8 g_Channel2[0x18c0] __attribute__((aligned(8)));
+u8 g_Channel2[0x1c80] __attribute__((aligned(8)));
 s16 g_CurrentFieldIndex;
 FieldEntity g_FieldEntity[0x100];
 s16 g_PlayerModelId;
