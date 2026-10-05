@@ -310,7 +310,7 @@ tap-and-poll rounds here before anyone looked at the window.
 
 ## Establishing what a flag bit does
 
-Reading `func_800D29D4` says which bits it tests. It does not say what a
+Reading `BattleDrawModel` says which bits it tests. It does not say what a
 bit does to a drawn model, and CONTRIBUTING asks for symbol names to be
 confirmed against a debugger. `tools/flag_probe.py` runs that
 confirmation on brizad, whose descriptor is static data at a known

@@ -53,6 +53,7 @@ set(FF7_BATTLE
     src/battle/battle1.c
     src/battle/battle2.c
     src/battle/battle3.c
+    src/battle/battle4.c
     src/battle/battle.c
 )
 

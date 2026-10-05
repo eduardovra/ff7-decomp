@@ -319,9 +319,9 @@ Eight functions. Everything else is behind them.
 ## Tier 1 -- what the spell overlays need
 
 All seven magic overlays are already at 100%. Once PSY-Q is discounted they
-need just **four** functions, all in `src/battle/battle2.c`:
+need just **four** functions, in `src/battle/battle3.c` and `model.s`:
 
-    BattleGetPartPosition    func_800D29D4    func_800D4368    func_800D4D90
+    BattleGetPartPosition    BattleDrawModel  func_800D4368    func_800D4D90
 
 ## The prototype
 
@@ -606,7 +606,7 @@ grep -rc INCLUDE_ASM src/battle src/main --include='*.c' | grep -v ':0'
     BattleEntityGetCenter                     BattleGetPartPosition                     func_800C7C4C
     func_800CD400                             func_800CD5E4                             func_800CD860
     func_800CEB48                             func_800D08B8                             func_800D09D0
-    func_800D1530                             func_800D29D4                             func_800D32B4
+    func_800D1530                             BattleDrawModel                           func_800D32B4
     func_800D3354                             func_800D3418                             func_800D3474
     func_800D34C8                             func_800D3548                             func_800D3658
     func_800D376C                             func_800D3AF0                             func_800D3F0C
@@ -651,7 +651,7 @@ grep -rc INCLUDE_ASM src/battle src/main --include='*.c' | grep -v ':0'
     SystemAkaoExecute                         func_8002FDA0                             func_8002FF4C
     func_80030038                             func_80030148
 
-### `src/battle/battle3.c` — 4
+### `src/battle/battle4.c` — 4
 
     func_800DBF8C                             func_800DC0CC                             func_800DCFD4
     func_800E16B8

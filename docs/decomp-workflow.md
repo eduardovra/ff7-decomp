@@ -38,7 +38,7 @@ insane -- pointer arithmetic against a field address, a cast to a type that
 makes no sense -- **suspect a missing symbol before you suspect exotic C.**
 
 Worked example: brizad's render call decompiled as
-`func_800D29D4((Unk801B0C98*)(&D_801B100E - 0xA), ...)`. splat had labelled
+`BattleDrawModel((Unk801B0C98*)(&D_801B100E - 0xA), ...)`. splat had labelled
 only `0x801B100E`, because that is the address the code references; the
 16-byte struct starting at `0x801B1004` had no name and was swallowed into a
 neighbouring data blob. Adding `BrizadRenderDesc = 0x801B1004;` let the

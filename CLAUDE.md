@@ -39,7 +39,7 @@ Never claim a match without running `make build`.
 
 `tools/hooks/` mirrors CI, once enabled with
 `git config core.hooksPath tools/hooks`: pre-commit checks formatting,
-pre-push adds `make build` and the symbol-export check. Format mid-work too --
+pre-push adds `make build`. Format mid-work too --
 `make build` cannot catch it, since reflowing a line leaves every object
 byte-identical, so the sha1 still matches. Renames are the usual culprit --
 a longer identifier pushes lines past the 120-column limit.
@@ -72,8 +72,6 @@ a longer identifier pushes lines past the 120-column limit.
   exist on `main`. Never cite them from anything that goes upstream (`src/`,
   `include/`, `config/`). A code comment has to stand on its own, so put the
   finding in the comment rather than a pointer to where it was written up.
-- `config/sym_export.us.txt` and `config/sym_export_battle.us.txt` are
-  build-generated. Do not hand-edit them.
 - Use `./mako.sh symbols add` rather than editing symbol files by hand. It
   takes an optional size (`... <symbol> 0x<addr> 0x<size>`) and updates an
   existing entry in place.

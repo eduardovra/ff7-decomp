@@ -24,7 +24,7 @@ the four overlays side by side, `decomp-workflow.md` for the tooling.
 Every animation length in a spell overlay is a frame count, so the frame rate
 is the first thing to pin down.
 
-The battle main loop is `func_800D8A88` in `src/battle/battle3.c`:
+The battle main loop is `func_800D8A88` in `src/battle/battle4.c`:
 
 ```c
 int func_800D8A88(void) {
@@ -346,7 +346,7 @@ colour to black, which is what the depth-cue stage blends toward.
 
 The actual vertex work happens inside the render helpers, which are still
 hand-written assembly. The pattern, from
-`asm/us/battle/nonmatchings/battle2/func_800D4D90.s`:
+`asm/us/battle/nonmatchings/battle3/func_800D4D90.s`:
 
 ```
     mtc2       $t0, $0      # VXY0  <- corner 0, x and y packed in one word
@@ -405,7 +405,7 @@ GPU packet in one instruction.
 That is the quad builder, which synthesises its corners in general registers
 and has to `mtc2` them across. The model renderer brizad uses does not. It has
 a real vertex table in memory, so it loads the coprocessor from RAM directly,
-at `0x800D2AFC` in `asm/us/battle/nonmatchings/battle2/func_800D29D4.s`:
+at `0x800D2AFC` in `src/battle/model.s`:
 
 ```
     lwc2  $0, 0x0($t4)     # VXY0 <- vertex A, x and y
@@ -716,7 +716,7 @@ frame.
 ## 10. The renderer ice actually uses
 
 `func_800D4D90` above is the simpler of the two. Brizad, barrier and thunder's
-model pass all go through `func_800D29D4`, which is 609 lines and does a great
+model pass all go through `BattleDrawModel`, which is 609 lines and does a great
 deal more. The differences are the interesting part.
 
 ### What a descriptor is
@@ -726,7 +726,7 @@ struct, and that struct is the only thing binding a spell to the engine's
 drawing code:
 
 ```c
-ModelRenderDesc  -> func_800D29D4()   // 3D model, four primitive lists
+ModelRenderDesc  -> BattleDrawModel()   // 3D model, four primitive lists
 SpriteRenderDesc -> func_800D4D90()   // textured quad, one block per frame
 ```
 
@@ -735,7 +735,7 @@ then hand the struct over:
 
 ```c
 brizad_render_desc.color = fade;
-brizad_buffer_ptr = func_800D29D4(&brizad_render_desc, g_cDb->unk70, 12,
+brizad_buffer_ptr = BattleDrawModel(&brizad_render_desc, g_cDb->unk70, 12,
                                   brizad_buffer_ptr);
 ```
 
@@ -1165,7 +1165,7 @@ Putting sections 4 through 11 in order, for one triangle of the ice model:
 the entire draw:
 
 ```c
-brizad_buffer_ptr = func_800D29D4(&brizad_render_desc, g_cDb->unk70, 12,
+brizad_buffer_ptr = BattleDrawModel(&brizad_render_desc, g_cDb->unk70, 12,
                                   brizad_buffer_ptr);
 ```
 
@@ -1225,7 +1225,7 @@ the render descriptor as "model pointer at `0x0`, flags at `0x4`, rotation at
 depth-cue interpolation factor, and nothing in either renderer performs a
 rotation of any kind. Three independent lines of evidence agree:
 
-- `func_800D29D4` moves the field into `IR0` and runs `dpcs` or `dpct`. There
+- `BattleDrawModel` moves the field into `IR0` and runs `dpcs` or `dpct`. There
   is no angle table, no trigonometry and no call to any `RotMatrix` variant
   anywhere in it.
 - `barrier.c` ramps it from zero to `0xE00` over the effect's last eight
@@ -1273,14 +1273,14 @@ likely to be misdescribed.
   whether anything could ever set a different rate mid-scene, has not been
   followed.
 - **`QuadCount` was named after the wrong function.** In `func_800D4D90` the
-  field selects a block of animation. In `func_800D29D4` it is added to every
+  field selects a block of animation. In `BattleDrawModel` it is added to every
   texture coordinate instead, making it a UV offset. No caller of the latter
   sets it to anything but zero, so that reading rests on the assembly alone.
   It is now the union `u08` of `frameIndex` and `uvOffset`, and offset `0xA`
   likewise splits into `depthCue`, `greyLevel` and `clutBias`.
 
 - **One instruction looks like a mistake in the original.** In
-  `func_800D29D4`, three of the four passes OR the descriptor's colour
+  `BattleDrawModel`, three of the four passes OR the descriptor's colour
   modifiers in from `$s2`. The textured-quad pass uses `$s1` instead. `$s1` is
   loaded with `lhu` and then shifted right by 16, so that expression is always
   zero, and the `0x8` semi-transparency bit is dropped on depth-cued
@@ -1297,7 +1297,7 @@ line numbers quoted here are reproducible rather than committed.
 
 ## 15. The flag bits, confirmed against the running game
 
-Sections 9 and 10 read the flag bits out of `func_800D29D4`'s assembly.
+Sections 9 and 10 read the flag bits out of `BattleDrawModel`'s assembly.
 That establishes which bits the renderer tests and what it does with
 them, but not that a named bit produces the named effect on screen, which
 is the standard `CONTRIBUTING.md` sets for naming a symbol.

@@ -132,7 +132,7 @@ the `TargetIndex` meaning it has in the other slots.
 | `BattleEffectRegister(cb)` | allocate a slot, returns its index |
 | `MagicAnimationRegister(mask, arg1, step, cb)` | fan out over targets, `cb(target)` every `step` frames |
 | `BattleGetPartPosition(target, part, out)` | where on the model to place the effect |
-| `func_800D29D4(desc, ot, otLen, buf)` | render a model, threads the primitive write pointer |
+| `BattleDrawModel(desc, ot, otLen, buf)` | render a model, threads the primitive write pointer |
 | `func_800D5774(target)` | fire the damage / result popup |
 | `BattleCommandSend(32, pan, sfxId)` | play a sound effect |
 | `func_800D55A4(target)` | scale derived from the target's model size |
@@ -185,7 +185,7 @@ capture is aligned.
 
 **But thunder is not depth-cued.** Its descriptor flags are `0x08`, not
 `0x88`, and bit `0x80` is what selects the depth-cue path. With that bit
-clear, `func_800D29D4` replicates offset `0xA` as `v | v<<8 | v<<16` and
+clear, `BattleDrawModel` replicates offset `0xA` as `v | v<<8 | v<<16` and
 ORs it straight into the primitive's colour word: a flat grey, with no
 `dpcs` at all. thunder's `0x80` to `0x10` is grey 128 to 16 -- it fades by
 dimming the vertex colour, not by blending toward `SetFarColor`.
@@ -233,7 +233,7 @@ requires.
 
 So barrier draws one quarter of its shell four times -- unmirrored,
 mirrored X, mirrored Y, mirrored both -- which is how a four-fold symmetric
-barrier is built from a quarter model. `battle2.c`'s `func_800D6394` does
+barrier is built from a quarter model. `battle3.c`'s `func_800D6394` does
 the same thing explicitly, toggling `|= 1` and `|= 2` across four passes.
 Bit `0x8` is semi-transparency: it is shifted left 22 into bit 25 of the
 colour word, which is bit 1 of the GPU code byte.
