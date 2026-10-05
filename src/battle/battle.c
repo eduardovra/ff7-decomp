@@ -302,13 +302,13 @@ void BattleRunFrame(void) {
             break;
         }
         if (a > NUM_PARTY && a < NUM_BATTLE_ACTOR) {
-            D_801636B8[a].idleActionId = g_BattleState.combatant[a].idleActionId;
+            g_BattleData.actors[a].idleActionId = g_BattleState.combatant[a].idleActionId;
         }
     }
     BattleQueue1Execute();
     BattleActionQueueReset();
     for (i = START_ENEMY; i < NUM_BATTLE_ACTOR; i++) {
-        D_801636B8[i].idleActionId = g_BattleState.combatant[i].idleActionId;
+        g_BattleData.actors[i].idleActionId = g_BattleState.combatant[i].idleActionId;
     }
 }
 
@@ -488,7 +488,100 @@ end:
     return enemyId;
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle", BattleUpdateUnitMasks);
+void BattleUpdateUnitMasks(void) {
+    u16 var_t3 = 0;
+    s16 coveredEnemies = 0;
+    u16 var_s1 = 0;
+    u16 petrifiedActors = 0;
+    u16 downedActors = 0;
+    s32 frontCoverFlags;
+    s32 enemyFrontRow;
+    s32 i;
+    s32 j;
+    s32 k;
+    s32 actorMask;
+    u16 enemyMask;
+    u32 stateFlags;
+    s32 status;
+    u16 row;
+
+    for (i = 0; i < NUM_BATTLE_ACTOR; i++) {
+        actorMask = 1 << i;
+        stateFlags = g_BattleState.combatant[i].stateFlags;
+        status = g_BattleState.combatant[i].status;
+
+        if (stateFlags & 8) {
+            var_t3 |= actorMask;
+        }
+        if (stateFlags & 0x10) {
+            var_s1 |= actorMask;
+        }
+        if (status & STATUS_PETRIFY) {
+            petrifiedActors |= actorMask;
+        }
+        if (status & STATUS_DEATH) {
+            downedActors |= actorMask;
+        }
+        if (status & STATUS_IMPRISONED &&
+            (g_BattleSceneContext.imprisonedType == 0 || g_BattleSceneContext.imprisonedType == 3)) {
+            downedActors |= actorMask;
+        }
+    }
+
+    enemyFrontRow = 0xffff; // This was probably defined as a constant somewhere (eg: INVALID_INDEX)
+    g_BattleSceneContext.petrifiedMask = petrifiedActors;
+    g_BattleData.unk14C = var_t3;
+    g_BattleData.unk15C = var_s1;
+    g_BattleData.downedActors = downedActors;
+
+    for (j = 0; j < NUM_ENEMY; j++) {
+        frontCoverFlags = 0;
+        enemyMask = 1 << j + START_ENEMY;
+        if (var_t3 & enemyMask) {
+            row = g_BattleState.combatant[j + START_ENEMY].formationRow;
+            g_BattleState.combatant[j + START_ENEMY].stateFlags &= ~0x840;
+            for (k = 0; k < NUM_ENEMY; k++) {
+                if (((var_t3 >> (k + START_ENEMY)) & 1) &&
+                    g_BattleState.combatant[k + START_ENEMY].formationRow < row) {
+                    frontCoverFlags |= g_BattleData.activeEncounter.formation[k].coverFlags;
+                }
+            }
+
+            if (g_BattleData.activeEncounter.formation[j].coverFlags & frontCoverFlags) {
+                coveredEnemies |= enemyMask;
+                g_BattleState.combatant[j + START_ENEMY].stateFlags |= 0x800;
+            }
+
+            if (row < enemyFrontRow) {
+                enemyFrontRow = row;
+            }
+        }
+    }
+
+    for (i = 0; i < NUM_ENEMY; i++) {
+        if ((var_t3 >> (i + START_ENEMY)) & 1 &&
+            g_BattleState.combatant[i + START_ENEMY].formationRow != enemyFrontRow) {
+            g_BattleState.combatant[i + START_ENEMY].stateFlags |= 0x40;
+        }
+    }
+
+    g_BattleData.unk150 = var_t3 ^ coveredEnemies;
+    g_BattleData.unk152 = var_t3;
+    actorMask = g_BattleState.presentMask & ((~downedActors & 0xF) | ((var_s1 | var_t3) & 0x3F0));
+    g_BattleData.unitPresentMask = actorMask;
+
+    if (g_BattleSceneContext.encounterType == SETUP_PINCER) {
+        actorMask &= 0x3F0;
+        // Odd loop, looks like it indexes out of bounds at first glance but checks
+        // [0] and [2]; i represents the index of the first zone without an actor
+        for (i = 0; i < 2; i++) {
+            if (!(actorMask & g_BattleData.unitZoneMask[i * 2])) {
+                break;
+            }
+        }
+        g_BattleData.unk174 = i;
+    }
+}
 
 void func_800A4844(s32 arg0) {
     s32 var_v0 = arg0 ? 3 : 1;
@@ -664,11 +757,8 @@ void func_800A4E40(void) {
 }
 
 void BattleEnableLimitToPlayerWithSpeed(s32 index) {
-    u16* p;
-
     if (g_BattleWork.party[index].limitLevel != 0xFF) {
-        p = &D_80163762; // Suggests this is part of a larger undiscovered struct (BattleSceneData?)
-        *p |= (1 << index);
+        g_BattleData.limitReadyMask |= (1 << index);
         g_BattleWork.turn[index].limitSpeedFlag |= 1;
         g_BattleWork.turn[index].hasLimitBreak |= 1;
     }
@@ -871,10 +961,10 @@ void BattleRunUnitScript(s32 actorId, s32 scriptType, s32 arg2) {
 
     if (actorId >= START_ENEMY) {
         s32 enemySlot = actorId - START_ENEMY;
-        scriptOffset = GetEnemyAiScriptOffs(
-            &g_BattleSceneContext.activeScriptMask - 0x80C, g_ActiveEncounter.formation[enemySlot].enemyID, scriptType);
+        scriptOffset = GetEnemyAiScriptOffs(&g_BattleSceneContext.activeScriptMask - 0x80C,
+                                            g_BattleData.activeEncounter.formation[enemySlot].enemyID, scriptType);
     } else if (actorId < NUM_PARTY) {
-        presetIdx = D_801636B8[actorId].charId;
+        presetIdx = g_BattleData.actors[actorId].charId;
         if (presetIdx != -1) {
             remapped = D_800E7A58[presetIdx];
             if (remapped != 0xFF) {
@@ -951,13 +1041,10 @@ void BattleResetManipulatorTimer(s32 arg0) {
 void func_800A6590(s32 arg0) { func_800A4D88(arg0); }
 
 void BattleEnableLimitToPlayerResettingBar(s32 charIdx, s32 arg1) {
-    u16* p;
-
     if (charIdx < NUM_PARTY) {
         BattleEnableLimitToPlayerWithoutSpeed(charIdx);
         g_ActiveCharacters[charIdx].unk1A = 0;
-        p = &D_80163762;
-        *p &= ~(1 << charIdx);
+        g_BattleData.limitReadyMask &= ~(1 << charIdx);
     }
 }
 
@@ -1066,7 +1153,7 @@ void func_800A6BFC(void) {}
 void BattleSetLimitBreakStringToDisplay(s32 arg0) {
     s16 sp10;
 
-    sp10 = (s16)D_801636B8[arg0].charId;
+    sp10 = (s16)g_BattleData.actors[arg0].charId;
     g_BattleSceneContext.lucky7777StringID = BattleExpandScriptToBuffer(SysGetKernBattleTextPtr(0x26), &sp10) + 0x100;
     g_BattleSceneContext.lucky7777ActionParam = 0xF;
 }
@@ -1357,7 +1444,7 @@ void func_800A85B4(void) {
     g_CurrentAction->elements = 0x10;
     g_CurrentAction->power = 1;
     g_CurrentAction->targetFlags = 0;
-    if (!((D_80163758[1] >> g_CurrentAction->actorId) & 1)) {
+    if (!((g_BattleData.unitPresentMask >> g_CurrentAction->actorId) & 1)) {
         g_CurrentAction->unk20 = -1;
     }
 }
@@ -1469,8 +1556,9 @@ static void BattleResolveCaitSithSlotsResult(void) {
 
     comboIndex = 0;
     while (comboIndex < 7) {
-        if (D_80163774[0] == D_800E7BA4[comboIndex][0] && D_80163774[1] == D_800E7BA4[comboIndex][1] &&
-            D_80163774[2] == D_800E7BA4[comboIndex][2]) {
+        if (g_BattleData.caitSithRolls[0] == D_800E7BA4[comboIndex][0] &&
+            g_BattleData.caitSithRolls[1] == D_800E7BA4[comboIndex][1] &&
+            g_BattleData.caitSithRolls[2] == D_800E7BA4[comboIndex][2]) {
             break;
         }
         comboIndex++;
@@ -1608,7 +1696,7 @@ static s32 BattleGetRndOpponentBit(s32 arg0) {
     if (arg0 < START_ENEMY) {
         var_v0 = 0x3F0;
     }
-    return BattleOpcodeGetRndBit(*D_80163758 & var_v0) & 0xFFFF;
+    return BattleOpcodeGetRndBit(g_BattleData.unk14C & var_v0) & 0xFFFF;
 }
 
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle", func_800AA738);
@@ -1652,7 +1740,7 @@ static void BattleLearnEnemySkill(void) {
     s32* flags;
     s32 mask;
 
-    if (!(D_8016376A & 0x40)) {
+    if (!(g_BattleData.flags & 0x40)) {
         flags = (s32*)((u8*)g_CurrentAction->unk204 + 0x24);
         mask = *flags;
 
@@ -1963,8 +2051,8 @@ static void BattleMainDmgCalculation(s32 arg0, s32 arg1) {
         act->flags = (act->flags | 4) & ~8;
         g_CurrentAction->unk7C |= 1 << arg1;
         if (g_CurrentAction->cmdIndex == 0x1A) {
-            if (D_801636B8[arg1].D_801636BC < 0x11) {
-                D_801636B8[arg1].D_801636BC = 8;
+            if (g_BattleData.actors[arg1].D_801636BC < 0x11) {
+                g_BattleData.actors[arg1].D_801636BC = 8;
             }
             BattleCreateImpactData(act, -2, 0, g_CurrentAction->unk248, g_CurrentAction->unk68);
         }
@@ -2388,7 +2476,7 @@ void BattleLowerFunc18(void) {
     }
 
     for (i = 0; i < 4; i++) {
-        D_80163774[i] = 0xFF;
+        g_BattleData.caitSithRolls[i] = 0xFF;
     }
 
     diceSum = 0;
@@ -2397,9 +2485,9 @@ void BattleLowerFunc18(void) {
         dieValues[i] = dieValue;
         diceSum += dieValue + 1;
         if (i & 1) {
-            D_80163774[i / 2] = dieValue << 4 | D_80163774[i / 2] & 0xF;
+            g_BattleData.caitSithRolls[i / 2] = dieValue << 4 | g_BattleData.caitSithRolls[i / 2] & 0xF;
         } else {
-            D_80163774[i / 2] = dieValue | 0xF0;
+            g_BattleData.caitSithRolls[i / 2] = dieValue | 0xF0;
         }
         SysIncSeedForRandom();
     }
@@ -2794,13 +2882,11 @@ void func_800B0C14(void) {
     }
     prevStateMask = stateMask;
 
-    // Note that this 3 likely refers to the number of possible groups
-    // in battle and not NUM_PARTY (see: BattleInitFormation)
-    for (i = 0; i < 3; i++) {
-        if (g_BattleMultiInfo.characterMask[i] & actorBitMask) {
+    for (i = 0; i < NUM_ZONES; i++) {
+        if (g_BattleData.unitZoneMask[i] & actorBitMask) {
             actorGroup = i;
         }
-        if (g_BattleMultiInfo.characterMask[i] & targetBitMask) {
+        if (g_BattleData.unitZoneMask[i] & targetBitMask) {
             targetGroup = i;
         }
     }
@@ -3006,7 +3092,7 @@ static s32 BattleOpcodeValOffs(s32 arg0, s32 arg1, void** arg2) {
 
     var_a1 = arg1;
     if (var_a1 < 0x2000) {
-        *arg2 = &D_800F87F0[arg0 * 0x80];
+        *arg2 = &D_800F87F0[arg0];
     } else if (var_a1 < 0x4000) {
         *arg2 = D_800F83A4;
         var_a1 -= 0x2000;
@@ -3349,13 +3435,13 @@ void BattleInitScriptContext(s32 arg0, s32 arg1, s32 arg2) {
     }
 
     // Masks default to the enemy's perspective (opponents = party, allies = enemies)
-    activeOpponents = g_BattleState.playerUnitMask & D_8016375E;
-    activeAllies = g_BattleState.enemyUnitMask & D_8016375E;
+    activeOpponents = g_BattleState.playerUnitMask & g_BattleData.unk152;
+    activeAllies = g_BattleState.enemyUnitMask & g_BattleData.unk152;
 
-    opponentAliveMask = activeOpponents & ~D_80163766;
-    opponentDeadMask = activeOpponents & D_80163766;
-    allyAliveMask = activeAllies & ~D_80163766;
-    allyDeadMask = activeAllies & D_80163766;
+    opponentAliveMask = activeOpponents & ~g_BattleData.downedActors;
+    opponentDeadMask = activeOpponents & g_BattleData.downedActors;
+    allyAliveMask = activeAllies & ~g_BattleData.downedActors;
+    allyDeadMask = activeAllies & g_BattleData.downedActors;
 
     // Swap to the party's perspective when the actor is on the party team
     if (BattleUnitIsOnPartyTeam(arg0)) {
@@ -3377,7 +3463,7 @@ void BattleInitScriptContext(s32 arg0, s32 arg1, s32 arg2) {
     g_BattleState.scriptOpponentAliveMask = opponentAliveMask;
     g_BattleState.scriptOpponentNonPetrifiedMask = opponentAliveMask;
 
-    g_BattleState.allUnitsMask = g_BattleUnitPresentMask & g_BattleState.presentMask;
+    g_BattleState.allUnitsMask = g_BattleData.unitPresentMask & g_BattleState.presentMask;
     g_BattleState.partyGil = Savemap.gil;
 }
 

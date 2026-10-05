@@ -87,7 +87,7 @@ void BatInitMain(s32 sceneID) {
     }
 
     g_BattleState.sceneID = sceneID;
-    g_EncounterType = g_ActiveEncounter.setup.type;
+    g_EncounterType = g_BattleData.activeEncounter.setup.type;
     BattleInitFormation();
     BattleUpdateUnitMasks();
     BattleInitPartyScripts();
@@ -163,7 +163,7 @@ static void BattleInitSetup(s32 sceneID) {
     s32 var_s1;
 
     var_s1 = 4;
-    if (g_BattleMultiInfo.isMultiBattle) {
+    if (g_BattleData.isMultiBattle) {
         var_s1 = 0;
         BattleQueueEvent(0, 0, 15, 0);
         BattleQueueEvent(0, 0, 14, 0);
@@ -176,7 +176,7 @@ static void BattleInitSetup(s32 sceneID) {
     for (i = 0; i < NUM_PARTY; i++) {
         g_BattleWork.party[i].unk6 = 0;
     }
-    if (g_BattleMultiInfo.isMultiBattle) {
+    if (g_BattleData.isMultiBattle) {
         BattleInitPartyFromSavemap();
     }
     BattleInitLoadSceneData(sceneID, BattleRunFrame);
@@ -190,7 +190,7 @@ static void BattleInitSetup(s32 sceneID) {
         }
     }
     g_BattleState.sceneID = sceneID;
-    g_EncounterType = g_ActiveEncounter.setup.type;
+    g_EncounterType = g_BattleData.activeEncounter.setup.type;
     BattleInitFormation();
     BattleUpdateUnitMasks();
     BattleInitEnemyAI();
@@ -216,7 +216,7 @@ static void BattleInitATBTimers(void) {
     s32 t;
     s32 i;
 
-    presentMask = g_BattleUnitPresentMask;
+    presentMask = g_BattleData.unitPresentMask;
     max = 0;
     for (i = 0; i < NUM_BATTLE_ACTOR; i++) {
         g_BattleWork.turn[i].atbGauge = 0;
@@ -299,7 +299,7 @@ static void BattleInitPlayer(void) {
     g_BattleState.playerUnitMask = 0;
     for (i = 0; i < NUM_PARTY; i++) {
         charId = Savemap.partyID[i];
-        D_801636B8[i].charId = -1;
+        g_BattleData.actors[i].charId = -1;
         turn = &g_BattleWork.turn[i];
         party = &g_BattleWork.party[i];
         setup = &g_BattleWork.setup[i];
@@ -310,7 +310,7 @@ static void BattleInitPlayer(void) {
         }
         for (j = 0; j < NUM_CHARACTERS; j++) {
             member = &Savemap.party[j];
-            if (D_8016376A & 0x40) {
+            if (g_BattleData.flags & 0x40) {
                 D_80167938 = *member;
             }
             if (member->char_id != charId) {
@@ -320,7 +320,7 @@ static void BattleInitPlayer(void) {
             turn->senseTargetMask = 0xFF;
             bit = 1;
             turn->formationIndex = 0xFF;
-            D_801636B8[i].charId = charId;
+            g_BattleData.actors[i].charId = charId;
             unit->actorId = charId;
             unit->formationIndex = charId + 0x10;
             unit->level = member->level;
@@ -489,7 +489,7 @@ static void BattleInitPartyScripts(void) {
     s32 i;
 
     for (i = 0; i < NUM_PARTY; i++) {
-        if ((D_801636B8[i].charId != -1) && !(g_BattleState.combatant[i].status & STATUS_DEATH)) {
+        if ((g_BattleData.actors[i].charId != -1) && !(g_BattleState.combatant[i].status & STATUS_DEATH)) {
             BattleRunUnitScript(i, 0, 0);
         }
     }
@@ -744,13 +744,13 @@ const u8 D_801B003C[] = {0xFF, 0x32, 0x33, 0x34, 0x35, 0xFF, 0x48, 0x07};
 void BattleQueueIntroCamera(s32);
 
 // Lays out the two sides for the opening of the battle. D_801B003C picks the
-// intro animation for the battle type, then the type decides which rows the
-// party and the enemies occupy (row[0]/row[1]/row[2]) and which combatants
+// intro animation for the battle type, then the type decides which zones the
+// party and the enemies occupy (zone[0]/zone[1]/zone[2]) and which combatants
 // start "turned around" (bit 0x80 of unk4) -- back attacks, side attacks and
 // pincers each split the party differently. Finally the front/back row bit is
 // re-derived for the three party slots.
 static void BattleInitFormation(void) {
-    u16 row[3];
+    u16 zone[NUM_ZONES];
     s32 enemyMask;
     s32 partyMask;
     s32 sideMask;
@@ -762,7 +762,7 @@ static void BattleInitFormation(void) {
     enemyMask = g_BattleState.enemyUnitMask;
     partyMask = g_BattleState.playerUnitMask;
     sideMask = 5;
-    if (g_ActiveEncounter.setup.type == SETUP_SIDE_ATTACK_3) {
+    if (g_BattleData.activeEncounter.setup.type == SETUP_SIDE_ATTACK_3) {
         sideMask = ~5;
     }
     intro = D_801B003C[g_BattleSceneContext.encounterType];
@@ -770,41 +770,41 @@ static void BattleInitFormation(void) {
         BattleQueueIntroCamera(intro);
     }
     mask = 0;
-    row[0] = 0;
-    row[1] = 0;
-    row[2] = 0;
+    zone[0] = 0;
+    zone[1] = 0;
+    zone[2] = 0;
     switch (g_BattleSceneContext.encounterType) {
     case 0:
         mask = enemyMask;
         /* fallthrough */
     case 1:
-        row[0] = partyMask;
-        row[1] = enemyMask;
+        zone[0] = partyMask;
+        zone[1] = enemyMask;
         break;
     case 2:
         mask = partyMask;
-        row[0] = enemyMask;
-        row[1] = mask;
+        zone[0] = enemyMask;
+        zone[1] = mask;
         break;
     case 4:
-        row[1] = partyMask;
+        zone[1] = partyMask;
         for (i = 0; i < NUM_ENEMY; i++) {
             if ((enemyMask >> (i + START_ENEMY)) & 1) {
-                row[g_BattleState.combatant[i + START_ENEMY].stateFlags & 2] |= 1 << (i + START_ENEMY);
+                zone[g_BattleState.combatant[i + START_ENEMY].stateFlags & 2] |= 1 << (i + START_ENEMY);
             }
         }
-        mask = row[2] | (partyMask & 2);
+        mask = zone[2] | (partyMask & 2);
         if (g_BattleState.sceneID == 0x3D6) {
             mask &= ~partyMask;
         }
         break;
     default:
-        row[0] = partyMask & sideMask;
-        row[1] = enemyMask;
-        row[2] = partyMask & ~sideMask;
-        mask = row[2];
+        zone[0] = partyMask & sideMask;
+        zone[1] = enemyMask;
+        zone[2] = partyMask & ~sideMask;
+        mask = zone[2];
         for (i = 0; i < NUM_ENEMY; i++) {
-            if (((enemyMask >> (i + START_ENEMY)) & 1) && g_ActiveEncounter.formation[i].z >= 0) {
+            if (((enemyMask >> (i + START_ENEMY)) & 1) && g_BattleData.activeEncounter.formation[i].z >= 0) {
                 mask |= 1 << (i + START_ENEMY);
             }
         }
@@ -812,7 +812,7 @@ static void BattleInitFormation(void) {
     }
     for (i = 0; i < NUM_BATTLE_ACTOR; i++) {
         g_BattleState.combatant[i].stateFlags &= ~0x82;
-        if ((row[2] >> i) & 1) {
+        if ((zone[2] >> i) & 1) {
             g_BattleState.combatant[i].stateFlags |= 2;
         }
         if ((mask >> i) & 1) {
@@ -835,11 +835,11 @@ static void BattleInitFormation(void) {
             g_BattleState.combatant[i].stateFlags &= ~COMBATANT_BACK_ROW;
             break;
         }
-        D_801636B8[i].D_801636BE = back;
+        g_BattleData.actors[i].D_801636BE = back;
     }
-    g_BattleMultiInfo.characterMask[0] = row[0];
-    g_BattleMultiInfo.characterMask[1] = row[1];
-    g_BattleMultiInfo.characterMask[2] = row[2];
+    g_BattleData.unitZoneMask[0] = zone[0];
+    g_BattleData.unitZoneMask[1] = zone[1];
+    g_BattleData.unitZoneMask[2] = zone[2];
 }
 
 extern u8 D_80166F74;
@@ -897,19 +897,156 @@ static void BattleInitItemList(void) {
     D_80166F74 = rows;
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/batini", BattleInitEnemyUnits);
+void BattleInitEnemyUnits(void) {
+    BattleTurnWork* turnWork;
+    BattleUnit* combatant;
+    SceneEnemy* enemy;
+    s32 i;
+    s32 j;
+    s32 k;
+    s32 manipSlotEnd;
+    s16 id;
+    u16 attack;
+    u8 targetFlags;
+
+    g_BattleState.enemyUnitMask = 0;
+    for (i = 0; i < LEN(g_BattleSceneContext.enemyTypeCount); i++) {
+        g_BattleSceneContext.enemyTypeCount[i] = 0;
+    }
+
+    for (i = 0; i < NUM_ENEMY; i++) {
+        for (j = 0; j < LEN(D_800F87F0[0]); j++) {
+            D_800F87F0[i + START_ENEMY][j] = 0;
+        }
+    }
+
+    for (i = 0; i < NUM_ENEMY; i++) {
+        turnWork = &g_BattleWork.turn[i + START_ENEMY];
+        combatant = &g_BattleState.combatant[i + START_ENEMY];
+
+        id = g_BattleData.activeEncounter.formation[i].enemyID;
+        combatant->actorId = -1;
+        combatant->enemyId = -1;
+        combatant->stateFlags = 0;
+        combatant->status = 0;
+        combatant->unk4F = 0xFF;
+        g_BattleSceneContext.subActionSlots[i + START_ENEMY].priority = 0xFF;
+
+        for (j = 0; j < NUM_STATUS_TIMERS; ++j) {
+            turnWork->statusTimers[j] = 0;
+        }
+
+        for (j = 0; j < NUM_STAT_MULTS; ++j) {
+            turnWork->statMults[j] = 0;
+        }
+
+        if (id != -1) {
+            combatant->enemyId = id;
+
+            for (j = 0; j < LEN(g_BattleSceneContext.enemyTypeCount); j++) {
+                if (g_BattleData.activeEncounter.enemyModelIDs[j] == id) {
+                    break;
+                }
+            }
+
+            g_BattleSceneContext.enemyTypeCount[j]++;
+
+            id = j;
+            g_BattleData.activeEncounter.formation[i].enemyID = id;
+            enemy = &g_BattleSceneContext.enemy[id];
+            combatant->actorId = id;
+            combatant->curHP = combatant->maxHP = enemy->hp;
+            combatant->curMP = combatant->maxMP = enemy->mp;
+            combatant->physAttack = enemy->strength;
+            combatant->magAttack = enemy->magic;
+            combatant->physDefence = enemy->defense * 2;
+            combatant->magDefence = enemy->magicDef * 2;
+            combatant->physEvade = enemy->evade;
+            combatant->dexterity = enemy->speed;
+            combatant->luck = enemy->luck;
+            combatant->level = enemy->level;
+            combatant->backDamageMult = enemy->backAttackMultiplier;
+            combatant->gil = enemy->gil;
+            combatant->exp = enemy->exp;
+            combatant->hurtActionId = 1;
+            combatant->unk4C = 1;
+            combatant->unk56 = 2;
+            combatant->idleActionId = 0;
+            combatant->status = 0;
+            combatant->prevStatus = 0;
+            combatant->unk50 = 0;
+            combatant->unk52 = 0xFFFF;
+            combatant->stateFlags = g_BattleData.activeEncounter.formation[i].flags & 0x1F;
+            combatant->formationRow = g_BattleData.activeEncounter.formation[i].row;
+
+            turnWork->enemyNamePtr = enemy->name;
+            turnWork->accessoryEffectId = -1;
+            turnWork->senseTargetMask = -1;
+            turnWork->formationIndex = -1;
+            turnWork->statusProtectionMask = ~enemy->statusImmunities;
+
+            g_BattleState.enemyUnitMask |= 1 << (i + START_ENEMY);
+
+            combatant->formationIndex = 0;
+            for (j = 0; j < i; j++) {
+                if (g_BattleState.combatant[j + START_ENEMY].enemyId == combatant->enemyId) {
+                    combatant->formationIndex++;
+                }
+            }
+
+            manipSlotEnd = LEN(enemy->manipAttackIDs);
+            for (j = 0; j < manipSlotEnd; j++) {
+                Unk80166F78* unk = &D_80166F78[i][j];
+                attack = enemy->manipAttackIDs[j];
+                unk->attackIndex = -1;
+                unk->unk1 = 0;
+                unk->targetFlags = 0;
+                unk->unk3 = 3;
+                if (attack != 0xFFFF) {
+                    for (k = 0; k < LEN(g_BattleSceneContext.attackIDs); k++) {
+                        if (g_BattleSceneContext.attackIDs[k] == attack) {
+                            targetFlags = g_BattleSceneContext.attacks[k].targetFlags;
+                            if (targetFlags != 0) {
+                                targetFlags ^= 2;
+                            }
+                            unk->attackIndex = k;
+                            unk->targetFlags = targetFlags;
+                            unk->unk3 = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            for (j = manipSlotEnd; j < LEN(D_80166F78[0]); j++) {
+                Unk80166F78* unk = &D_80166F78[i][j];
+                unk->attackIndex = -1;
+                unk->unk1 = 0;
+                unk->targetFlags = 0;
+                unk->unk3 = 3;
+            }
+            turnWork->turnFlags = 0;
+        }
+    }
+
+    for (i = 0; i < NUM_ENEMY; i++) {
+        if (g_BattleSceneContext.enemyTypeCount[g_BattleData.activeEncounter.formation[i].enemyID] >= 2) {
+            g_BattleWork.turn[i + START_ENEMY].formationIndex = g_BattleState.combatant[i + START_ENEMY].formationIndex;
+        }
+    }
+}
 
 static void BattleInitEnemyAI(void) {
     s32 i;
 
     for (i = 0; i < NUM_ENEMY; i++) {
-        if (g_ActiveEncounter.formation[i].enemyID != -1) {
+        if (g_BattleData.activeEncounter.formation[i].enemyID != -1) {
             BattleRunUnitScript(i + START_ENEMY, 0, 0);
         }
     };
     for (i = 0; i < NUM_ENEMY; i++) {
-        g_ActiveEncounter.formation[i].flags = g_BattleState.combatant[START_ENEMY + i].stateFlags;
-        D_801636B8[START_ENEMY + i].idleActionId = g_BattleState.combatant[START_ENEMY + i].idleActionId;
+        g_BattleData.activeEncounter.formation[i].flags = g_BattleState.combatant[START_ENEMY + i].stateFlags;
+        g_BattleData.actors[START_ENEMY + i].idleActionId = g_BattleState.combatant[START_ENEMY + i].idleActionId;
         g_BattleState.combatant[START_ENEMY + i].prevStatus = g_BattleState.combatant[START_ENEMY + i].status;
     }
 }
@@ -942,40 +1079,41 @@ static void BattleInitLoadSceneData(s32 sceneID, void (*cb)(void)) {
     dst = (u_long*)&scene;
     Unzip((u8*)src, (u8*)dst);
     formationIndex = sceneID - sceneChunkID * 4;
-    SysMemCopy32(g_ActiveEncounter.enemyModelIDs, scene.enemyModelIDs, sizeof(scene.enemyModelIDs));
-    SysMemCopy32(&g_ActiveEncounter.setup, &scene.setup[formationIndex], sizeof(BattleSetup));
-    SysMemCopy32(&g_ActiveEncounter.camera, &scene.camera[formationIndex], sizeof(CameraPlacement) * 4);
-    SysMemCopy32(&g_ActiveEncounter.formation, &scene.formation[formationIndex], sizeof(FormationEntry) * NUM_ENEMY);
+    SysMemCopy32(g_BattleData.activeEncounter.enemyModelIDs, scene.enemyModelIDs, sizeof(scene.enemyModelIDs));
+    SysMemCopy32(&g_BattleData.activeEncounter.setup, &scene.setup[formationIndex], sizeof(BattleSetup));
+    SysMemCopy32(&g_BattleData.activeEncounter.camera, &scene.camera[formationIndex], sizeof(CameraPlacement) * 4);
+    SysMemCopy32(
+        &g_BattleData.activeEncounter.formation, &scene.formation[formationIndex], sizeof(FormationEntry) * NUM_ENEMY);
     SysMemCopy32(&g_BattleSceneContext.enemy, &scene.enemy, sizeof(scene.enemy));
     SysMemCopy32(&g_BattleSceneContext.attacks, &scene.attacks, sizeof(scene.attacks));
     SysMemCopy32(&g_BattleSceneContext.attackIDs, scene.attackIDs, sizeof(scene.attackIDs));
     SysMemCopy32(&g_BattleSceneContext.attackNames, &scene.attackNames, sizeof(scene.attackNames));
     SysMemCopy32(&g_BattleSceneContext.formationAI, &scene.formationAI, sizeof(FormationAIScripts));
     SysMemCopy32(&g_BattleSceneContext.aiScriptBuffer, &scene.script, sizeof(scene.script));
-    if (D_8016376A & 4 && g_ActiveEncounter.setup.flags & SETUP_NO_PREEMPTIVE_STRIKE) {
-        if (g_ActiveEncounter.setup.type == SETUP_DEFAULT) {
-            g_ActiveEncounter.setup.type = SETUP_PREEMPTIVE;
+    if (g_BattleData.flags & 4 && g_BattleData.activeEncounter.setup.flags & SETUP_NO_PREEMPTIVE_STRIKE) {
+        if (g_BattleData.activeEncounter.setup.type == SETUP_DEFAULT) {
+            g_BattleData.activeEncounter.setup.type = SETUP_PREEMPTIVE;
         }
     }
-    g_BattleSceneContext.encounterType = (u8)g_BattleTypeMap[g_ActiveEncounter.setup.type];
-    if (D_8016376A & EVENT_BATTLE_SQUARE) {
-        g_ActiveEncounter.setup.stageID = 37;
-        g_ActiveEncounter.setup.flags |= SETUP_CANNOT_ESCAPE;
-        g_ActiveEncounter.setup.cameraID = (SysGetRandomByteFromTable() & 3) + 0x60;
-        g_ActiveEncounter.setup.escapeCounter = 1;
+    g_BattleSceneContext.encounterType = (u8)g_BattleTypeMap[g_BattleData.activeEncounter.setup.type];
+    if (g_BattleData.flags & EVENT_BATTLE_SQUARE) {
+        g_BattleData.activeEncounter.setup.stageID = 37;
+        g_BattleData.activeEncounter.setup.flags |= SETUP_CANNOT_ESCAPE;
+        g_BattleData.activeEncounter.setup.cameraID = (SysGetRandomByteFromTable() & 3) + 0x60;
+        g_BattleData.activeEncounter.setup.escapeCounter = 1;
         // enemy strength and magic is 25% higher at battle square
         for (i = 0; i < 3; i++) {
             g_BattleSceneContext.enemy[i].hp *= 2;
             g_BattleSceneContext.enemy[i].strength = BattleBoostVal25Percent(g_BattleSceneContext.enemy[i].strength);
             g_BattleSceneContext.enemy[i].magic = BattleBoostVal25Percent(g_BattleSceneContext.enemy[i].magic);
         }
-    } else if (D_8016376A & 8) {
-        g_ActiveEncounter.setup.flags &= ~SETUP_CANNOT_ESCAPE;
+    } else if (g_BattleData.flags & 8) {
+        g_BattleData.activeEncounter.setup.flags &= ~SETUP_CANNOT_ESCAPE;
     }
-    if (!(g_ActiveEncounter.setup.flags & SETUP_CANNOT_ESCAPE)) {
-        D_8016376A |= 8;
+    if (!(g_BattleData.activeEncounter.setup.flags & SETUP_CANNOT_ESCAPE)) {
+        g_BattleData.flags |= 8;
     }
-    g_BattleSceneContext.escapeCounter1 = g_ActiveEncounter.setup.escapeCounter;
+    g_BattleSceneContext.escapeCounter1 = g_BattleData.activeEncounter.setup.escapeCounter;
     if (g_BattleSceneContext.encounterType == 1 || g_BattleSceneContext.encounterType == 3) {
         g_BattleSceneContext.escapeCounter1 = 1;
     }
