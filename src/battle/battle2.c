@@ -1,9 +1,13 @@
 //! PSYQ=3.3 CC1=2.6.3
 #include "battle_private.h"
 #include "../magic/magic.h"
+#include <libc.h>
 
 void func_800D751C();
 void func_800D7888();
+void func_800D7368();
+void BattleSubModelFlashTick();
+void func_800D6D8C();
 void func_800D6F78();
 void func_800D5D28();
 void BattleHitFlashGrowTick();
@@ -13,11 +17,12 @@ static void BattleTriggerActorFlashMode0(s32 arg0);
 static void BattleTriggerActorFlashMode1(s32 arg0);
 void BattleTriggerActorFlashMode2(s32 arg0);
 static void BattleSpawnActorRampEffect(s32 arg0, s16 arg1, s16 arg2);
+void BattleSpawnPartEffect(s32 actor, s32 hitFlashType);
 
 extern Yamada D_800EEBB8[]; // MAGIC/*.BIN overlay
 
 s32 BattleMovementRegister(void (*f)(void));
-s32 func_800BC04C(void (*f)());
+s32 BattleUntrackedRegister(void (*f)());
 void func_800C2928();
 void func_800C328C();
 void func_800C3578();
@@ -26,12 +31,13 @@ void func_800C3CA8();
 void func_800C40F4();
 void func_800C44B4();
 void func_800C4814();
-void func_800C6CB8(s16, u8);
 static void BattleModelMoveTick();
 void func_800D1530();
 s32 BattleModelReadAnimStream(BattleModelSub* arg0, s32 arg1, s16 nItems, u8* arg3);
 void func_800D3AF0();
-static void BattleSpawnFloatingIcon(s32 arg0, s32 arg1);
+void func_800D4710();
+MATRIX* BattleSetMatrixPosition(SVECTOR* pos, s32 depthBias, MATRIX* m);
+static void BattleSpawnFloatingIcon(s32 actor, s32 arg1);
 void BattleQueueImpactEffect(s32 arg0, s16 arg1);
 void BattleInitMagicCastEffect(void);
 void BattleStartEffectWithModel(s32 targetMask, s32 callbackArg);
@@ -1182,7 +1188,7 @@ static void BattleModelRestoreVelocity(u8 arg0) {
 
 static void BattleClearEffectAndFlag(void) {
     D_801590DC = 1;
-    D_801621F0[D_801590D4].D_801621F0 = -1;
+    g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
 }
 
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800CD860);
@@ -1202,17 +1208,19 @@ void BattleApplyToggleFlag(void) {
 }
 
 static void BattleSpawnPartEffectTick(void) {
-    func_800BBA84(D_801621F0[D_801590D4].D_801621F4, D_801590CC, 0);
-    BattleSpawnPartEffect(D_801590CC, D_801621F0[D_801590D4].D_801621F2);
-    D_801621F0[D_801590D4].D_801621F0 = -1;
+    func_800BBA84(g_BattleUntrackedSlots[g_BattleUntrackedCursor].partEffect.unk4, D_801590CC, 0);
+    BattleSpawnPartEffect(D_801590CC, g_BattleUntrackedSlots[g_BattleUntrackedCursor].partEffect.hitFlashType);
+    g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
 }
 
 static void BattleApplyFacingFlipTick(void) {
-    if (g_modelScreenPos[D_801590CC].prevX < g_modelScreenPos[D_801621F0[D_801590D4].unk8].prevX) {
-        D_801621F0[D_801590D4].unk14 |= 0x100;
+    if (g_modelScreenPos[D_801590CC].prevX <
+        g_modelScreenPos[g_BattleUntrackedSlots[g_BattleUntrackedCursor].facingFlip.actor].prevX) {
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].facingFlip.unk14 |= 0x100;
     }
-    BattleSpawnFloatingIcon(D_801621F0[D_801590D4].unk8, D_801621F0[D_801590D4].unk14);
-    D_801621F0[D_801590D4].D_801621F0 = -1;
+    BattleSpawnFloatingIcon(g_BattleUntrackedSlots[g_BattleUntrackedCursor].facingFlip.actor,
+                            g_BattleUntrackedSlots[g_BattleUntrackedCursor].facingFlip.unk14);
+    g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
 }
 
 void BattleQueueImpactEffect(s32 arg0, s16 arg1) {
@@ -1222,12 +1230,12 @@ void BattleQueueImpactEffect(s32 arg0, s16 arg1) {
 }
 
 static void BattleFadeToGreyTick(void) {
-    if (!D_801621F0[D_801590D4].D_801621F4) {
+    if (!g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.framesLeft) {
         D_80163C74 = (DR_MODE*)func_800C4FC8(0xFA, 0xFA, 0xFA);
-        D_801621F0[D_801590D4].D_801621F0 = -1;
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
         return;
     }
-    D_801621F0[D_801590D4].D_801621F4--;
+    g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.framesLeft--;
 }
 
 static void BattleResetModelScale(s16 arg0) {
@@ -1245,13 +1253,13 @@ static void BattleSpawnEffectByType(s16 arg0, u8 arg1, u8 arg2) {
     switch (arg1) {
     case 0:
         ret = BattleEffectRegister(func_800C3578);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg2;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg2;
         break;
     case 8:
         ret = BattleEffectRegister(func_800C4814);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg2;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg2;
         break;
     case 1:
     case 10:
@@ -1262,24 +1270,24 @@ static void BattleSpawnEffectByType(s16 arg0, u8 arg1, u8 arg2) {
         return;
     case 2:
         ret = BattleEffectRegister(func_800C3CA8);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg2;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg2;
         break;
     case 3:
         ret = BattleEffectRegister(func_800C328C);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg2;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg2;
         break;
     case 17:
     case 18:
         ret = BattleEffectRegister(func_800C40F4);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg2;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg2;
         break;
     case 7:
         ret = BattleEffectRegister(func_800C44B4);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg2;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg2;
         break;
     }
 }
@@ -1291,13 +1299,13 @@ static void BattleReapplyEffectFromState(s16 arg0, u8 arg1) {
     switch (g_BattleData.actors[arg0].D_801636BC) {
     case 0:
         ret = BattleEffectRegister(func_800C3578);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg1;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg1;
         break;
     case 8:
         ret = BattleEffectRegister(func_800C4814);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg1;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg1;
         break;
     case 1:
     case 10:
@@ -1308,24 +1316,24 @@ static void BattleReapplyEffectFromState(s16 arg0, u8 arg1) {
         break;
     case 2:
         ret = BattleEffectRegister(func_800C3CA8);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg1;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg1;
         break;
     case 3:
         ret = BattleEffectRegister(func_800C328C);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg1;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg1;
         break;
     case 17:
     case 18:
         ret = BattleEffectRegister(func_800C40F4);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg1;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg1;
         break;
     case 7:
         ret = BattleEffectRegister(func_800C44B4);
-        g_BattleEffectSlots[ret].D_80162980 = arg0;
-        g_BattleEffectSlots[ret].D_8016297E = arg1;
+        g_BattleEffectSlots[ret].raw.D_80162980 = arg0;
+        g_BattleEffectSlots[ret].raw.D_8016297E = arg1;
         break;
     }
 }
@@ -1336,32 +1344,34 @@ static void BattleEffectScriptTick(void) {
     u32 param;
     u32 param_hi;
 
-    if (D_80151200[D_801621F0[D_801590D4].D_801621F6].D_80151234 != D_801621F0[D_801590D4].D_801621F2) {
-        D_801621F0[D_801590D4].D_801621F0 = -1;
+    if (D_80151200[g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.actor].D_80151234 !=
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.unk2) {
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
         return;
     }
-    if (D_801621F0[D_801590D4].D_801621F4) {
-        D_801621F0[D_801590D4].D_801621F4--;
+    if (g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.framesLeft) {
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.framesLeft--;
         return;
     }
     do_work = 1;
     while (do_work) {
-        ptr = D_801621F0[D_801590D4].unk10.ptr;
-        switch (ptr[D_801621F0[D_801590D4].unk18++]) {
+        ptr = g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.script;
+        switch (ptr[g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.scriptPos++]) {
         case 0xFD:
-            param = ptr[D_801621F0[D_801590D4].unk18++];
-            param_hi = ptr[D_801621F0[D_801590D4].unk18++];
+            param = ptr[g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.scriptPos++];
+            param_hi = ptr[g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.scriptPos++];
             param_hi <<= 8;
             param |= param_hi;
-            D_801621F0[D_801590D4].D_801621F4 = ptr[D_801621F0[D_801590D4].unk18++];
-            D_80151200[D_801621F0[D_801590D4].D_801621F6].D_8015122E = param;
+            g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.framesLeft =
+                ptr[g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.scriptPos++];
+            D_80151200[g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.actor].D_8015122E = param;
             do_work = 0;
             break;
         case 0xFE:
-            D_801621F0[D_801590D4].unk18 = 0;
+            g_BattleUntrackedSlots[g_BattleUntrackedCursor].effectScript.scriptPos = 0;
             break;
         case 0xFF:
-            D_801621F0[D_801590D4].D_801621F0 = -1;
+            g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
             do_work = 0;
             break;
         default:
@@ -1372,16 +1382,17 @@ static void BattleEffectScriptTick(void) {
 }
 
 static void BattleEffectDelayedCleanupTick(void) {
-    switch (D_801621F0[D_801590D4].D_801621F2) {
+    switch (g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F2) {
     case 0:
-        D_801621F0[D_801590D4].D_801621F4 = 3;
-        D_801621F0[D_801590D4].D_801621F2++;
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F4 = 3;
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F2++;
     case 1:
-        if (D_801621F0[D_801590D4].D_801621F4 == 0) {
-            D_801621F0[D_801590D4].D_801621F0 = -1;
-            func_800A3534(D_801621F0[D_801590D4].unkA, D_801621F0[D_801590D4].unk8);
+        if (g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F4 == 0) {
+            g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
+            func_800A3534(g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.unkA,
+                          g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.unk8);
         }
-        D_801621F0[D_801590D4].D_801621F4--;
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F4--;
         break;
     }
 }
@@ -1390,31 +1401,32 @@ static void BattleEffectDelayedCleanupTick(void) {
 // named by Akari's q-gears_reverse (ffvii/address_battle.txt): D_800FA69C is
 // the magic barrier mask, D_80163608 the physical one.
 static void BattleDispatchFlagEffect(void) {
-    if ((D_800FA69C >> g_BattleEffectSlots[g_BattleEffectCursor].D_80162980) & 1) {
-        BattleTriggerActorFlashMode1(g_BattleEffectSlots[g_BattleEffectCursor].D_80162980); // MBarrier
-    } else if ((D_80163608 >> g_BattleEffectSlots[g_BattleEffectCursor].D_80162980) & 1) {
-        BattleTriggerActorFlashMode0(g_BattleEffectSlots[g_BattleEffectCursor].D_80162980); // Barrier
+    if ((D_800FA69C >> g_BattleEffectSlots[g_BattleEffectCursor].raw.D_80162980) & 1) {
+        BattleTriggerActorFlashMode1(g_BattleEffectSlots[g_BattleEffectCursor].raw.D_80162980); // MBarrier
+    } else if ((D_80163608 >> g_BattleEffectSlots[g_BattleEffectCursor].raw.D_80162980) & 1) {
+        BattleTriggerActorFlashMode0(g_BattleEffectSlots[g_BattleEffectCursor].raw.D_80162980); // Barrier
     }
 }
 
 static void BattleFixedPointRampSpawnChildEffects(void) {
     s32 dst;
 
-    if (!g_BattleEffectSlots[g_BattleEffectCursor].D_8016297C) {
-        if (g_BattleEffectSlots[g_BattleEffectCursor].D_8016297E != -1) {
+    if (!g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.framesLeft) {
+        if (g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk6 != -1) {
             BattleDispatchFlagEffect();
-            dst = func_800BC04C(func_800C2928);
-            D_801621F0[dst].unk14 = g_BattleEffectSlots[g_BattleEffectCursor].unkE;
-            D_801621F0[dst].unkE = g_BattleEffectSlots[g_BattleEffectCursor].D_80162982;
-            D_801621F0[dst].unk10.ptr = (u8*)(u32)g_BattleEffectSlots[g_BattleEffectCursor].D_80162980;
-            dst = func_800BC04C(BattleEffectDelayedCleanupTick);
-            D_801621F0[dst].unkA = g_BattleEffectSlots[g_BattleEffectCursor].unk19;
-            D_801621F0[dst].unk8 = g_BattleEffectSlots[g_BattleEffectCursor].D_8016297E;
+            dst = BattleUntrackedRegister(func_800C2928);
+            g_BattleUntrackedSlots[dst].raw.unk14 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkE;
+            g_BattleUntrackedSlots[dst].raw.unkE = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkA;
+            g_BattleUntrackedSlots[dst].raw.unk10.ptr =
+                (u8*)(u32)g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk8;
+            dst = BattleUntrackedRegister(BattleEffectDelayedCleanupTick);
+            g_BattleUntrackedSlots[dst].raw.unkA = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk19;
+            g_BattleUntrackedSlots[dst].raw.unk8 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk6;
         }
-        g_BattleEffectSlots[g_BattleEffectCursor].D_80162978 = -1;
+        g_BattleEffectSlots[g_BattleEffectCursor].raw.D_80162978 = -1;
         return;
     } else {
-        g_BattleEffectSlots[g_BattleEffectCursor].D_8016297C--;
+        g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.framesLeft--;
     }
 }
 
@@ -1422,25 +1434,26 @@ void func_800CEB48(void);
 void BattleFixedPointRampSpawnChildEffectsWithFade(void) {
     s32 dst;
 
-    if (!g_BattleEffectSlots[g_BattleEffectCursor].D_8016297C) {
-        if (g_BattleEffectSlots[g_BattleEffectCursor].unkE & 2) {
+    if (!g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.framesLeft) {
+        if (g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkE & 2) {
             D_80163C74 = (DR_MODE*)func_800C4FC8(0xFA, 0xFA, 0xFA);
         }
-        if (g_BattleEffectSlots[g_BattleEffectCursor].D_8016297E != -1 &&
-            g_BattleEffectSlots[g_BattleEffectCursor].unk18 != 1) {
+        if (g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk6 != -1 &&
+            g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk18 != 1) {
             BattleDispatchFlagEffect();
-            dst = func_800BC04C(func_800C2928);
-            D_801621F0[dst].unk14 = g_BattleEffectSlots[g_BattleEffectCursor].unkE;
-            D_801621F0[dst].unkE = g_BattleEffectSlots[g_BattleEffectCursor].D_80162982;
-            D_801621F0[dst].unk10.ptr = (u8*)(u32)g_BattleEffectSlots[g_BattleEffectCursor].D_80162980;
-            dst = func_800BC04C(BattleEffectDelayedCleanupTick);
-            D_801621F0[dst].unkA = g_BattleEffectSlots[g_BattleEffectCursor].unk19;
-            D_801621F0[dst].unk8 = g_BattleEffectSlots[g_BattleEffectCursor].D_8016297E;
+            dst = BattleUntrackedRegister(func_800C2928);
+            g_BattleUntrackedSlots[dst].raw.unk14 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkE;
+            g_BattleUntrackedSlots[dst].raw.unkE = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkA;
+            g_BattleUntrackedSlots[dst].raw.unk10.ptr =
+                (u8*)(u32)g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk8;
+            dst = BattleUntrackedRegister(BattleEffectDelayedCleanupTick);
+            g_BattleUntrackedSlots[dst].raw.unkA = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk19;
+            g_BattleUntrackedSlots[dst].raw.unk8 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk6;
         }
         func_800CEB48();
         return;
     } else {
-        g_BattleEffectSlots[g_BattleEffectCursor].D_8016297C--;
+        g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.framesLeft--;
     }
 }
 
@@ -1674,45 +1687,46 @@ static void BattleModelSettleTick(void) {
 }
 
 static void BattleApplyDelayedFlagTick(void) {
-    if (D_801621F0[D_801590D4].D_801621F4 == 0) {
-        BattleSpawnFloatingIcon(D_801621F0[D_801590D4].unk8, D_801621F0[D_801590D4].D_801621F6);
-        D_801621F0[D_801590D4].D_801621F0 = -1;
+    if (g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.framesLeft == 0) {
+        BattleSpawnFloatingIcon(g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.actor,
+                                g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.unk6);
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
         return;
     }
-    D_801621F0[D_801590D4].D_801621F4--;
+    g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.framesLeft--;
 }
 
 static void BattleApplyDelayedActionTick(void) {
-    if (D_801621F0[D_801590D4].D_801621F4 == 0) {
-        func_800BBA84(D_801621F0[D_801590D4].D_801621F6, D_801590CC, 0);
-        D_801621F0[D_801590D4].D_801621F0 = -1;
+    if (g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.framesLeft == 0) {
+        func_800BBA84(g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.unk6, D_801590CC, 0);
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
         return;
     }
-    D_801621F0[D_801590D4].D_801621F4--;
+    g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.framesLeft--;
 }
 
 static void BattleApplyGatedDelayedTick(void) {
-    if (D_801621F0[D_801590D4].D_801621F4 == 0) {
+    if (g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.framesLeft == 0) {
         if (D_801518DC == 0) {
-            func_800D0C80(D_801621F0[D_801590D4].D_801621F6);
-            D_801621F0[D_801590D4].D_801621F0 = -1;
+            func_800D0C80(g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.unk6);
+            g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
         }
     } else {
-        D_801621F0[D_801590D4].D_801621F4--;
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.framesLeft--;
     }
 }
 
 static void BattleFixedPointRampRepeatTick(void) {
-    if (g_BattleEffectSlots[g_BattleEffectCursor].D_8016297E == 0) {
-        if (g_BattleEffectSlots[g_BattleEffectCursor].D_8016297C == 0) {
-            g_BattleEffectSlots[g_BattleEffectCursor].D_80162978 = -1;
+    if (g_BattleEffectSlots[g_BattleEffectCursor].rampRepeat.delayLeft == 0) {
+        if (g_BattleEffectSlots[g_BattleEffectCursor].rampRepeat.repeatsLeft == 0) {
+            g_BattleEffectSlots[g_BattleEffectCursor].raw.D_80162978 = -1;
             return;
         }
         BattleSetPendingMarkerPos(g_BattleModels[D_801590CC].currentActionId, D_80151200[D_801590CC].D_8015123E);
-        g_BattleEffectSlots[g_BattleEffectCursor].D_8016297C--;
+        g_BattleEffectSlots[g_BattleEffectCursor].rampRepeat.repeatsLeft--;
         return;
     }
-    g_BattleEffectSlots[g_BattleEffectCursor].D_8016297E--;
+    g_BattleEffectSlots[g_BattleEffectCursor].rampRepeat.delayLeft--;
 }
 
 void BattleLoadOverlaySector(s32 loc, s32 len) {
@@ -1737,18 +1751,18 @@ void BattleInitMagicCastEffect(void) {
         g_BattleModels[i].specialFlags |= 1;
     }
     func_801B0040(g_BattleCurrentTargetMask, D_801590CC);
-    ret = func_800BC04C(BattleEffectTimeoutTick);
+    ret = BattleUntrackedRegister(BattleEffectTimeoutTick);
     *(s32*)0x1F800000 = ret;
-    D_801621F0[ret].D_801621F4 = 2;
+    g_BattleUntrackedSlots[ret].delay.framesLeft = 2;
 }
 
 static void BattleEffectTimeoutTick(void) {
-    if (!D_801621F0[D_801590D4].D_801621F4) {
-        D_801621F0[D_801590D4].D_801621F0 = -1;
+    if (!g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.framesLeft) {
+        g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
         func_800BB978();
         return;
     }
-    D_801621F0[D_801590D4].D_801621F4--;
+    g_BattleUntrackedSlots[g_BattleUntrackedCursor].delay.framesLeft--;
 }
 
 static void BattleDispatchModelRunScript(u8 arg0) {
@@ -1775,9 +1789,9 @@ void func_800D0C80(u8 arg0) {
     case CMD_MAGIC:
         if (D_801031F0 == 0) {
             if (g_BattleModels[arg0].attackEffectId == 25) {
-                g_BattleModels[0].unk26 = 1;
-                g_BattleModels[1].unk26 = 1;
-                g_BattleModels[2].unk26 = 1;
+                g_BattleModels[0].ready = 1;
+                g_BattleModels[1].ready = 1;
+                g_BattleModels[2].ready = 1;
             }
             D_800EFAF0[g_BattleModels[arg0].attackEffectId](g_BattleCurrentTargetMask, D_801590CC);
             return;
@@ -2084,36 +2098,59 @@ INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", BattleModelAnimReadEncryptedRo
 
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", BattleModelReadAnimStream);
 
-void BattleGetPartPosition(s32 arg0, s32 arg1, void* arg2);
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", BattleGetPartPosition);
+void BattleGetPartPosition(s32 actor, s32 bone, SVECTOR* pos) {
+    MATRIX inverse;
 
-// Take the low 16 bits of each of arg0's translation components relative to the
-// camera D_800FA63C, then rotate that offset by the camera's transposed
-// orientation into arg1.
-static void BattleTransformToCameraSpace(MATRIX* arg0, SVECTOR* arg1) {
-    MATRIX sp10;
-
-    arg1->vx = (s16)(*(u16*)&arg0->t[0] - *(u16*)&D_800FA63C.m.t[0]);
-    arg1->vy = (s16)(*(u16*)&arg0->t[1] - *(u16*)&D_800FA63C.m.t[1]);
-    arg1->vz = (s16)(*(u16*)&arg0->t[2] - *(u16*)&D_800FA63C.m.t[2]);
-    TransposeMatrix(&D_800FA63C.m, &sp10);
-    ApplyMatrixSV(&sp10, arg1, arg1);
+    pos->vx = g_BattleModels[actor].boneTransforms[bone].m.t[0] - g_BattleWorldView.m.t[0];
+    pos->vy = g_BattleModels[actor].boneTransforms[bone].m.t[1] - g_BattleWorldView.m.t[1];
+    pos->vz = g_BattleModels[actor].boneTransforms[bone].m.t[2] - g_BattleWorldView.m.t[2];
+    TransposeMatrix(&g_BattleWorldView.m, &inverse);
+    ApplyMatrixSV(&inverse, pos, pos);
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D3AF0);
+// Take the low 16 bits of each of m's translation components relative to the
+// camera g_BattleWorldView, then rotate that offset by the camera's transposed
+// orientation into pos.
+static void BattleGetMatrixPosition(MATRIX* m, SVECTOR* pos) {
+    MATRIX inverse;
+
+    pos->vx = m->t[0] - g_BattleWorldView.m.t[0];
+    pos->vy = m->t[1] - g_BattleWorldView.m.t[1];
+    pos->vz = m->t[2] - g_BattleWorldView.m.t[2];
+    TransposeMatrix(&g_BattleWorldView.m, &inverse);
+    ApplyMatrixSV(&inverse, pos, pos);
+}
+
+void func_800D3AF0(void) {
+    BattleSparkleSlot* slot;
+
+    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].sparkle;
+    D_800F01E8.u = slot->frame * 32;
+    D_800F01F8.m[0][0] = slot->scaleX;
+    D_800F01F8.m[1][1] = slot->scaleY;
+    BattleSetMatrixPosition(&slot->pos, -slot->scaleX >> 4, &D_800F01F8);
+    SetRotMatrix(&D_800F01F8);
+    SetTransMatrix(&D_800F01F8);
+    D_80163C74 = BattleEffectSpriteAdd(&D_800F01E8, g_cDb->unk70, 12, D_80163C74);
+    if (D_80062D98 == 0) {
+        if (slot->frame++ >= 7) {
+            slot->unk0 = -1;
+        }
+    }
+}
 
 const MATRIX D_800A0D98 = {{{0, 0, 0}, {0, 0, 0}, {0, 0, 4096}}, {0, 0, 0}};
 extern BattleSpriteDesc D_800F0218;
 
 void BattleEffectSingleDustCloud(void) {
     MATRIX m = D_800A0D98;
-    long flag;
+    s32 flag;
     Unk801621F0* slot;
 
-    slot = &D_801621F0[D_801590D4];
+    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
     D_800F0218.u = slot->D_801621F2 * 32;
-    SetRotMatrix(&D_800FA63C.m);
-    SetTransMatrix(&D_800FA63C.m);
+    SetRotMatrix(&g_BattleWorldView.m);
+    SetTransMatrix(&g_BattleWorldView.m);
     RotTrans((SVECTOR*)&slot->D_801621F4, (VECTOR*)m.t, &flag);
     m.t[2] -= (s16)slot->unk10.unk.unk0 >> 4;
     m.m[0][0] = slot->unkE + ((slot->unkE * slot->D_801621F2) >> 3);
@@ -2134,14 +2171,14 @@ static void BattleEffectDustClouds(void) {
     s32 temp_s0;
     u16 temp_s2;
 
-    temp_s1 = &D_801621F0[D_801590D4];
+    temp_s1 = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
     temp_s0 = temp_s1->D_801621F0;
     temp_s2 = (&g_BattleModels[temp_s0].boneIndices[11])[temp_s1->D_801621F2 & 1];
     temp_s0++; // !FAKE
     temp_s0--; // !FAKE
     if (temp_s2 != 0xFF) {
-        temp_s0_2 = &D_801621F0[func_800BC04C(BattleEffectSingleDustCloud)];
-        BattleGetPartPosition(temp_s0, temp_s2, &temp_s0_2->D_801621F4);
+        temp_s0_2 = &g_BattleUntrackedSlots[BattleUntrackedRegister(BattleEffectSingleDustCloud)].raw;
+        BattleGetPartPosition(temp_s0, temp_s2, (SVECTOR*)&temp_s0_2->D_801621F4);
         temp_s0_2->D_801621F6 = 0;
         temp_s0_2->unkE = temp_s1->unkE;
         temp_s0_2->unk10.unk.unk0 = temp_s1->unk10.unk.unk0;
@@ -2155,29 +2192,29 @@ static void BattleEffectDustClouds(void) {
 static void BattleSpawnPartFlickerEffect(s32 arg0) {
     Unk801621F0* temp_v0;
 
-    temp_v0 = &D_801621F0[func_800BC04C(BattleEffectDustClouds)];
+    temp_v0 = &g_BattleUntrackedSlots[BattleUntrackedRegister(BattleEffectDustClouds)].raw;
     temp_v0->D_801621F0 = arg0;
     temp_v0->unkE = *(s16*)& temp_v0->unk10 = g_BattleModels[arg0].scale;
 }
 
-void BattleSpawnSparkleEffect(Pair16x2* arg0, s16 arg1, s16 arg2) {
-    Unk801621F0* dst;
+void BattleSpawnSparkleEffect(SVECTOR* pos, s16 scaleX, s16 scaleY) {
+    BattleSparkleSlot* dst;
 
-    dst = &D_801621F0[func_800BC04C(func_800D3AF0)];
-    *(Pair16x2*)&dst->D_801621F4 = *arg0;
-    dst->unkE = arg1;
-    dst->unk10.unk.unk0 = arg2;
+    dst = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D3AF0)].sparkle;
+    dst->pos = *pos;
+    dst->scaleX = scaleX;
+    dst->scaleY = scaleY;
 }
 
 static void BattleDelayedRotatedSpawnTick(void) {
     Unk801621F0* temp_s0;
     Unk801621F0* temp_s1;
 
-    temp_s1 = &D_801621F0[D_801590D4];
+    temp_s1 = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
     if (D_80062D98 == 0) {
         temp_s1->unkC--;
         if (temp_s1->unkC == -1) {
-            temp_s0 = &D_801621F0[func_800BC04C(func_800D3AF0)];
+            temp_s0 = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D3AF0)].raw;
             RotMatrixYXZ(&g_BattleModels[temp_s1->unk10.unk.unk2].rootRot, (MATRIX*)0x1F800008);
             ApplyMatrixSV((MATRIX*)0x1F800008, (SVECTOR*)&temp_s1->D_801621F4, (SVECTOR*)0x1F800000);
             temp_s0->D_801621F4 = g_BattleModels[temp_s1->unk10.unk.unk2].rootTrans.vx + ((SVECTOR*)0x1F800000)->vx;
@@ -2201,23 +2238,40 @@ static void BattleComputeRelativeMatrix(MATRIX* arg0, MATRIX* arg1, MATRIX* arg2
     MulMatrix(arg2, arg1);
 }
 
-BattleModelSub* BattleModelAdvance(SVECTOR* arg0, s32 arg1, BattleModelSub* arg2) {
+MATRIX* BattleSetMatrixPosition(SVECTOR* pos, s32 depthBias, MATRIX* m) {
     VECTOR normal;
-    long flag;
+    s32 flag;
 
-    SetRotMatrix(&D_800FA63C.m);
-    SetTransMatrix(&D_800FA63C.m);
-    RotTrans(arg0, (VECTOR*)arg2->m.t, &flag);
-    if (arg1 != 0) {
-        VectorNormal((VECTOR*)arg2->m.t, &normal);
-        arg2->m.t[0] = ((arg1 * normal.vx) >> 12) + arg2->m.t[0];
-        arg2->m.t[1] = ((arg1 * normal.vy) >> 12) + arg2->m.t[1];
-        arg2->m.t[2] = ((arg1 * normal.vz) >> 12) + arg2->m.t[2];
+    SetRotMatrix(&g_BattleWorldView.m);
+    SetTransMatrix(&g_BattleWorldView.m);
+    RotTrans(pos, (VECTOR*)m->t, &flag);
+    if (depthBias != 0) {
+        VectorNormal((VECTOR*)m->t, &normal);
+        m->t[0] = ((depthBias * normal.vx) >> 12) + m->t[0];
+        m->t[1] = ((depthBias * normal.vy) >> 12) + m->t[1];
+        m->t[2] = ((depthBias * normal.vz) >> 12) + m->t[2];
     }
-    return arg2;
+    return m;
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D4368);
+MATRIX* BattleSetBillboardMatrix(SVECTOR* pos, s32 scale, s32 depthBias) {
+    VECTOR normal;
+    s32 flag;
+
+    g_BattleBillboardMatrix.m[0][0] = g_BattleBillboardMatrix.m[1][1] = g_BattleBillboardMatrix.m[2][2] = scale;
+    SetRotMatrix(&g_BattleWorldView.m);
+    SetTransMatrix(&g_BattleWorldView.m);
+    RotTrans(pos, (VECTOR*)g_BattleBillboardMatrix.t, &flag);
+    if (depthBias != 0) {
+        VectorNormal((VECTOR*)g_BattleBillboardMatrix.t, &normal);
+        g_BattleBillboardMatrix.t[0] = ((depthBias * normal.vx) >> 12) + g_BattleBillboardMatrix.t[0];
+        g_BattleBillboardMatrix.t[1] = ((depthBias * normal.vy) >> 12) + g_BattleBillboardMatrix.t[1];
+        g_BattleBillboardMatrix.t[2] = ((depthBias * normal.vz) >> 12) + g_BattleBillboardMatrix.t[2];
+    }
+    SetRotMatrix(&g_BattleBillboardMatrix);
+    SetTransMatrix(&g_BattleBillboardMatrix);
+    return &g_BattleBillboardMatrix;
+}
 
 static void BattleAddDrawModePrim(u_long* ot, u16 tpage) {
     DR_MODE* dr_mode;
@@ -2281,37 +2335,95 @@ void BattleMatrixOrthonormalize(MATRIX* m) {
     m->m[2][2] = fwd.vz;
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D4710);
+void func_800D4710(void) {
+    BattleKeyframeParticleSlot* p;
+    SpriteRenderDesc* desc;
+    MATRIX* m;
+    u8 anim;
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", BattleSpawnKeyframeParticle);
+    p = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].keyframeParticle;
+    desc = (SpriteRenderDesc*)0x1F800000;
+    desc->frameIndex = p->frame | 0x8000;
+    desc->clutBias = p->clutBias;
+    *(u32*)&desc->color = 0x2C808080;
+    D_800F10B8.m[0][0] = D_800F10B8.m[1][1] = D_800F10B8.m[2][2] = p->scale;
+    anim = p->flags;
+    if (anim != 8) {
+        m = &D_800F10B8;
+        desc->frames = D_800F0B14[anim];
+    } else {
+        m = (MATRIX*)0x1F80000C;
+        desc->frames = D_800F0B14[5];
+        *m = D_800F10B8;
+        RotMatrixZ(0x200, m);
+    }
+    if (p->flags & 0x100) {
+        m->m[0][0] = -m->m[0][0];
+        m->m[0][1] = -m->m[0][1];
+        m->m[0][2] = -m->m[0][2];
+    }
+    BattleSetMatrixPosition(&p->pos, p->depthBias, m);
+    m->t[0] += p->offsetX;
+    m->t[1] += p->offsetY;
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    D_80163C74 = func_800D4D90(desc, g_cDb->unk70, 12, D_80163C74);
+    if (D_80062D98 == 0) {
+        if (++p->frame >= desc->frames->frameCount) {
+            p->flags = -1;
+        }
+    }
+}
+
+void BattleSpawnKeyframeParticle(s8* key, SVECTOR* pos, BattleKeyframeEffectSlot* parent) {
+    BattleKeyframeParticleSlot* p;
+    s32 scale;
+
+    p = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D4710)].keyframeParticle;
+    p->pos = *pos;
+    p->flags = (*key++ - 1) | parent->flags;
+    if (parent->flags & 0x100) {
+        p->offsetX = (-(*key++ << 3) * parent->scale) >> 12;
+    } else {
+        p->offsetX = ((*key++ << 3) * parent->scale) >> 12;
+    }
+    p->offsetY = ((*key++ << 3) * parent->scale) >> 12;
+    p->depthBias = parent->depthBias;
+    scale = ((*key++ << 8) * parent->scale) >> 12;
+    if (scale > 0x7FFF) {
+        scale = 0x7FFF;
+    }
+    p->scale = scale;
+    p->clutBias = *key << 6;
+}
 
 void BattleKeyframeEffectTick(void) {
-    Unk801621F0* slot;
+    BattleKeyframeEffectSlot* slot;
     s8* key;
     s8* sub;
     s32 alive;
-    u8 frame;
-    u8 subFrame;
+    s8 frame;
+    s8 subFrame;
 
-    slot = &D_801621F0[D_801590D4];
+    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].keyframeEffect;
     if (D_80062D98 == 0) {
         alive = 0;
-        key = (s8*)*(s32*)&slot->unkC;
-        while ((s8)(frame = *key++) != -1) {
+        key = slot->script;
+        while ((frame = *key++) != -1) {
             if (*key != -2) {
-                if ((s8)frame == slot->D_801621F2) {
-                    BattleSpawnKeyframeParticle(key, (Pair16x2*)&slot->D_801621F4, slot);
-                } else if (slot->D_801621F2 < (s8)frame) {
+                if (frame == slot->frame) {
+                    BattleSpawnKeyframeParticle(key, &slot->pos, slot);
+                } else if (slot->frame < frame) {
                     alive = 1;
                 }
                 key += 5;
             } else {
                 sub = D_800F0C44[key[1]];
                 key += 2;
-                while ((s8)(subFrame = *sub++) != -1) {
-                    if ((s8)frame + (s8)subFrame == slot->D_801621F2) {
-                        BattleSpawnKeyframeParticle(sub, (Pair16x2*)&slot->D_801621F4, slot);
-                    } else if (slot->D_801621F2 < (s8)frame + (s8)subFrame) {
+                while ((subFrame = *sub++) != -1) {
+                    if (frame + subFrame == slot->frame) {
+                        BattleSpawnKeyframeParticle(sub, &slot->pos, slot);
+                    } else if (slot->frame < frame + subFrame) {
                         alive = 1;
                     }
                     sub += 5;
@@ -2319,24 +2431,32 @@ void BattleKeyframeEffectTick(void) {
             }
         }
         if (alive == 0) {
-            slot->D_801621F0 = -1;
+            slot->flags = -1;
         }
-        slot->D_801621F2++;
+        slot->frame++;
     }
 }
 
 static void BattleSpawnFloatingIconAt(void* arg0, s32 arg1, s32 arg2);
-void func_800D4C08(void* arg0, s32 arg1, s32 arg2, s32 arg3);
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D4C08);
+void func_800D4C08(SVECTOR* pos, s32 scriptAndFlags, s32 scale, s32 depthBias) {
+    BattleKeyframeEffectSlot* slot;
 
-static void BattleSpawnFloatingIconAtPart(s32 arg0, s32 arg1, s32 arg2) {
-    s32 sp10;
-
-    BattleGetPartPosition(arg0, g_BattleModels[arg0].boneIndices[0], &sp10);
-    func_800D4C08(&sp10, arg1, arg2, -g_BattleModels[arg0].collisionRadius);
+    slot = &g_BattleUntrackedSlots[BattleUntrackedRegister(BattleKeyframeEffectTick)].keyframeEffect;
+    slot->flags = scriptAndFlags & 0xFF00;
+    slot->script = D_800F0F98[scriptAndFlags & 0xFF];
+    slot->pos = *pos;
+    slot->scale = scale;
+    slot->depthBias = depthBias;
 }
 
-static void BattleSpawnFloatingIcon(s32 arg0, s32 arg1) { BattleSpawnFloatingIconAtPart(arg0, arg1, 0x1000); }
+static void BattleSpawnFloatingIconAtPart(s32 actor, s32 arg1, s32 arg2) {
+    SVECTOR pos;
+
+    BattleGetPartPosition(actor, g_BattleModels[actor].boneIndices[0], &pos);
+    func_800D4C08(&pos, arg1, arg2, -g_BattleModels[actor].collisionRadius);
+}
+
+static void BattleSpawnFloatingIcon(s32 actor, s32 arg1) { BattleSpawnFloatingIconAtPart(actor, arg1, 0x1000); }
 
 static void BattleSpawnFloatingIconAt(void* arg0, s32 arg1, s32 arg2) { func_800D4C08(arg0, arg1, 0x1000, arg2); }
 
@@ -2374,7 +2494,7 @@ extern Unk80162978* D_800F10E0;
 
 void BattleFixedPointRampTick();
 void BattleFixedPointRampTick(void) {
-    Unk80162978* slot = &g_BattleEffectSlots[g_BattleEffectCursor];
+    Unk80162978* slot = &g_BattleEffectSlots[g_BattleEffectCursor].raw;
     s32 v;
     u8 c;
 
@@ -2401,7 +2521,7 @@ void BattleFixedPointRampTick(void) {
 // countdown (0x0C) so it lasts arg0 ticks.
 static void BattleFixedPointRampInit(s32 arg0) {
     if (D_800F10E0 == NULL) {
-        D_800F10E0 = &g_BattleEffectSlots[BattleEffectRegister(BattleFixedPointRampTick)];
+        D_800F10E0 = &g_BattleEffectSlots[BattleEffectRegister(BattleFixedPointRampTick)].raw;
     }
     *(s32*)&D_800F10E0->D_8016297C = 0;
     *(s32*)&D_800F10E0->unkC = 0x10000 / arg0;
@@ -2415,12 +2535,11 @@ void BattleFixedPointRampReconfigure(s32 arg0) {
 }
 
 extern s32 D_800F10E4;
-extern s16 D_800F5B74;
 
 // Step the ramp once: accumulate (0x04 += 0x08), publish the high word, and
 // free the slot when the countdown (0x0C) reaches 0.
 static void BattleFixedPointRampUpdate(void) {
-    Unk80162978* slot = &g_BattleEffectSlots[g_BattleEffectCursor];
+    Unk80162978* slot = &g_BattleEffectSlots[g_BattleEffectCursor].raw;
     s32 v0;
     s32 v1;
 
@@ -2442,7 +2561,7 @@ void BattleFixedPointRampUpdateInit(s32 arg0, s32 arg1) {
     s32 accum;
 
     if (D_800F10E4 == 0) {
-        slot = &g_BattleEffectSlots[BattleEffectRegister(BattleFixedPointRampUpdate)];
+        slot = &g_BattleEffectSlots[BattleEffectRegister(BattleFixedPointRampUpdate)].raw;
         accum = D_800F5B74 << 0x10;
         D_800F10E4 = (s32)slot;
         *(s32*)&slot->unkC = arg1;
@@ -2455,7 +2574,7 @@ void BattleFixedPointRampUpdateInit(s32 arg0, s32 arg1) {
 // the next target in the mask, fires the callback, and retires the slot once
 // the mask is exhausted; FrameStep decides how often that happens.
 void BattleAnimationUpdate(void) {
-    MagicAnimationData* slot = (MagicAnimationData*)&g_BattleEffectSlots[g_BattleEffectCursor];
+    MagicAnimationData* slot = &g_BattleEffectSlots[g_BattleEffectCursor].magicAnimation;
     s16 target;
 
     if (D_80062D98 != 0) { // global pause
@@ -2489,14 +2608,12 @@ void BattleAnimationUpdate(void) {
 // index and arg1 (offset 0x06). Guessed: the types -- s16 and s32
 // compile identically, no overlay yet reads arg1, and editing this
 // leaves every object byte-identical, so the build cannot check it.
-
-void MagicAnimationRegister(s32 arg0, s32 arg1, s32 arg2, void (*func)(s32, s32)) {
-    MagicAnimationData* temp_v0 =
-        (MagicAnimationData*)&g_BattleEffectSlots[BattleEffectRegister(BattleAnimationUpdate)];
+void MagicAnimationRegister(s32 targetMask, s32 callbackArg, s32 frameStep, void (*func)(s32, s32)) {
+    MagicAnimationData* temp_v0 = &g_BattleEffectSlots[BattleEffectRegister(BattleAnimationUpdate)].magicAnimation;
     temp_v0->TargetCursor = 0;
-    temp_v0->TargetMask = arg0;
-    temp_v0->CallbackArg = arg1;
-    temp_v0->FrameStep = arg2;
+    temp_v0->TargetMask = targetMask;
+    temp_v0->CallbackArg = callbackArg;
+    temp_v0->FrameStep = frameStep;
     temp_v0->Callback = func;
 }
 
@@ -2513,7 +2630,36 @@ static s32 BattleCountSetBits(s32 arg0) {
     return count;
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", BattleEntityGetCenter);
+SVECTOR* BattleEntityGetCenter(s32 targetMask, SVECTOR* center) {
+    s32 minX = 32767;
+    s32 minZ = 32767;
+    s32 maxX = -32768;
+    s32 maxZ = -32768;
+    s32 i;
+    BattleModelSub* root;
+
+    for (i = 0; i < NUM_BATTLE_ACTOR; i++) {
+        root = (BattleModelSub*)&g_BattleModels[i].stageMatrix;
+        if ((targetMask >> i) & 1) {
+            if (root->trans.vx < minX) {
+                minX = root->trans.vx;
+            }
+            if (root->trans.vx > maxX) {
+                maxX = root->trans.vx;
+            }
+            if (root->trans.vz < minZ) {
+                minZ = root->trans.vz;
+            }
+            if (root->trans.vz > maxZ) {
+                maxZ = root->trans.vz;
+            }
+        }
+    }
+    center->vx = (minX + maxX) / 2;
+    center->vz = (minZ + maxZ) / 2;
+    center->vy = 0;
+    return center;
+}
 
 s32 func_800D55A4(s32 arg0) {
     return (g_BattleModels[arg0].collisionRadius * 0x10) * g_BattleModels[arg0].scale >> 0xC;
@@ -2563,8 +2709,8 @@ s32 BattlePositionToStereoPan(SVECTOR* sv) {
     s32 p;
     s32 flag;
 
-    SetRotMatrix(&D_800FA63C.m);
-    SetTransMatrix(&D_800FA63C.m);
+    SetRotMatrix(&g_BattleWorldView.m);
+    SetTransMatrix(&g_BattleWorldView.m);
     RotTransPers(sv, (long*)sxy, (long*)&p, (long*)&flag);
     if (sxy[0] < 0) {
         sxy[0] = 0;
@@ -2600,7 +2746,7 @@ void func_800D57C0();
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D57C0);
 
 static void BattleSpawnActorRampEffect(s32 arg0, s16 arg1, s16 arg2) {
-    Unk80162978* temp_v0 = &g_BattleEffectSlots[BattleEffectRegister(func_800D57C0)];
+    Unk80162978* temp_v0 = &g_BattleEffectSlots[BattleEffectRegister(func_800D57C0)].raw;
     temp_v0->D_80162978 = 0;
     temp_v0->D_80162980 = arg0;
     temp_v0->D_8016297E = arg2;
@@ -2613,7 +2759,7 @@ INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D5938);
 static void BattleSpawnGlobalRampEffect(s16 arg0, s16 arg1) {
     Unk80162978* temp_v0;
 
-    temp_v0 = &g_BattleEffectSlots[BattleEffectRegister(func_800D5938)];
+    temp_v0 = &g_BattleEffectSlots[BattleEffectRegister(func_800D5938)].raw;
     temp_v0->D_80162978 = 0;
     temp_v0->D_8016297E = arg1;
     temp_v0->D_8016297C = arg0;
@@ -2631,7 +2777,7 @@ INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D5B6C);
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D5D28);
 
 void BattleSpawnBlinkEffect(s32 arg0, s16 arg1, u32 arg2, s32 arg3, s32 arg4) {
-    Unk801621F0* dst = &D_801621F0[func_800BC04C(func_800D5D28)];
+    Unk801621F0* dst = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D5D28)].raw;
 
     dst->D_801621F0 = (s16)(arg2 >> 24);
     *(s32*)&dst->D_801621F4 = arg0;
@@ -2714,84 +2860,183 @@ void BattleDrawHitFlashModel(MATRIX* m) {
     D_800F1698.clut = 0;
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", BattleHitFlashGrowTick);
+void BattleHitFlashGrowTick(void) {
+    BattleHitFlashSlot* slot;
+    u16 frame;
+
+    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].hitFlash;
+    D_800F16A8.m[1][1] = rsin(slot->frame << 7) + 0x1000;
+    D_800F16A8.m[0][0] = D_800F16A8.m[2][2] = slot->frame * 1024;
+    if (slot->frame < 8) {
+        D_800F1698.color = 0;
+    } else {
+        D_800F1698.color = (slot->frame - 8) * 512;
+    }
+    D_800F16A8.t[0] = slot->pos.vx;
+    D_800F16A8.t[1] = 0;
+    D_800F16A8.t[2] = slot->pos.vz;
+    CompMatrix(&g_BattleWorldView.m, &D_800F16A8, D_800F16C8);
+    D_800F1698.model = D_800F15AC;
+    BattleDrawHitFlashModel(D_800F16C8);
+    if (D_80062D98 == 0) {
+        frame = slot->frame + 1;
+        slot->frame = frame;
+        if ((s16)frame == 16) {
+            slot->unk0 = -1;
+        }
+    }
+}
 
 void BattleHitFlashBurstTick(void) {
-    Unk801621F0* slot = &D_801621F0[D_801590D4];
+    BattleHitFlashSlot* slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].hitFlash;
     u16 v;
 
-    D_800F16CC.m[0][0] = D_800F16CC.m[2][2] = (slot->D_801621F2 * 3) << 9;
-    if (slot->D_801621F2 < 8) {
-        D_800F16CC.m[1][1] = (slot->D_801621F2 * 3) << 10;
+    D_800F16CC.m[0][0] = D_800F16CC.m[2][2] = (slot->frame * 3) << 9;
+    if (slot->frame < 8) {
+        D_800F16CC.m[1][1] = (slot->frame * 3) << 10;
         D_800F1698.color = 0;
-    } else if (slot->D_801621F2 < 16) {
+    } else if (slot->frame < 16) {
         D_800F16CC.m[1][1] = 0x6000;
-        D_800F1698.color = (slot->D_801621F2 - 8) << 9;
+        D_800F1698.color = (slot->frame - 8) << 9;
     }
-    D_800F16CC.t[0] = slot->D_801621F4;
+    D_800F16CC.t[0] = slot->pos.vx;
     D_800F16CC.t[1] = 0;
-    D_800F16CC.t[2] = slot->unk8;
-    CompMatrix(&D_800FA63C.m, &D_800F16CC, D_800F16EC);
+    D_800F16CC.t[2] = slot->pos.vz;
+    CompMatrix(&g_BattleWorldView.m, &D_800F16CC, D_800F16EC);
     D_800F1698.model = D_800F14E0;
     BattleDrawHitFlashModel(D_800F16EC);
     if (D_80062D98 == 0) {
-        v = slot->D_801621F2 + 1;
-        slot->D_801621F2 = v;
+        v = slot->frame + 1;
+        slot->frame = v;
         if ((s16)v == 16) {
-            slot->D_801621F0 = -1;
+            slot->unk0 = -1;
         }
     }
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", BattleHitFlashShrinkTick);
+void BattleHitFlashShrinkTick(void) {
+    BattleHitFlashSlot* slot;
+    u16 frame;
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D6D8C);
+    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].hitFlash;
+    D_800F16F0.m[1][1] = rsin((14 - slot->frame) << 7) + 0x1000;
+    D_800F16F0.m[0][0] = D_800F16F0.m[2][2] = (14 - slot->frame) * 1024;
+    if (slot->frame < 8) {
+        D_800F1698.color = -(slot->frame << 12) / 8 + 0x1000;
+    } else {
+        D_800F1698.color = (slot->frame - 8) * 512;
+    }
+    D_800F16F0.t[0] = slot->pos.vx;
+    D_800F16F0.t[1] = 0;
+    D_800F16F0.t[2] = slot->pos.vz;
+    CompMatrix(&g_BattleWorldView.m, &D_800F16F0, D_800F1710);
+    D_800F1698.model = D_800F15AC;
+    D_800F1698.uvOffset = 0x80;
+    D_800F1698.clut = 0x80;
+    BattleDrawHitFlashModel(D_800F1710);
+    if (D_80062D98 == 0) {
+        frame = slot->frame + 1;
+        slot->frame = frame;
+        if ((s16)frame == 16) {
+            slot->unk0 = -1;
+        }
+    }
+}
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D6F78);
+void func_800D6D8C(void) {
+    VECTOR view;
+    s32 flag;
+    MATRIX* m;
+    Unk800D6D8CSlot* spark;
+    s32 progress;
+    s32 arc;
+
+    spark = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].unk800D6D8C;
+    progress = 0x1000 - (spark->frame << 12) / 8;
+    arc = rsin(progress / 2);
+    SetRotMatrix(&g_BattleWorldView.m);
+    SetTransMatrix(&g_BattleWorldView.m);
+    RotTrans(&spark->pos, &view, &flag);
+    m = BattleSetBillboardMatrix(
+        &spark->pos, (s16)((-(progress * 0x500) >> 12) + 0xA00), ((0x200 - view.vz) * progress) >> 12);
+    m->t[0] += ((spark->dirX * progress) >> 12) + ((spark->perpX * arc) >> 11);
+    m->t[1] += ((spark->dirY * progress) >> 12) + ((spark->perpY * arc) >> 11);
+    SetTransMatrix(m);
+    D_800F1714.clutBias = D_800F1720[spark->palette];
+    D_80163C74 = func_800D4D90(&D_800F1714, g_cDb->unk70, 12, D_80163C74);
+    if (D_80062D98 == 0) {
+        if (++spark->frame >= 8) {
+            spark->palette = -1;
+        }
+    }
+}
+
+void func_800D6F78(void) {
+    u8 unused[0x50];
+    Unk800D6F78Slot* slot;
+    Unk800D6D8CSlot* spark;
+    s32 palette;
+    s32 angle;
+
+    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].unk800D6F78;
+    if (D_80062D98 == 0) {
+        spark = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D6D8C)].unk800D6D8C;
+        spark->palette = (slot->frame + palette) % 5;
+        spark->pos = slot->pos;
+        angle = rand() & 0xFFF;
+        spark->dirX = (u32)(rsin(angle) * 25) >> 9;
+        spark->dirY = (rcos(angle) * 200) >> 12;
+        spark->perpX = spark->dirY;
+        spark->perpY = -spark->dirX;
+        if (++slot->frame >= 23) {
+            slot->unk0 = -1;
+        }
+    }
+}
 
 void BattleSpawnTrailEffect(void) {
-    Unk801621F0* src = &D_801621F0[D_801590D4];
-    Unk801621F0* dst;
+    BattleTrailSlot* src = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].trail;
+    BattleHitFlashSlot* dst;
     u16 v;
 
     if (D_80062D98 == 0) {
-        if (!(src->D_801621F2 & 3)) {
-            dst = &D_801621F0[func_800BC04C((void (*)())src->unk1C)];
-            *(Pair16x2*)&dst->D_801621F4 = *(Pair16x2*)&src->D_801621F4;
+        if (!(src->frame & 3)) {
+            dst = &g_BattleUntrackedSlots[BattleUntrackedRegister(src->spawnCallback)].hitFlash;
+            dst->pos = src->pos;
         }
-        v = src->D_801621F2 + 1;
-        src->D_801621F2 = v;
+        v = src->frame + 1;
+        src->frame = v;
         if ((s16)v == 0xD) {
-            src->D_801621F0 = -1;
+            src->unk0 = -1;
         }
     }
 }
 
-void BattleSpawnPartEffect(s32 arg0, s32 arg1) {
-    Unk801621F0* dst = &D_801621F0[func_800BC04C(BattleSpawnTrailEffect)];
-    Unk801621F0* dst2;
+void BattleSpawnPartEffect(s32 actor, s32 hitFlashType) {
+    BattleTrailSlot* dst = &g_BattleUntrackedSlots[BattleUntrackedRegister(BattleSpawnTrailEffect)].trail;
+    Unk800D6F78Slot* dst2;
 
-    BattleGetPartPosition(arg0, g_BattleModels[arg0].boneIndices[0], (u8*)dst + 4);
-    switch (arg1) {
+    BattleGetPartPosition(actor, g_BattleModels[actor].boneIndices[0], &dst->pos);
+    switch (hitFlashType) {
     case 0:
-        dst->unk1C = BattleHitFlashGrowTick;
+        dst->spawnCallback = BattleHitFlashGrowTick;
         return;
     case 1:
-        dst->unk1C = BattleHitFlashBurstTick;
+        dst->spawnCallback = BattleHitFlashBurstTick;
         return;
     case 2:
-        dst->unk1C = BattleHitFlashShrinkTick;
+        dst->spawnCallback = BattleHitFlashShrinkTick;
         return;
     case 3:
-        dst->unk1C = BattleHitFlashGrowTick;
-        dst2 = &D_801621F0[func_800BC04C(func_800D6F78)];
-        *(Pair16x2*)&dst2->D_801621F4 = *(Pair16x2*)&dst->D_801621F4;
+        dst->spawnCallback = BattleHitFlashGrowTick;
+        dst2 = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D6F78)].unk800D6F78;
+        dst2->pos = dst->pos;
         return;
     }
 }
 
 static void BattleFixedPointRampEffectTick(void) {
-    Unk801621F0* elem = &D_801621F0[D_801590D4];
+    Unk801621F0* elem = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
 
     if (D_80062D98 == 0) {
         // Advance this slot's per-tick state machine (field 0x2).
@@ -2808,28 +3053,166 @@ static void BattleFixedPointRampEffectTick(void) {
 
 static void BattleSpawnFixedPointRampEffect(void) { BattleEffectRegister(BattleFixedPointRampEffectTick); }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D7368);
+void func_800D7368(void) {
+    MATRIX m;
+    SVECTOR rot;
+    BattleBounceParticle* p;
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D751C);
-
-void BattleSpawnStreakEffect(Pair16x2* arg0) {
-    Unk801621F0* dst;
-
-    dst = &D_801621F0[func_800BC04C(func_800D751C)];
-    *(Pair16x2*)&dst->unk8 = *arg0;
-    dst->D_801621F0 = 1;
+    rot.vz = 0;
+    rot.vx = 0;
+    p = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].bounceParticle;
+    rot.vy = p->facing;
+    RotMatrixYXZ(&rot, &m);
+    m.t[0] = p->pos.vx;
+    m.t[1] = p->pos.vy;
+    m.t[2] = p->pos.vz;
+    CompMatrix(&g_BattleWorldView.m, &m, &m);
+    SetRotMatrix(&m);
+    SetTransMatrix(&m);
+    D_80163C74 = func_800D29D4(&D_800F1904, g_cDb->unk70, 12, D_80163C74);
+    if (D_80062D98 == 0) {
+        p->pos.vx += p->velocity.vx;
+        p->pos.vy += p->velocity.vy;
+        p->pos.vz += p->velocity.vz;
+        p->velocity.vy += 30;
+        if (p->pos.vy >= 0) {
+            p->velocity.vy = (-p->velocity.vy >> 2) - (rand() & 0x1F);
+            p->pos.vy = -p->pos.vy >> 2;
+            p->velocity.vx = (p->velocity.vx >> 2) + (rand() & 0x1F) - 16;
+            p->velocity.vz = (p->velocity.vz >> 2) + (rand() & 0x1F) - 16;
+            p->bounces++;
+            if (p->bounces == 2) {
+                p->bounces = -1;
+            }
+            BattleSpawnSparkleEffect(&p->pos, 0x200, 0x400);
+        }
+    }
 }
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", BattleSubModelFlashTick);
+void func_800D751C(void) {
+    MATRIX m;
+    long p;
+    long flag;
+    POLY_FT4* quad;
+    BattleStreakSlot* slot;
+    s32 otz;
 
-INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800D7888);
+    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].streak;
+    D_800F1954.vy = rand() & 0x3FF;
+    RotMatrixYXZ(&D_800F1954, &D_800F1934);
+    D_800F1934.t[0] = slot->pos.vx;
+    D_800F1934.t[2] = slot->pos.vz;
+    CompMatrix(&g_BattleWorldView.m, &D_800F1934, &m);
+    SetRotMatrix(&m);
+    SetTransMatrix(&m);
+    quad = D_80163C74;
+    otz = RotAverage4(&D_800F1914, &D_800F191C, &D_800F1924, &D_800F192C, (long*)&quad->x0, (long*)&quad->x1,
+                      (long*)&quad->x2, (long*)&quad->x3, &p, &flag);
+    if (otz > 0) {
+        quad->tag = 0x09000000;
+        if (slot->unk0 == 0) {
+            *(u32*)&quad->r0 = 0x2E808080;
+        } else {
+            *(u32*)&quad->r0 = 0x2E202020;
+        }
+        quad->clut = 0x78C7;
+        quad->tpage = 0x3A;
+        *(s16*)&quad->u0 = 0xC000;
+        *(s16*)&quad->u1 = 0xC03F;
+        *(s16*)&quad->u2 = 0xFF00;
+        *(s16*)&quad->u3 = 0xFF3F;
+        AddPrim(&g_cDb->unk70[otz >> 2], quad);
+        D_80163C74 = quad + 1;
+    }
+    slot->unk0 = -1;
+}
 
-void BattleSpawnSpriteEffect(s32 arg0, s32 arg1, s32 arg2, s16 arg3, s32 arg4, s32 arg5) {
-    Unk801621F0* slot = &D_801621F0[func_800BC04C(func_800D7888)];
+void BattleSpawnStreakEffect(SVECTOR* pos) {
+    BattleStreakSlot* dst;
+
+    dst = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D751C)].streak;
+    dst->pos = *pos;
+    dst->unk0 = 1;
+}
+
+void BattleSubModelFlashTick(void) {
+    MATRIX m;
+    Unk801621F0* slot;
+    BattleStreakSlot* streak;
+
+    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
+    if (D_80062D98 == 0 && slot->D_801621F2 != 0) {
+        slot->D_801621F0 = -1;
+        return;
+    }
+    D_800F195C.t[2] = -slot->unk1A;
+    CompMatrix(slot->unk1C, &D_800F195C, &m);
+    SetRotMatrix(&m);
+    SetTransMatrix(&m);
+    D_80163C74 = func_800D29D4(&D_800F197C, g_cDb->unk70, 12, D_80163C74);
+    if (D_80062D98 == 0) {
+        streak = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D751C)].streak;
+        streak->pos.vx = m.t[0] - g_BattleWorldView.m.t[0];
+        streak->pos.vy = m.t[1] - g_BattleWorldView.m.t[1];
+        streak->pos.vz = m.t[2] - g_BattleWorldView.m.t[2];
+        TransposeMatrix(&g_BattleWorldView.m, &m);
+        ApplyMatrixSV(&m, &streak->pos, &streak->pos);
+        streak->unk0 = 0;
+        slot->D_801621F2++;
+    }
+}
+
+void func_800D7888(void) {
+    MATRIX facing;
+    SVECTOR velocity;
+    Unk801621F0* slot;
+    Unk801621F0* child;
+    BattleBounceParticle* particle;
+    SVECTOR* pos;
+    s32 elapsed;
+
+    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
+    if (D_80062D98 == 0) {
+        elapsed = slot->D_801621F2;
+        if (elapsed >= slot->unk8) {
+            elapsed -= slot->unk8;
+            if (elapsed < (s16)(slot->unkA & ~0x80)) {
+                if (!(elapsed & 1)) {
+                    child = &g_BattleUntrackedSlots[BattleUntrackedRegister(BattleSubModelFlashTick)].raw;
+                    child->D_801621F6 = slot->D_801621F6;
+                    child->D_801621F4 = slot->D_801621F4;
+                    child->unk1C = slot->unk1C;
+                    child->unk1A = slot->unk1A;
+                    if (!(slot->unkA & 0x80)) {
+                        child = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D7368)].raw;
+                        particle = (BattleBounceParticle*)child;
+                        pos = &particle->pos;
+                        BattleGetMatrixPosition(slot->unk1C, pos);
+                        velocity.vx = -60 - (rand() & 0xF);
+                        velocity.vy = (rand() & 0x1F) - 150;
+                        velocity.vz = (rand() & 0xF) + 20;
+                        RotMatrixYXZ(&g_BattleModels[slot->D_801621F6].rootRot, &facing);
+                        ApplyMatrixSV(&facing, &velocity, &particle->velocity);
+                        particle->actor = slot->D_801621F6;
+                        particle->bounces = 0;
+                        particle->facing = g_BattleModels[slot->D_801621F6].rootRot.vy;
+                        BattleSpawnSparkleEffect(pos, 0x400, 0x800);
+                    }
+                }
+            } else {
+                slot->D_801621F0 = -1;
+            }
+        }
+        slot->D_801621F2++;
+    }
+}
+
+void BattleSpawnSpriteEffect(s32 arg0, s32 actor, BattleModelSub* bone, s16 arg3, s32 arg4, s32 arg5) {
+    Unk801621F0* slot = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D7888)].raw;
 
     slot->D_801621F4 = arg0;
-    slot->D_801621F6 = arg1;
-    slot->unk1C = arg2;
+    slot->D_801621F6 = actor;
+    slot->unk1C = bone;
     slot->unk1A = arg3;
     slot->unk8 = (s16)arg4;
     slot->unkA = (s16)arg5;
