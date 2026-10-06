@@ -48,8 +48,8 @@ long RotTransPers4(
     long* p,   // Pointer to interpolated value for depth cueing
     long* flag // Pointer to flag
 );
-long RotAverage4(SVECTOR* v0, SVECTOR* v1, SVECTOR* v2, SVECTOR* v3, int* sxy0, int* sxy1, int* sxy2, int* sxy3,
-                 int* p, int* flag);
+long RotAverage4(SVECTOR* v0, SVECTOR* v1, SVECTOR* v2, SVECTOR* v3, long* sxy0, long* sxy1, long* sxy2,
+                 long* sxy3, long* p, long* flag);
 long RotAverageNclip4(
     SVECTOR* v0, SVECTOR* v1, SVECTOR* v2,
     SVECTOR* v3, // Pointer to vectors (input)

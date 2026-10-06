@@ -106,6 +106,7 @@ static void Lv5DeathRenderTargetSprite(void) {
     Lv5DeathData* effect;
     s32 frame;
     u8 intensity;
+    s16 scale;
 
     effect = &g_BattleEffectSlots[g_BattleEffectCursor];
     lv5deth_sprite_desc.frameIndex = effect->AnimationFrame & 7;
@@ -120,7 +121,8 @@ static void Lv5DeathRenderTargetSprite(void) {
     }
     lv5deth_sprite_desc.color.r = lv5deth_sprite_desc.color.g = lv5deth_sprite_desc.color.b = intensity;
 
-    BattleSetBillboardMatrix(&effect->Pos, (s16)effect->Scale, -((s16)effect->Scale >> 2));
+    scale = effect->Scale;
+    BattleSetBillboardMatrix(&effect->Pos, scale, -(scale >> 2));
     g_Lv5DeathBufferPtr = func_800D4D90(&lv5deth_sprite_desc, g_cDb->unk70, 12, g_Lv5DeathBufferPtr);
 
     if (effect->AnimationFrame >= TARGET_LIFETIME) {
