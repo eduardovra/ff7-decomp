@@ -138,6 +138,19 @@ enum CombatantStateFlags {
     COMBATANT_BACK_ROW = 0x40,
 };
 
+typedef enum {
+    BATTLE_MSG_ARG_CHAR_NAME = 0xEA,
+    BATTLE_MSG_ARG_UNK_EB = 0xEB, // item name maybe? Haven't traced SysKernGetString(4, arg, 8)
+    BATTLE_MSG_ARG_NUMBER = 0xEC,
+    BATTLE_MSG_ARG_UNIT_NAME = 0xED,
+    BATTLE_MSG_ARG_MAGIC_NAME = 0xEE,
+    BATTLE_MSG_ARG_ENEMY_LETTER = 0xEF,
+    BATTLE_MSG_ARG_BATTLE_TEXT = 0xF0,
+    BATTLE_MSG_ARG_KERNEL_TEXT = 0xF1,
+    BATTLE_MSG_ARG_START = BATTLE_MSG_ARG_CHAR_NAME,
+    BATTLE_MSG_ARG_END = BATTLE_MSG_ARG_KERNEL_TEXT,
+} BattleMessageArgType;
+
 typedef struct {
     // condition/status bitmask; see BattleStatusFlags above for the bits
     // confirmed live here
@@ -182,8 +195,8 @@ typedef struct {
     /* 0x4D */ u8 magEvade;
     /* 0x4E */ u8 formationRow;
     /* 0x4F */ u8 unk4F;
-    /* 0x50 */ u16 unk50;
-    /* 0x52 */ u16 unk52;
+    /* 0x50 */ u16 unk50; // Stolen gil?
+    /* 0x52 */ u16 unk52; // Stolen item?
     /* 0x54 */ u16 elemImmuneExtra;
     /* 0x56 */ u8 unk56;
     /* 0x57 */ u8 unk57;
@@ -696,6 +709,10 @@ s32 BattleEffectRegister(void (*func)(void));
 void BattleSetLoadTimToVram(u_long* addr, s16 imgXY, s16 clutX, s16 clutY);
 void BattleEnqueueClearImage(RECT* rect, s32 arg1, s32 arg2, s32 arg3);
 void* BattleDrawModel(ModelRenderDesc* desc, u_long** ot, int otLen, void* prim);
+// Build the model matrix for a battle effect: `scale` goes on the matrix
+// diagonal, `pos` is transformed into view space to become the translation,
+// and `depthBias` nudges it along that view vector (negative pulls it toward
+// the camera). Leaves the result installed as the rot/trans matrix.
 MATRIX* BattleSetBillboardMatrix(SVECTOR* pos, s32 scale, s32 depthBias);
 void* func_800D4D90(SpriteRenderDesc* desc, u_long** ot, int otLen, void* prim);
 void* BattleEffectSpriteAdd(BattleSpriteDesc* desc, u_long** ot, int otLen, void* prim);

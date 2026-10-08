@@ -90,6 +90,12 @@ u8 g_JetExit;
 SVECTOR g_JetPopupRot;
 u16 g_JetSpriteClut[12];
 extern void* D_80110BB8;
+void* JetDrawModelTris(JetModelDrawArgs* args);
+void JetProject3Points(SVECTOR* points, u_long* screen);
+void JetProject6Points(SVECTOR* points, u_long* screen);
+void* JetDrawModelTrisUI(JetModelDrawArgs* args);
+POLY_G3* JetDrawTriangle(JetTriangle* arg0, POLY_G3* arg1, OT_TYPE* arg2, JetTriangle* arg3);
+POLY_FT4* JetDrawTrackQuad(SVECTOR* arg0, POLY_FT4* arg1, OT_TYPE* arg2, SVECTOR* arg3);
 
 static void JetDrawEnergyGauge();
 static void JetDrawNumber(s32 value, s32 x, s32 y, s16 zeroPad, u16 textureV);
@@ -868,7 +874,7 @@ static void JetAudioInit(void) {
     AkaoExec();
     g_AkaoCmd.opcode = AKAO_PLAY_SLOT0;
     g_AkaoCmd.params[0] = AKAO_PAN_CENTER;
-    g_AkaoCmd.params[1] = SFX_177;
+    g_AkaoCmd.params[1] = SFX_JET_TRACK;
     AkaoExec();
 }
 
@@ -910,7 +916,7 @@ static void JetUpdateLaserSfx(s32 power) {
     if (g_JetLaserPitch == 0 && (power & 0xFF)) {
         g_AkaoCmd.opcode = AKAO_PLAY_SLOT3;
         g_AkaoCmd.params[0] = AKAO_PAN_CENTER;
-        g_AkaoCmd.params[1] = SFX_22B;
+        g_AkaoCmd.params[1] = SFX_JET_LASER;
         AkaoExec();
     }
     if (power & 0xFF) {

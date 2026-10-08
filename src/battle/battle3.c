@@ -2,6 +2,7 @@
 #include "battle_private.h"
 #include "../magic/magic.h"
 #include <libc.h>
+#include <libetc.h>
 
 void func_800D751C();
 void func_800D7888();
@@ -17,7 +18,7 @@ void BattleTriggerActorFlashMode1(s32 arg0);
 void BattleTriggerActorFlashMode2(s32 arg0);
 void BattleSpawnActorRampEffect(s32 arg0, s16 arg1, s16 arg2);
 void BattleSpawnPartEffect(s32 actor, s32 hitFlashType);
-s32 BattleUntrackedRegister(void (*f)());
+s32 BattleDetachedRegister(void (*f)());
 s32 BattleModelReadAnimStream(BattleModelSub* arg0, s32 arg1, s16 nItems, u8* arg3);
 void func_800D3AF0();
 void func_800D4710();
@@ -98,7 +99,7 @@ static void BattleGetMatrixPosition(MATRIX* m, SVECTOR* pos) {
 void func_800D3AF0(void) {
     BattleSparkleSlot* slot;
 
-    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].sparkle;
+    slot = &g_BattleDetachedSlots[g_BattleDetachedCursor].sparkle;
     D_800F01E8.u = slot->frame * 32;
     D_800F01F8.m[0][0] = slot->scaleX;
     D_800F01F8.m[1][1] = slot->scaleY;
@@ -121,7 +122,7 @@ void BattleEffectSingleDustCloud(void) {
     s32 flag;
     Unk801621F0* slot;
 
-    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
+    slot = &g_BattleDetachedSlots[g_BattleDetachedCursor].raw;
     D_800F0218.u = slot->D_801621F2 * 32;
     SetRotMatrix(&g_BattleWorldView.m);
     SetTransMatrix(&g_BattleWorldView.m);
@@ -145,13 +146,13 @@ static void BattleEffectDustClouds(void) {
     s32 temp_s0;
     u16 temp_s2;
 
-    temp_s1 = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
+    temp_s1 = &g_BattleDetachedSlots[g_BattleDetachedCursor].raw;
     temp_s0 = temp_s1->D_801621F0;
     temp_s2 = (&g_BattleModels[temp_s0].boneIndices[11])[temp_s1->D_801621F2 & 1];
     temp_s0++; // !FAKE
     temp_s0--; // !FAKE
     if (temp_s2 != 0xFF) {
-        temp_s0_2 = &g_BattleUntrackedSlots[BattleUntrackedRegister(BattleEffectSingleDustCloud)].raw;
+        temp_s0_2 = &g_BattleDetachedSlots[BattleDetachedRegister(BattleEffectSingleDustCloud)].raw;
         BattleGetPartPosition(temp_s0, temp_s2, (SVECTOR*)&temp_s0_2->D_801621F4);
         temp_s0_2->D_801621F6 = 0;
         temp_s0_2->unkE = temp_s1->unkE;
@@ -166,7 +167,7 @@ static void BattleEffectDustClouds(void) {
 void BattleSpawnPartFlickerEffect(s32 arg0) {
     Unk801621F0* temp_v0;
 
-    temp_v0 = &g_BattleUntrackedSlots[BattleUntrackedRegister(BattleEffectDustClouds)].raw;
+    temp_v0 = &g_BattleDetachedSlots[BattleDetachedRegister(BattleEffectDustClouds)].raw;
     temp_v0->D_801621F0 = arg0;
     temp_v0->unkE = *(s16*)& temp_v0->unk10 = g_BattleModels[arg0].scale;
 }
@@ -174,7 +175,7 @@ void BattleSpawnPartFlickerEffect(s32 arg0) {
 void BattleSpawnSparkleEffect(SVECTOR* pos, s16 scaleX, s16 scaleY) {
     BattleSparkleSlot* dst;
 
-    dst = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D3AF0)].sparkle;
+    dst = &g_BattleDetachedSlots[BattleDetachedRegister(func_800D3AF0)].sparkle;
     dst->pos = *pos;
     dst->scaleX = scaleX;
     dst->scaleY = scaleY;
@@ -184,11 +185,11 @@ static void BattleDelayedRotatedSpawnTick(void) {
     Unk801621F0* temp_s0;
     Unk801621F0* temp_s1;
 
-    temp_s1 = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
+    temp_s1 = &g_BattleDetachedSlots[g_BattleDetachedCursor].raw;
     if (D_80062D98 == 0) {
         temp_s1->unkC--;
         if (temp_s1->unkC == -1) {
-            temp_s0 = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D3AF0)].raw;
+            temp_s0 = &g_BattleDetachedSlots[BattleDetachedRegister(func_800D3AF0)].raw;
             RotMatrixYXZ(&g_BattleModels[temp_s1->unk10.unk.unk2].rootRot, (MATRIX*)0x1F800008);
             ApplyMatrixSV((MATRIX*)0x1F800008, (SVECTOR*)&temp_s1->D_801621F4, (SVECTOR*)0x1F800000);
             temp_s0->D_801621F4 = g_BattleModels[temp_s1->unk10.unk.unk2].rootTrans.vx + ((SVECTOR*)0x1F800000)->vx;
@@ -315,8 +316,8 @@ void func_800D4710(void) {
     MATRIX* m;
     u8 anim;
 
-    p = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].keyframeParticle;
-    desc = (SpriteRenderDesc*)0x1F800000;
+    p = &g_BattleDetachedSlots[g_BattleDetachedCursor].keyframeParticle;
+    desc = (SpriteRenderDesc*)getScratchAddr(0);
     desc->frameIndex = p->frame | 0x8000;
     desc->clutBias = p->clutBias;
     *(u32*)&desc->color = 0x2C808080;
@@ -326,7 +327,7 @@ void func_800D4710(void) {
         m = &D_800F10B8;
         desc->frames = D_800F0B14[anim];
     } else {
-        m = (MATRIX*)0x1F80000C;
+        m = (MATRIX*)getScratchAddr(3);
         desc->frames = D_800F0B14[5];
         *m = D_800F10B8;
         RotMatrixZ(0x200, m);
@@ -353,7 +354,7 @@ void BattleSpawnKeyframeParticle(s8* key, SVECTOR* pos, BattleKeyframeEffectSlot
     BattleKeyframeParticleSlot* p;
     s32 scale;
 
-    p = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D4710)].keyframeParticle;
+    p = &g_BattleDetachedSlots[BattleDetachedRegister(func_800D4710)].keyframeParticle;
     p->pos = *pos;
     p->flags = (*key++ - 1) | parent->flags;
     if (parent->flags & 0x100) {
@@ -379,7 +380,7 @@ void BattleKeyframeEffectTick(void) {
     s8 frame;
     s8 subFrame;
 
-    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].keyframeEffect;
+    slot = &g_BattleDetachedSlots[g_BattleDetachedCursor].keyframeEffect;
     if (D_80062D98 == 0) {
         alive = 0;
         key = slot->script;
@@ -415,7 +416,7 @@ static void BattleSpawnFloatingIconAt(void* arg0, s32 arg1, s32 arg2);
 void func_800D4C08(SVECTOR* pos, s32 scriptAndFlags, s32 scale, s32 depthBias) {
     BattleKeyframeEffectSlot* slot;
 
-    slot = &g_BattleUntrackedSlots[BattleUntrackedRegister(BattleKeyframeEffectTick)].keyframeEffect;
+    slot = &g_BattleDetachedSlots[BattleDetachedRegister(BattleKeyframeEffectTick)].keyframeEffect;
     slot->flags = scriptAndFlags & 0xFF00;
     slot->script = D_800F0F98[scriptAndFlags & 0xFF];
     slot->pos = *pos;
@@ -751,7 +752,7 @@ INCLUDE_ASM("asm/us/battle/nonmatchings/battle3", func_800D5B6C);
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle3", func_800D5D28);
 
 void BattleSpawnBlinkEffect(s32 arg0, s16 arg1, u32 arg2, s32 arg3, s32 arg4) {
-    Unk801621F0* dst = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D5D28)].raw;
+    Unk801621F0* dst = &g_BattleDetachedSlots[BattleDetachedRegister(func_800D5D28)].raw;
 
     dst->D_801621F0 = (s16)(arg2 >> 24);
     *(s32*)&dst->D_801621F4 = arg0;
@@ -836,9 +837,8 @@ void BattleDrawHitFlashModel(MATRIX* m) {
 
 void BattleHitFlashGrowTick(void) {
     BattleHitFlashSlot* slot;
-    u16 frame;
 
-    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].hitFlash;
+    slot = &g_BattleDetachedSlots[g_BattleDetachedCursor].hitFlash;
     D_800F16A8.m[1][1] = rsin(slot->frame << 7) + 0x1000;
     D_800F16A8.m[0][0] = D_800F16A8.m[2][2] = slot->frame * 1024;
     if (slot->frame < 8) {
@@ -853,16 +853,14 @@ void BattleHitFlashGrowTick(void) {
     D_800F1698.model = D_800F15AC;
     BattleDrawHitFlashModel(D_800F16C8);
     if (D_80062D98 == 0) {
-        frame = slot->frame + 1;
-        slot->frame = frame;
-        if ((s16)frame == 16) {
+        if (++slot->frame == 16) {
             slot->unk0 = -1;
         }
     }
 }
 
 void BattleHitFlashBurstTick(void) {
-    BattleHitFlashSlot* slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].hitFlash;
+    BattleHitFlashSlot* slot = &g_BattleDetachedSlots[g_BattleDetachedCursor].hitFlash;
     u16 v;
 
     D_800F16CC.m[0][0] = D_800F16CC.m[2][2] = (slot->frame * 3) << 9;
@@ -892,7 +890,7 @@ void BattleHitFlashShrinkTick(void) {
     BattleHitFlashSlot* slot;
     u16 frame;
 
-    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].hitFlash;
+    slot = &g_BattleDetachedSlots[g_BattleDetachedCursor].hitFlash;
     D_800F16F0.m[1][1] = rsin((14 - slot->frame) << 7) + 0x1000;
     D_800F16F0.m[0][0] = D_800F16F0.m[2][2] = (14 - slot->frame) * 1024;
     if (slot->frame < 8) {
@@ -925,7 +923,7 @@ void func_800D6D8C(void) {
     s32 progress;
     s32 arc;
 
-    spark = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].unk800D6D8C;
+    spark = &g_BattleDetachedSlots[g_BattleDetachedCursor].unk800D6D8C;
     progress = 0x1000 - (spark->frame << 12) / 8;
     arc = rsin(progress / 2);
     SetRotMatrix(&g_BattleWorldView.m);
@@ -952,9 +950,9 @@ void func_800D6F78(void) {
     s32 palette;
     s32 angle;
 
-    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].unk800D6F78;
+    slot = &g_BattleDetachedSlots[g_BattleDetachedCursor].unk800D6F78;
     if (D_80062D98 == 0) {
-        spark = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D6D8C)].unk800D6D8C;
+        spark = &g_BattleDetachedSlots[BattleDetachedRegister(func_800D6D8C)].unk800D6D8C;
         spark->palette = (slot->frame + palette) % 5;
         spark->pos = slot->pos;
         angle = rand() & 0xFFF;
@@ -969,13 +967,13 @@ void func_800D6F78(void) {
 }
 
 void BattleSpawnTrailEffect(void) {
-    BattleTrailSlot* src = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].trail;
+    BattleTrailSlot* src = &g_BattleDetachedSlots[g_BattleDetachedCursor].trail;
     BattleHitFlashSlot* dst;
     u16 v;
 
     if (D_80062D98 == 0) {
         if (!(src->frame & 3)) {
-            dst = &g_BattleUntrackedSlots[BattleUntrackedRegister(src->spawnCallback)].hitFlash;
+            dst = &g_BattleDetachedSlots[BattleDetachedRegister(src->spawnCallback)].hitFlash;
             dst->pos = src->pos;
         }
         v = src->frame + 1;
@@ -987,7 +985,7 @@ void BattleSpawnTrailEffect(void) {
 }
 
 void BattleSpawnPartEffect(s32 actor, s32 hitFlashType) {
-    BattleTrailSlot* dst = &g_BattleUntrackedSlots[BattleUntrackedRegister(BattleSpawnTrailEffect)].trail;
+    BattleTrailSlot* dst = &g_BattleDetachedSlots[BattleDetachedRegister(BattleSpawnTrailEffect)].trail;
     Unk800D6F78Slot* dst2;
 
     BattleGetPartPosition(actor, g_BattleModels[actor].boneIndices[0], &dst->pos);
@@ -1003,14 +1001,14 @@ void BattleSpawnPartEffect(s32 actor, s32 hitFlashType) {
         return;
     case 3:
         dst->spawnCallback = BattleHitFlashGrowTick;
-        dst2 = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D6F78)].unk800D6F78;
+        dst2 = &g_BattleDetachedSlots[BattleDetachedRegister(func_800D6F78)].unk800D6F78;
         dst2->pos = dst->pos;
         return;
     }
 }
 
 static void BattleFixedPointRampEffectTick(void) {
-    Unk801621F0* elem = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
+    Unk801621F0* elem = &g_BattleDetachedSlots[g_BattleDetachedCursor].raw;
 
     if (D_80062D98 == 0) {
         // Advance this slot's per-tick state machine (field 0x2).
@@ -1034,7 +1032,7 @@ void func_800D7368(void) {
 
     rot.vz = 0;
     rot.vx = 0;
-    p = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].bounceParticle;
+    p = &g_BattleDetachedSlots[g_BattleDetachedCursor].bounceParticle;
     rot.vy = p->facing;
     RotMatrixYXZ(&rot, &m);
     m.t[0] = p->pos.vx;
@@ -1071,7 +1069,7 @@ void func_800D751C(void) {
     BattleStreakSlot* slot;
     s32 otz;
 
-    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].streak;
+    slot = &g_BattleDetachedSlots[g_BattleDetachedCursor].streak;
     D_800F1954.vy = rand() & 0x3FF;
     RotMatrixYXZ(&D_800F1954, &D_800F1934);
     D_800F1934.t[0] = slot->pos.vx;
@@ -1083,7 +1081,11 @@ void func_800D751C(void) {
     otz = RotAverage4(&D_800F1914, &D_800F191C, &D_800F1924, &D_800F192C, (long*)&quad->x0, (long*)&quad->x1,
                       (long*)&quad->x2, (long*)&quad->x3, &p, &flag);
     if (otz > 0) {
+#ifdef PLATFORM_PSYZ
+        setlen(quad, 9);
+#else
         quad->tag = 0x09000000;
+#endif
         if (slot->unk0 == 0) {
             *(u32*)&quad->r0 = 0x2E808080;
         } else {
@@ -1104,7 +1106,7 @@ void func_800D751C(void) {
 void BattleSpawnStreakEffect(SVECTOR* pos) {
     BattleStreakSlot* dst;
 
-    dst = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D751C)].streak;
+    dst = &g_BattleDetachedSlots[BattleDetachedRegister(func_800D751C)].streak;
     dst->pos = *pos;
     dst->unk0 = 1;
 }
@@ -1114,7 +1116,7 @@ void BattleSubModelFlashTick(void) {
     Unk801621F0* slot;
     BattleStreakSlot* streak;
 
-    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
+    slot = &g_BattleDetachedSlots[g_BattleDetachedCursor].raw;
     if (D_80062D98 == 0 && slot->D_801621F2 != 0) {
         slot->D_801621F0 = -1;
         return;
@@ -1125,7 +1127,7 @@ void BattleSubModelFlashTick(void) {
     SetTransMatrix(&m);
     D_80163C74 = BattleDrawModel(&D_800F197C, g_cDb->unk70, 12, D_80163C74);
     if (D_80062D98 == 0) {
-        streak = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D751C)].streak;
+        streak = &g_BattleDetachedSlots[BattleDetachedRegister(func_800D751C)].streak;
         streak->pos.vx = m.t[0] - g_BattleWorldView.m.t[0];
         streak->pos.vy = m.t[1] - g_BattleWorldView.m.t[1];
         streak->pos.vz = m.t[2] - g_BattleWorldView.m.t[2];
@@ -1145,20 +1147,20 @@ void func_800D7888(void) {
     SVECTOR* pos;
     s32 elapsed;
 
-    slot = &g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw;
+    slot = &g_BattleDetachedSlots[g_BattleDetachedCursor].raw;
     if (D_80062D98 == 0) {
         elapsed = slot->D_801621F2;
         if (elapsed >= slot->unk8) {
             elapsed -= slot->unk8;
             if (elapsed < (s16)(slot->unkA & ~0x80)) {
                 if (!(elapsed & 1)) {
-                    child = &g_BattleUntrackedSlots[BattleUntrackedRegister(BattleSubModelFlashTick)].raw;
+                    child = &g_BattleDetachedSlots[BattleDetachedRegister(BattleSubModelFlashTick)].raw;
                     child->D_801621F6 = slot->D_801621F6;
                     child->D_801621F4 = slot->D_801621F4;
                     child->unk1C = slot->unk1C;
                     child->unk1A = slot->unk1A;
                     if (!(slot->unkA & 0x80)) {
-                        child = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D7368)].raw;
+                        child = &g_BattleDetachedSlots[BattleDetachedRegister(func_800D7368)].raw;
                         particle = (BattleBounceParticle*)child;
                         pos = &particle->pos;
                         BattleGetMatrixPosition(slot->unk1C, pos);
@@ -1182,7 +1184,7 @@ void func_800D7888(void) {
 }
 
 void BattleSpawnSpriteEffect(s32 arg0, s32 actor, BattleModelSub* bone, s16 arg3, s32 arg4, s32 arg5) {
-    Unk801621F0* slot = &g_BattleUntrackedSlots[BattleUntrackedRegister(func_800D7888)].raw;
+    Unk801621F0* slot = &g_BattleDetachedSlots[BattleDetachedRegister(func_800D7888)].raw;
 
     slot->D_801621F4 = arg0;
     slot->D_801621F6 = actor;

@@ -25,14 +25,14 @@ void BattleQueue1CameraInit(void);
 static void func_800BB75C(BattleWorldView* view, MATRIX* camera, s16* cameraPos, s16* cameraTarget);
 static void func_800BB804(void);
 static void func_800BB864(void);
-s32 BattleUntrackedRegister(void (*callback)(void));
+s32 BattleDetachedRegister(void (*callback)(void));
 s32 BattleMovementRegister(void (*callback)(void));
 static s32 BattleCameraRegister(void (*callback)(void));
 static void BattleCallbacksReset(void);
 static void BattleCameraResetCallbacks(void);
-static void func_800BC348(void);
+static void BattleEffectUpdate(void);
 static void BattleMovementUpdate(void);
-static void BattleUntrackedUpdate(void);
+static void BattleDetachedUpdate(void);
 static void BattleCameraUpdate(void);
 static void func_800C0410(void);
 static void func_800C0900(void);
@@ -126,7 +126,7 @@ void BattleNormalStartSeq(void) {
     func_800B37A0();
     func_800B3E2C();
     BattleQueue1CameraInit();
-    BattleUntrackedRegister(func_800C4D10);
+    BattleDetachedRegister(func_800C4D10);
     BattleUpdateRender();
     BattleUpdateRender();
     do {
@@ -443,7 +443,7 @@ INCLUDE_ASM("asm/us/battle/nonmatchings/battle1", BattleInitModelsAnimAndColor);
 // drains g_BattleActionQueue (12-byte entries, -1-terminated, index D_801590E0), one
 // entry per call, dispatched by a type byte (0-5, jtbl_800A05FC) via m2c
 // structural read (not yet decompiled):
-//   0 callback-driven step (BattleUntrackedRegister(&func_800C494C)), immediate
+//   0 callback-driven step (BattleDetachedRegister(&func_800C494C)), immediate
 //   1 gated on D_800F7DE4: walks a linked status list (g_BattleQueueTargets/1/2),
 //     looks like "hide next status icon" (sets D_800FA6D4/D_80161EEC/
 //     D_800F99E8 icon slots, or 0xF when the list is exhausted)
@@ -635,8 +635,8 @@ void func_800B8438(void) {
     func_800BC8B0(D_800F8370);
     func_800B8268();
     SetFarColor(0, 0, 0);
-    BattleUntrackedUpdate();
-    func_800BC348();
+    BattleDetachedUpdate();
+    BattleEffectUpdate();
     func_800BB75C(&g_BattleWorldView, &D_800FA958, &g_BattleCameraPos, &g_BattleCameraTarget);
     func_800C627C();
 }
@@ -1046,15 +1046,15 @@ s32 BattleMovementRegister(void (*callback)(void)) {
 }
 
 // q-gears: "add effect callback"
-s32 BattleUntrackedRegister(void (*callback)(void)) {
+s32 BattleDetachedRegister(void (*callback)(void)) {
     s16 i;
 
     for (i = 0; i < 60; i++) {
-        if (!g_BattleUntrackedCallbacks[i]) {
-            if (i >= g_BattleUntrackedCursor) {
-                g_BattleUntrackedCallbacks[i] = callback;
-                g_BattleUntrackedSlots[i].raw.D_801621F0 = g_BattleUntrackedCursor;
-                g_BattleUntrackedCount++;
+        if (!g_BattleDetachedCallbacks[i]) {
+            if (i >= g_BattleDetachedCursor) {
+                g_BattleDetachedCallbacks[i] = callback;
+                g_BattleDetachedSlots[i].raw.D_801621F0 = g_BattleDetachedCursor;
+                g_BattleDetachedCount++;
                 return i;
             }
         }
@@ -1088,7 +1088,7 @@ static s32 BattleCameraRegister(void (*callback)(void)) {
 static void BattleCallbacksReset(void) {
     s32 i;
 
-    g_BattleEffectCount = g_BattleMovementCount = g_BattleUntrackedCount = 0;
+    g_BattleEffectCount = g_BattleMovementCount = g_BattleDetachedCount = 0;
 
     for (i = 0; i < 100; i++) {
         g_BattleEffectCallbacks[i] = NULL;
@@ -1099,8 +1099,8 @@ static void BattleCallbacksReset(void) {
         g_BattleMovementSlots[i].D_801620AC = g_BattleMovementSlots[i].D_801620AE = 0;
     }
     for (i = 0; i < 60; i++) {
-        g_BattleUntrackedCallbacks[i] = NULL;
-        g_BattleUntrackedSlots[i].raw.D_801621F0 = g_BattleUntrackedSlots[i].raw.D_801621F2 = 0;
+        g_BattleDetachedCallbacks[i] = NULL;
+        g_BattleDetachedSlots[i].raw.D_801621F0 = g_BattleDetachedSlots[i].raw.D_801621F2 = 0;
     }
 
     BattleCameraResetCallbacks();
@@ -1118,7 +1118,7 @@ static void BattleCameraResetCallbacks(void) {
 }
 
 // drives the 0x64 queue; q-gears calls that one the damage callbacks
-static void func_800BC348(void) {
+static void BattleEffectUpdate(void) {
     void (*callback)(void);
 
     for (g_BattleEffectCursor = 0; g_BattleEffectCursor < 100; g_BattleEffectCursor++) {
@@ -1155,22 +1155,22 @@ static void BattleMovementUpdate(void) {
 }
 
 // q-gears: "effects update"
-static void BattleUntrackedUpdate(void) {
+static void BattleDetachedUpdate(void) {
     void (*callback)(void);
 
-    for (g_BattleUntrackedCursor = 0; g_BattleUntrackedCursor < 60; g_BattleUntrackedCursor++) {
-        callback = g_BattleUntrackedCallbacks[g_BattleUntrackedCursor];
+    for (g_BattleDetachedCursor = 0; g_BattleDetachedCursor < 60; g_BattleDetachedCursor++) {
+        callback = g_BattleDetachedCallbacks[g_BattleDetachedCursor];
         if (callback) {
             callback();
-            if (g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 == -1) {
-                g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = 0;
-                g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F2 = 0;
-                g_BattleUntrackedCallbacks[g_BattleUntrackedCursor] = NULL;
-                g_BattleUntrackedCount--;
+            if (g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 == -1) {
+                g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = 0;
+                g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F2 = 0;
+                g_BattleDetachedCallbacks[g_BattleDetachedCursor] = NULL;
+                g_BattleDetachedCount--;
             }
         }
     }
-    g_BattleUntrackedCursor = 0;
+    g_BattleDetachedCursor = 0;
 }
 
 static void BattleCameraUpdate(void) {
@@ -1524,66 +1524,66 @@ INCLUDE_ASM("asm/us/battle/nonmatchings/battle1", func_800C45EC);
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle1", func_800C4814);
 
 void func_800C494C(void) {
-    switch (g_BattleUntrackedSlots[g_BattleUntrackedCursor].screenFade.state) {
+    switch (g_BattleDetachedSlots[g_BattleDetachedCursor].screenFade.state) {
     case 0:
         g_BattleScreenFadeR = 0;
         g_BattleScreenFadeG = 0;
         g_BattleScreenFadeB = 0;
-        g_BattleUntrackedSlots[g_BattleUntrackedCursor].screenFade.state = 1;
-        g_BattleUntrackedSlots[g_BattleUntrackedCursor].screenFade.framesLeft = 15;
-        g_BattleUntrackedSlots[g_BattleUntrackedCursor].screenFade.colorStep = 16;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].screenFade.state = 1;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].screenFade.framesLeft = 15;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].screenFade.colorStep = 16;
         D_80162974 = 1;
-        D_80163C74 = (DR_MODE*)func_800C5004(g_BattleScreenFadeR, g_BattleScreenFadeG, g_BattleScreenFadeB);
+        D_80163C74 = func_800C5004(g_BattleScreenFadeR, g_BattleScreenFadeG, g_BattleScreenFadeB);
         g_BattleScreenFadeG = g_BattleScreenFadeB = g_BattleScreenFadeR +=
-            g_BattleUntrackedSlots[g_BattleUntrackedCursor].screenFade.colorStep;
-        g_BattleUntrackedSlots[g_BattleUntrackedCursor].screenFade.framesLeft--;
+            g_BattleDetachedSlots[g_BattleDetachedCursor].screenFade.colorStep;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].screenFade.framesLeft--;
         break;
     case 1:
-        if (g_BattleUntrackedSlots[g_BattleUntrackedCursor].screenFade.framesLeft == 0) {
+        if (g_BattleDetachedSlots[g_BattleDetachedCursor].screenFade.framesLeft == 0) {
             g_BattleScreenFadeR = 0xFF;
             g_BattleScreenFadeG = 0xFF;
             g_BattleScreenFadeB = 0xFF;
-            g_BattleUntrackedSlots[g_BattleUntrackedCursor].screenFade.state = 2;
-            D_80163C74 = (DR_MODE*)func_800C5004(g_BattleScreenFadeR, g_BattleScreenFadeG, g_BattleScreenFadeB);
+            g_BattleDetachedSlots[g_BattleDetachedCursor].screenFade.state = 2;
+            D_80163C74 = func_800C5004(g_BattleScreenFadeR, g_BattleScreenFadeG, g_BattleScreenFadeB);
             SetDispMask(0);
         } else {
-            D_80163C74 = (DR_MODE*)func_800C5004(g_BattleScreenFadeR, g_BattleScreenFadeG, g_BattleScreenFadeB);
+            D_80163C74 = func_800C5004(g_BattleScreenFadeR, g_BattleScreenFadeG, g_BattleScreenFadeB);
             g_BattleScreenFadeG = g_BattleScreenFadeB = g_BattleScreenFadeR +=
-                g_BattleUntrackedSlots[g_BattleUntrackedCursor].screenFade.colorStep;
-            g_BattleUntrackedSlots[g_BattleUntrackedCursor].screenFade.framesLeft--;
+                g_BattleDetachedSlots[g_BattleDetachedCursor].screenFade.colorStep;
+            g_BattleDetachedSlots[g_BattleDetachedCursor].screenFade.framesLeft--;
         }
         break;
     case 2:
-        D_80163C74 = (DR_MODE*)func_800C5004(g_BattleScreenFadeR, g_BattleScreenFadeG, g_BattleScreenFadeB);
+        D_80163C74 = func_800C5004(g_BattleScreenFadeR, g_BattleScreenFadeG, g_BattleScreenFadeB);
         SetDispMask(0);
         break;
     }
 }
 
 static void func_800C4B60(s16 arg0) {
-    if (g_BattleUntrackedSlots[arg0].bands.framesLeft == 0) {
-        g_BattleUntrackedSlots[arg0].raw.D_801621F0 = -1;
+    if (g_BattleDetachedSlots[arg0].bands.framesLeft == 0) {
+        g_BattleDetachedSlots[arg0].raw.D_801621F0 = -1;
         return;
     }
-    D_80163C74 = func_800C4DC8(0, g_BattleUntrackedSlots[arg0].bands.upperY, 320, 47, &D_800EA25C);
-    D_80163C74 = func_800C4DC8(0, g_BattleUntrackedSlots[arg0].bands.upperY + 47, 320, 32, &D_800EA258);
-    D_80163C74 = func_800C4DC8(0, g_BattleUntrackedSlots[arg0].bands.lowerY, 320, 32, &D_800EA260);
-    D_80163C74 = func_800C4DC8(0, g_BattleUntrackedSlots[arg0].bands.lowerY + 32, 320, 47, &D_800EA25C);
-    g_BattleUntrackedSlots[arg0].bands.lowerY += 4;
-    g_BattleUntrackedSlots[arg0].bands.upperY -= 4;
-    g_BattleUntrackedSlots[arg0].bands.framesLeft--;
+    D_80163C74 = func_800C4DC8(0, g_BattleDetachedSlots[arg0].bands.upperY, 320, 47, &D_800EA25C);
+    D_80163C74 = func_800C4DC8(0, g_BattleDetachedSlots[arg0].bands.upperY + 47, 320, 32, &D_800EA258);
+    D_80163C74 = func_800C4DC8(0, g_BattleDetachedSlots[arg0].bands.lowerY, 320, 32, &D_800EA260);
+    D_80163C74 = func_800C4DC8(0, g_BattleDetachedSlots[arg0].bands.lowerY + 32, 320, 47, &D_800EA25C);
+    g_BattleDetachedSlots[arg0].bands.lowerY += 4;
+    g_BattleDetachedSlots[arg0].bands.upperY -= 4;
+    g_BattleDetachedSlots[arg0].bands.framesLeft--;
 }
 
 static void func_800C4D10(void) {
     int arg0;
 
-    arg0 = g_BattleUntrackedCursor;
-    switch (g_BattleUntrackedSlots[arg0].bands.state) {
+    arg0 = g_BattleDetachedCursor;
+    switch (g_BattleDetachedSlots[arg0].bands.state) {
     case 0:
-        g_BattleUntrackedSlots[arg0].bands.framesLeft = 21;
-        g_BattleUntrackedSlots[arg0].bands.lowerY = 87;
-        g_BattleUntrackedSlots[arg0].bands.upperY = 8;
-        g_BattleUntrackedSlots[arg0].bands.state++;
+        g_BattleDetachedSlots[arg0].bands.framesLeft = 21;
+        g_BattleDetachedSlots[arg0].bands.lowerY = 87;
+        g_BattleDetachedSlots[arg0].bands.upperY = 8;
+        g_BattleDetachedSlots[arg0].bands.state++;
     case 1:
         func_800C4B60(arg0);
         break;
@@ -1633,32 +1633,32 @@ static void func_800C5468(u8 arg0) {
         temp_a1 = D_80151200[var_v0].D_8015120C;
         if (!(temp_a1 & 0x80)) {
             D_80151200[var_v0].D_8015120C |= 0x80;
-            var_v0_2 = BattleUntrackedRegister(func_800C55B8);
-            g_BattleUntrackedSlots[var_v0_2].modelScale.actor = arg0;
-            g_BattleUntrackedSlots[var_v0_2].modelScale.framesLeft = 0x10;
-            g_BattleUntrackedSlots[var_v0_2].modelScale.scaleStep = -0x80;
+            var_v0_2 = BattleDetachedRegister(func_800C55B8);
+            g_BattleDetachedSlots[var_v0_2].modelScale.actor = arg0;
+            g_BattleDetachedSlots[var_v0_2].modelScale.framesLeft = 0x10;
+            g_BattleDetachedSlots[var_v0_2].modelScale.scaleStep = -0x80;
         }
     } else {
         temp_a1 = D_80151200[var_v0].D_8015120C;
         if (temp_a1 & 0x80) {
             D_80151200[var_v0].D_8015120C = temp_a1 & (~0x80);
-            var_v0_2 = BattleUntrackedRegister(func_800C55B8);
+            var_v0_2 = BattleDetachedRegister(func_800C55B8);
             var_v0_2 = var_v0_2;
-            g_BattleUntrackedSlots[var_v0_2].modelScale.actor = arg0;
-            g_BattleUntrackedSlots[var_v0_2].modelScale.framesLeft = 0x10;
-            g_BattleUntrackedSlots[var_v0_2].modelScale.scaleStep = 0x80;
+            g_BattleDetachedSlots[var_v0_2].modelScale.actor = arg0;
+            g_BattleDetachedSlots[var_v0_2].modelScale.framesLeft = 0x10;
+            g_BattleDetachedSlots[var_v0_2].modelScale.scaleStep = 0x80;
         }
     }
 }
 
 static void func_800C55B8(void) {
-    if (g_BattleUntrackedSlots[g_BattleUntrackedCursor].modelScale.framesLeft == 0) {
-        g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
+    if (g_BattleDetachedSlots[g_BattleDetachedCursor].modelScale.framesLeft == 0) {
+        g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
         return;
     }
-    g_BattleModels[g_BattleUntrackedSlots[g_BattleUntrackedCursor].modelScale.actor].scale +=
-        g_BattleUntrackedSlots[g_BattleUntrackedCursor].modelScale.scaleStep;
-    g_BattleUntrackedSlots[g_BattleUntrackedCursor].modelScale.framesLeft--;
+    g_BattleModels[g_BattleDetachedSlots[g_BattleDetachedCursor].modelScale.actor].scale +=
+        g_BattleDetachedSlots[g_BattleDetachedCursor].modelScale.scaleStep;
+    g_BattleDetachedSlots[g_BattleDetachedCursor].modelScale.framesLeft--;
 }
 
 static void func_800C5694(void) {
@@ -1952,7 +1952,7 @@ void BattleFadeInAfterSummon(void) {
     s32 i;
     s16 timer;
 
-    if (g_BattleUntrackedSlots[g_BattleUntrackedCursor].fade.state == 0) {
+    if (g_BattleDetachedSlots[g_BattleDetachedCursor].fade.state == 0) {
         if (g_BattleEffectCount == 0) {
             for (i = 0; i < NUM_PARTY; i++) {
                 g_BattleModels[i].animControlFlags |= ANIM_CTRL_FADE_IN;
@@ -1964,35 +1964,35 @@ void BattleFadeInAfterSummon(void) {
                 BattleFadeInUntargetedEnemies();
             }
             g_BattleModelFadeFrames = 14;
-            g_BattleUntrackedSlots[g_BattleUntrackedCursor].fade.state = 1;
-            g_BattleUntrackedSlots[g_BattleUntrackedCursor].fade.framesLeft = 14;
+            g_BattleDetachedSlots[g_BattleDetachedCursor].fade.state = 1;
+            g_BattleDetachedSlots[g_BattleDetachedCursor].fade.framesLeft = 14;
         }
     } else {
-        timer = g_BattleUntrackedSlots[g_BattleUntrackedCursor].fade.framesLeft;
+        timer = g_BattleDetachedSlots[g_BattleDetachedCursor].fade.framesLeft;
         if (timer == 0) {
-            g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
+            g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
             D_800FAFDC = 0;
             g_BattleModels[EFFECT_MODEL_SLOT].ready = 1;
         } else {
-            g_BattleUntrackedSlots[g_BattleUntrackedCursor].fade.framesLeft = timer - 1;
+            g_BattleDetachedSlots[g_BattleDetachedCursor].fade.framesLeft = timer - 1;
         }
     }
 }
 
 void BattleFadeOutEffectModel(void) {
-    if (g_BattleUntrackedSlots[g_BattleUntrackedCursor].fade.state == 0) {
+    if (g_BattleDetachedSlots[g_BattleDetachedCursor].fade.state == 0) {
         g_BattleModelFadeFrames = 14;
         g_BattleModels[EFFECT_MODEL_SLOT].animControlFlags |= ANIM_CTRL_FADE_OUT;
-        g_BattleUntrackedSlots[g_BattleUntrackedCursor].fade.state = 1;
-        g_BattleUntrackedSlots[g_BattleUntrackedCursor].fade.framesLeft = 14;
-    } else if (g_BattleUntrackedSlots[g_BattleUntrackedCursor].fade.framesLeft == 0) {
+        g_BattleDetachedSlots[g_BattleDetachedCursor].fade.state = 1;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].fade.framesLeft = 14;
+    } else if (g_BattleDetachedSlots[g_BattleDetachedCursor].fade.framesLeft == 0) {
         g_BattleModels[EFFECT_MODEL_SLOT].specialFlags |= BATTLE_MODEL_INACTIVE;
         g_BattleModels[EFFECT_MODEL_SLOT].specialFlags &= ~BATTLE_MODEL_NO_SHADOW;
-        g_BattleUntrackedSlots[g_BattleUntrackedCursor].raw.D_801621F0 = -1;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
         g_BattleModels[EFFECT_MODEL_SLOT].ready = 1;
         return;
     } else {
-        g_BattleUntrackedSlots[g_BattleUntrackedCursor].fade.framesLeft--;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].fade.framesLeft--;
     }
     BattleModelStartFades(EFFECT_MODEL_SLOT);
     func_800C74A4();
@@ -2005,9 +2005,9 @@ void BattleEffectModelTick(void) {
     if (g_BattleEffectModelState == EFFECT_MODEL_ENDING) {
         g_BattleEffectSlots[g_BattleEffectCursor].raw.D_80162978 = -1;
         if (g_BattleEffectModelNotSummon == 0) {
-            BattleUntrackedRegister(BattleFadeInAfterSummon);
+            BattleDetachedRegister(BattleFadeInAfterSummon);
         } else {
-            BattleUntrackedRegister(BattleFadeOutEffectModel);
+            BattleDetachedRegister(BattleFadeOutEffectModel);
         }
     }
     if (g_BattleEffectModelState == EFFECT_MODEL_STARTING) {

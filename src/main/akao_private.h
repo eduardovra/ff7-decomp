@@ -80,8 +80,8 @@ typedef struct {
     /* 0x20 */ s16* panLfoWave;
     /* 0x24 */ u32 overlayChannelId;
     /* 0x28 */ s32 alternativeChannelId;
-    /* 0x2C */ s32 volumeMultiplier;
-    /* 0x30 */ s32 basePitch;
+    /* 0x2C */ u32 volumeMultiplier;
+    /* 0x30 */ u32 basePitch;
     /* 0x34 */ s32 pitchSlide;
     /* 0x38 */ u32 updateFlags;
     /* 0x3C */ u32 pitchMulSound;
@@ -97,7 +97,7 @@ typedef struct {
     /* 0x5C */ u16 volSlideSteps;
     /* 0x5E */ u16 volBalanceSlideSteps;
     /* 0x60 */ u16 volPan;
-    /* 0x62 */ s16 volPanSlideSteps;
+    /* 0x62 */ u16 volPanSlideSteps;
     /* 0x64 */ u16 pitchSlideStepsCur;
     /* 0x66 */ u16 octave;
     /* 0x68 */ u16 pitchSlideSteps;

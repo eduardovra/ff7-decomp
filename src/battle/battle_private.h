@@ -233,7 +233,7 @@ typedef struct {
     /* 0x02 */ s16 unk2;
     /* 0x04 */ s16 framesLeft;
     /* 0x06 */ s16 unk6;
-    /* 0x08 */ s16 actor; // BattleApplyDelayedFlagTick only
+    /* 0x08 */ s16 actor;
     /* 0x0A */ u8 unkA[0x16];
 } BattleDelaySlot; // size:0x20
 
@@ -300,7 +300,7 @@ typedef struct {
 } BattleEffectScriptSlot; // size:0x20
 
 typedef union {
-    Unk801621F0 raw;
+    Unk801621F0 raw; // kept around for accesses that haven't been typed yet
     BattleHitFlashSlot hitFlash;
     BattleTrailSlot trail;
     Unk800D6F78Slot unk800D6F78;
@@ -318,10 +318,10 @@ typedef union {
     BattlePartEffectSlot partEffect;
     BattleFacingFlipSlot facingFlip;
     BattleEffectScriptSlot effectScript;
-} BattleUntrackedSlot; // size:0x20
+} BattleDetachedSlot; // size:0x20
 
 typedef union {
-    Unk80162978 raw;
+    Unk80162978 raw; // kept around for accesses that haven't been typed yet
     MagicAnimationData magicAnimation;
     BattleRampRepeatSlot rampRepeat;
     BattleRampSpawnSlot rampSpawn;
@@ -772,7 +772,7 @@ extern u8 D_80153BDD;
 extern u32 D_80151840;
 extern u8 D_801590CC;
 extern s16 g_BattleMovementCursor;
-extern s16 g_BattleUntrackedCursor;
+extern s16 g_BattleDetachedCursor;
 extern u8 D_801590D8;
 extern u8 D_801590DC;
 extern u8 D_801590E0;
@@ -784,7 +784,7 @@ extern u8 g_BattleEffectModelNotSummon;
 extern u8 D_801620A0;
 extern u8 D_801620A4;
 extern Unk801620AC g_BattleMovementSlots[10];
-extern BattleUntrackedSlot g_BattleUntrackedSlots[60];
+extern BattleDetachedSlot g_BattleDetachedSlots[60];
 extern u8 D_80162974;
 extern BattleEffectSlot g_BattleEffectSlots[100];
 extern u8 D_801635F8;
@@ -803,9 +803,9 @@ extern u8 D_80163B70[];
 extern void (*g_BattleMovementCallbacks[10])(void);
 extern s16 g_BattleMovementCount;
 extern u16 D_80163B80;
-extern void (*g_BattleUntrackedCallbacks[60])(void);
+extern void (*g_BattleDetachedCallbacks[60])(void);
 extern void* D_80163C74;
-extern s16 g_BattleUntrackedCount;
+extern s16 g_BattleDetachedCount;
 extern u8 D_80163C7C;
 extern ShortVectorXYZ g_BattleEffectModelStartPos;
 extern ShortVectorXYZ D_80163C80[];
@@ -842,6 +842,7 @@ void func_800AD324(s32, s32, s32, s32);
 static void BattleApplyDefaultAbsorbEffect(void);
 void BattleDmgFormulaRun(void);
 void func_800AE82C(void);
+s32 BattleGetStatusProtectionMask(s32, s32, s32);
 s32 BattleOpcodeGetRndBit(u16);
 void BattlePlayerModelsUpdateBonesPos(void);
 s32 BattleLoadEnemyModel(s32);
@@ -877,6 +878,13 @@ void func_800E6B94(void);
 void BattleEnqueueLoadImage(RECT* rect, u_long* ptr);
 void BattleReqReturnReservedItems(s16 arg0);
 void BattleQueueEvent(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
+static void BattleInvalidateQueuedMessages(s32 arg0, s32 arg1);
+
+// func_800A6278 does not match if this is forward declared because the types do not agree
+// but the modern build fails if it is not declared
+#ifdef PLATFORM_PSYZ
+static void BattleQueueOpcodeAction(s16 unitId, s16 actionType, s16 attackIndex);
+#endif
 
 /* battle menu widget block (one per widget id, 0x240 apart) -- partial */
 typedef struct {
@@ -931,6 +939,12 @@ typedef struct {
     /* 0x7C */ u8 stack[1];
 } BattleScriptVm;
 
+// Used for selecting an action with auto-battle units
+typedef struct {
+    /* 0x0 */ s32 cmdIndex;
+    /* 0x4 */ s32 attackIndex;
+} BattleAutoAction; // size:0x8
+
 extern u8* D_800F4AC0;
 extern BattleScriptVm* D_800F4AC4;
 
@@ -965,6 +979,7 @@ extern u8 D_800F5630;
 extern u16 D_800F5634;
 extern u8 D_800F5638;
 extern u8 D_800F563C;
+extern u16 D_800F7DE0[];
 extern BattleMenuSlot D_800F90B4[];
 extern MenuTable D_800F9144;
 extern u8 D_800F977C;
