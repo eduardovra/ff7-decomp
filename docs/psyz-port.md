@@ -326,18 +326,18 @@ need just **four** functions, in `src/battle/battle3.c` and `model.s`:
 ## The prototype
 
 Upstream's PsyZ support (#167) superseded the prototype described below; its
-`ff7` executable boots `GameMain`. Jet still runs on its own through
-`ff7_jet`, an opt-in target that links the real jet sources ahead of
-upstream's `src/pc/stubs.c`.
+`ff7` executable boots `GameMain`, and also links the real jet sources;
+`ff7 jet` boots straight into the minigame, which otherwise only a field
+script reaches.
 
 ```shell
 git submodule update --init --depth 1 tools/psyz
 git -C tools/psyz submodule update --init --depth 1 external/SDL
 
-cmake -B build-pc -DFF7_JET=ON -DCMAKE_BUILD_TYPE=Debug
+cmake -B build-pc -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-pc -j8
 
-./build-pc/ff7_jet                                # the jet minigame
+./build-pc/ff7 jet                                # the jet minigame
 ```
 
 ### What it measures
@@ -423,7 +423,7 @@ clang/gcc with `-g -O0`, not gcc 2.6.3.
 (gdb) break BATTLE_RunFrame           # then `finish` to step frame by frame
 ```
 
-`rr record ./build-pc/ff7_jet` then `rr replay` gives reverse execution, which
+`rr record ./build-pc/ff7 jet` then `rr replay` gives reverse execution, which
 is the fast way to find what wrote a bad value in `g_BattleState`.
 
 **You do not have to finish all 262 before debugging**, and the prototype above

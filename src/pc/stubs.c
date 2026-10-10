@@ -299,10 +299,6 @@ void func_800A00D0(void) { NOT_IMPLEMENTED; }
 void MINI_Chocobo(void) { NOT_IMPLEMENTED; }
 void func_800A0390(void) { NOT_IMPLEMENTED; }
 void func_800A0448(void) { NOT_IMPLEMENTED; }
-u16 MINI_Jet(void) {
-    NOT_IMPLEMENTED;
-    return 0;
-}
 void func_800A0C58(void) { NOT_IMPLEMENTED; }
 void func_800B6B58(void) { NOT_IMPLEMENTED; }
 
@@ -415,3 +411,6 @@ int IsIdleGPU(int max_count) {
     NOT_IMPLEMENTED;
     return 0;
 }
+
+void* D_80110BB8;
+void SetFogNearFar(long a, long b, long h) { NOT_IMPLEMENTED; }

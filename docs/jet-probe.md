@@ -58,7 +58,7 @@ Two traps already hit:
 
 ## Probing the native build
 
-`./build-pc/ff7_jet` runs the ride on the host (see `psyz-port.md`),
+`./build-pc/ff7 jet` runs the ride on the host (see `psyz-port.md`),
 so gdb reads jet's globals and structs by name, with types. A gdb Python
 `Breakpoint` subclass on `JetObjectsUpdate` whose `stop()` returns `False`
 is a per-frame hook. `SDL_VIDEO_DRIVER=offscreen` runs it without a window

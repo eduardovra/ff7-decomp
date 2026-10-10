@@ -1,6 +1,6 @@
 """Render every jet model in g_JetModelTable, from the native build under gdb.
 
-Runs ./build-pc/ff7_jet up to the first JetObjectsUpdate, reads each
+Runs ./build-pc/ff7 jet up to the first JetObjectsUpdate, reads each
 model's triangles and draws them flat-shaded from a three-quarter view.
 Writes contact sheets of 20 models, labelled with id and triangle count,
 into build/jet_models/.
@@ -20,7 +20,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = REPO_ROOT / "build" / "jet_models"
-BINARY = REPO_ROOT / "build-pc" / "ff7_jet"
+BINARY = REPO_ROOT / "build-pc" / "ff7"
 MODEL_COUNT = 100
 PER_SHEET = 20
 COLUMNS = 5
@@ -43,7 +43,7 @@ def launch() -> int:
         "-ex", "break JetObjectsUpdate",
         "-ex", "run",
         "-x", __file__,
-        "--args", str(BINARY),
+        "--args", str(BINARY), "jet",
     ]  # fmt: skip
     return subprocess.run(command, cwd=REPO_ROOT, env=env).returncode
 

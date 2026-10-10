@@ -111,6 +111,22 @@ s32 func_80036244(void* anim, u16 frame) {
 }
 
 extern void GameMain(void);
+extern u16 MINI_Jet(void);
+extern void SysCdromInit(void);
+
+// Boots straight into an overlay that only a field script would reach.
+static int BootOverlay(const char* name) {
+    if (strcmp(name, "jet")) {
+        return 0;
+    }
+    // What main's boot init does before any overlay runs.
+    ResetGraph(0);
+    InitGeom();
+    SysCdromInit();
+    InputInit();
+    printf("jet result %d\n", MINI_Jet());
+    return 1;
+}
 
 int main(int argc, char* argv[]) {
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -123,6 +139,8 @@ int main(int argc, char* argv[]) {
     if (Psyz_AudioInit() < 0) {
         ERRORF("failed to open the audio device");
     }
-    GameMain();
+    if (argc < 2 || !BootOverlay(argv[1])) {
+        GameMain();
+    }
     return 0;
 }
