@@ -1,7 +1,6 @@
 #ifndef JET_MODEL_H
 #define JET_MODEL_H
 
-#include "types.h"
 #include <game.h>
 
 typedef struct {

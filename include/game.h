@@ -1516,6 +1516,7 @@ void MENU_SetWindowColors(u8* menuColors);
 
 int func_80033DAC(int sector_no, void (*cb)());
 int func_80033DE4(int sector_no);
+void SysCdromInit(void);
 int SystemLoadFileBySector(int sector_no, size_t size, u_long* dst, void (*cb)());
 int SysCdromStartLoadLzs(int sector_no, size_t size, u_long* dst, void (*cb)());
 int func_80033EDC(int sector_no, void (*cb)());

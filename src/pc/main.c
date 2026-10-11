@@ -112,6 +112,35 @@ s32 func_80036244(void* anim, u16 frame) {
 
 extern void GameMain(void);
 
+static void BootJet(void) { INFOF("jet result %d", MINI_Jet()); }
+
+static const struct {
+    const char* name;
+    void (*boot)(void);
+} s_Overlays[] = {
+    {"jet", BootJet},
+};
+
+static int BootOverlay(const char* name) {
+    int i;
+
+    for (i = 0; i < LEN(s_Overlays); i++) {
+        if (!strcmp(name, s_Overlays[i].name)) {
+            break;
+        }
+    }
+    if (i == LEN(s_Overlays)) {
+        ERRORF("unknown overlay '%s'", name);
+        return 1;
+    }
+    ResetGraph(0);
+    InitGeom();
+    SysCdromInit();
+    InputInit();
+    s_Overlays[i].boot();
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
     setvbuf(stdout, NULL, _IONBF, 0);
     Psyz_DebugServer(8081);
@@ -122,6 +151,9 @@ int main(int argc, char* argv[]) {
     }
     if (Psyz_AudioInit() < 0) {
         ERRORF("failed to open the audio device");
+    }
+    if (argc > 1) {
+        return BootOverlay(argv[1]);
     }
     GameMain();
     return 0;

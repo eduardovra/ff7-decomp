@@ -10,6 +10,7 @@ set(FF7_PSYZ
     src/pc/stubs.c
     src/pc/stubs_akao.c
     src/pc/lzs.c
+    src/pc/jet_gte.c
 )
 
 set(FF7_MAIN
@@ -79,6 +80,15 @@ set(FF7_MINI
     src/mini/chocobo/chocobo_model.c
 )
 
+set(FF7_JET
+    src/mini/jet/jet.c
+    src/mini/jet/jet_buffer.c
+    src/mini/jet/jet_collide.c
+    src/mini/jet/jet_model.c
+    src/mini/jet/jet_node.c
+    src/mini/jet/jet_object.c
+)
+
 set(FF7_MAGIC
     src/magic/barrier.c
     src/magic/brizad.c
@@ -103,7 +113,7 @@ function(ff7_str out_var)
 endfunction()
 
 set(FF7_ALL ${FF7_PSYZ} ${FF7_MAIN} ${FF7_MENU} ${FF7_MISC} ${FF7_BATTLE}
-    ${FF7_FIELD} ${FF7_WORLD} ${FF7_MINI} ${FF7_MAGIC})
+    ${FF7_FIELD} ${FF7_WORLD} ${FF7_MINI} ${FF7_JET} ${FF7_MAGIC})
 list(REMOVE_DUPLICATES FF7_ALL)
 list(FILTER FF7_ALL INCLUDE REGEX "\\.c$")
 foreach(src ${FF7_ALL})
@@ -123,7 +133,7 @@ endforeach()
 # Both targets share the generated sources, so they are produced once here
 add_custom_target(${PROJECT_NAME}_strd DEPENDS ${FF7_STR_ALL})
 
-foreach(group PSYZ MAIN MENU MISC BATTLE FIELD WORLD MINI MAGIC)
+foreach(group PSYZ MAIN MENU MISC BATTLE FIELD WORLD MINI JET MAGIC)
     ff7_str(FF7_STR_${group} ${FF7_${group}})
 endforeach()
 
@@ -174,12 +184,16 @@ endfunction()
 
 option(FF7_ASAN "Build the PC executable with AddressSanitizer" OFF)
 
+# jet_object.c calls its own plain inline functions out of line.
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/strd/src/mini/jet/jet_object.c
+    PROPERTIES COMPILE_OPTIONS -fgnu89-inline)
+
 add_executable(${PROJECT_NAME}
-    ${FF7_STR_PSYZ} ${FF7_STR_MAIN} ${FF7_STR_MENU} ${FF7_STR_MISC})
+    ${FF7_STR_PSYZ} ${FF7_STR_MAIN} ${FF7_STR_MENU} ${FF7_STR_MISC} ${FF7_STR_JET})
 ff7_configure(${PROJECT_NAME})
 
 add_library(${PROJECT_NAME}_lib
     ${FF7_STR_MAIN} ${FF7_STR_MENU} ${FF7_STR_MISC} ${FF7_STR_BATTLE}
-    ${FF7_STR_FIELD} ${FF7_STR_WORLD} ${FF7_STR_MINI} ${FF7_STR_MAGIC})
+    ${FF7_STR_FIELD} ${FF7_STR_WORLD} ${FF7_STR_MINI} ${FF7_STR_JET} ${FF7_STR_MAGIC})
 set_target_properties(${PROJECT_NAME}_lib PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 ff7_configure(${PROJECT_NAME}_lib)

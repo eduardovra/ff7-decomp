@@ -42,6 +42,11 @@ extern size_t D_80071A6C;    // amount of sectors to read
 extern u_long* D_80071A80;   // read content destination
 extern void (*D_80071A84)(); // callback
 
+#ifdef PLATFORM_PSYZ
+static u_long* sector_buf;
+static size_t requested_len;
+#endif
+
 void SystemCdromAbortLoading(void);
 static void func_80034CAC(u32 arg0);
 s32 func_80034D5C(void);
@@ -152,6 +157,9 @@ static void SysCdromSetChainParam(int op, int sector, size_t len, u_long* dst, v
     } while (nextOp);
     CdIntToPos(sector, &D_80071A68);
     D_80071A6C = (len + 0x7FF) / 0x800;
+#ifdef PLATFORM_PSYZ
+    requested_len = len;
+#endif
     D_80071A80 = dst;
     D_80071A84 = cb;
     D_80071A60 = op;
@@ -463,7 +471,13 @@ static void CdOpReadSeekWait(void) {
 }
 
 static void CdOpRead(void) {
+#ifdef PLATFORM_PSYZ
+    // PSX always reads 2048 bytes, which corrupts memory on PC.
+    sector_buf = realloc(sector_buf, D_80071A6C * 2048);
+    if (CdRead(D_80071A6C, sector_buf, CdlModeSpeed) == 0) {
+#else
     if (CdRead(D_80071A6C, D_80071A80, CdlModeSpeed) == 0) {
+#endif
         D_80071A60 = CDOP_READ_SEEK;
         func_80034CAC(0x10);
         return;
@@ -474,6 +488,9 @@ static void CdOpRead(void) {
 static void CdOpReadWait(void) {
     switch (CdReadSync(1, NULL)) {
     case 0:
+#ifdef PLATFORM_PSYZ
+        memcpy(D_80071A80, sector_buf, requested_len);
+#endif
         D_80071A60 = CDOP_COMPLETE;
         break;
     case -1:

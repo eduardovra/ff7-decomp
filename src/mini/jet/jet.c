@@ -757,6 +757,17 @@ static void JetInitialize(void) {
     g_JetPopupTimer = 0;
 }
 
+#ifdef PLATFORM_PSYZ
+static void JetWidenPsxAddresses(void* table, s32 count) {
+    u32* packed = table;
+    u_long* wide = table;
+
+    while (count--) {
+        wide[count] = packed[count];
+    }
+}
+#endif
+
 static void JetLoadAssets(void) {
     RECT unused;
 
@@ -765,6 +776,9 @@ static void JetLoadAssets(void) {
     SystemLoadFileBySector(g_JetAssetFiles[0].loc, g_JetAssetFiles[0].len, (u_long*)g_JetTexAdr, NULL);
     while (SystemCdromReadChain())
         ;
+#ifdef PLATFORM_PSYZ
+    JetWidenPsxAddresses(g_JetTexAdr, LEN(g_JetTexAdr));
+#endif
     SystemLoadFileBySector(g_JetAssetFiles[1].loc, g_JetAssetFiles[1].len, JET_ASSET_ADDR, NULL);
     while (SystemCdromReadChain())
         ;
@@ -774,6 +788,9 @@ static void JetLoadAssets(void) {
     SystemLoadFileBySector(g_JetAssetFiles[2].loc, g_JetAssetFiles[2].len, &g_JetXbinAdr.musicData, NULL);
     while (SystemCdromReadChain())
         ;
+#ifdef PLATFORM_PSYZ
+    JetWidenPsxAddresses(&g_JetXbinAdr, sizeof(g_JetXbinAdr) / sizeof(u_long));
+#endif
     SysCdromStartLoadLzs(g_JetAssetFiles[3].loc, g_JetAssetFiles[3].len, JET_ASSET_ADDR, NULL);
     while (SystemCdromReadChain())
         ;
