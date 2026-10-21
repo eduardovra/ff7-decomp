@@ -160,7 +160,7 @@ static void BrizadSpawnIce(void) {
             next->Rot.vy = 0;
             next->Rot.vx = 0;
             next->Scale = func_800D55A4(effect->TargetIndex);
-            func_800D5774(effect->TargetIndex);
+            BattleQueueTargetImpact(effect->TargetIndex);
             if (effect->AnimationFrame == 0) {
                 effect->StartFrame = -1;
             }

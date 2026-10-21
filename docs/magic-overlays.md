@@ -133,7 +133,7 @@ the `TargetIndex` meaning it has in the other slots.
 | `MagicAnimationRegister(mask, arg1, step, cb)` | fan out over targets, `cb(target)` every `step` frames |
 | `BattleGetPartPosition(target, part, out)` | where on the model to place the effect |
 | `BattleDrawModel(desc, ot, otLen, buf)` | render a model, threads the primitive write pointer |
-| `func_800D5774(target)` | fire the damage / result popup |
+| `BattleQueueTargetImpact(target)` | fire the damage / result popup |
 | `BattleCommandSend(32, pan, sfxId)` | play a sound effect |
 | `func_800D55A4(target)` | scale derived from the target's model size |
 
@@ -271,20 +271,27 @@ shows a shell every time it is hit, long after `BARRIER.BIN` has been
 replaced at `0x801B0000` by the next spell -- confirmed by reading the
 resident bytes mid-battle and matching them against no overlay we build. It
 comes from the battle overlay: `battle2.c`'s `func_800CE75C` tests the two
-coverage masks q-gears named, `D_800FA69C` for MBarrier and `D_80163608`
-for physical Barrier, and calls `func_800D67E8` or `func_800D67BC`. Those
+coverage masks `g_BattleMBarrierTargetMask` and `g_BattleBarrierTargetMask`,
+and calls `BattleTriggerMBarrierFlash` or `BattleTriggerBarrierFlash`. The
+masks are proven in `battle.c`: `BattleAddBarriersModifier` sets hit flag
+`0x8000` for `STATUS_M_BARRIER` on a magic attack and `0x4000` for
+`STATUS_BARRIER` on a physical one; those become target flags `0x20`/`0x10`,
+which `BattleQueue1UpdateTargMasks` collects into the two masks. Target flag
+`0x2` (set when `STATUS_REFLECT` bounces the attack) feeds
+`g_BattleReflectTargetMask`; `BattleQueueTargetImpact` then pushes event 6 instead of
+4, whose handler calls `BattleTriggerReflectFlash`. Barrier and MBarrier
 differ in one line each:
 
 ```c
-D_800F14D4 = 0x88;  func_800D6734(unit, 0);   // Barrier
-D_800F14D4 = 0xA8;  func_800D6734(unit, 1);   // MBarrier
+D_800F14D4 = 0x88;  BattleSpawnActorFlash(unit, 0);   // Barrier
+D_800F14D4 = 0xA8;  BattleSpawnActorFlash(unit, 1);   // MBarrier
 ```
 
 `D_800F14D4` is the flags word of `D_800F14D0`, the engine's own render
 descriptor. So the only rendering difference between the two flashes is bit
 `0x20`, backface culling: MBarrier shows both faces of the shell, Barrier
 culls. Note the `else if` -- a unit under both statuses only shows the
-MBarrier flash. `func_800D6734`, which does the drawing, is still
+MBarrier flash. `BattleSpawnActorFlash`, which does the drawing, is still
 `INCLUDE_ASM`.
 
 So a spell splits across two places: the overlay draws the cast, and the
