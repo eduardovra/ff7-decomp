@@ -233,7 +233,7 @@ requires.
 
 So barrier draws one quarter of its shell four times -- unmirrored,
 mirrored X, mirrored Y, mirrored both -- which is how a four-fold symmetric
-barrier is built from a quarter model. `battle3.c`'s `func_800D6394` does
+barrier is built from a quarter model. `battle2.c`'s `func_800D6394` does
 the same thing explicitly, toggling `|= 1` and `|= 2` across four passes.
 Bit `0x8` is semi-transparency: it is shifted left 22 into bit 25 of the
 colour word, which is bit 1 of the GPU code byte.

@@ -24,7 +24,7 @@ the four overlays side by side, `decomp-workflow.md` for the tooling.
 Every animation length in a spell overlay is a frame count, so the frame rate
 is the first thing to pin down.
 
-The battle main loop is `func_800D8A88` in `src/battle/battle4.c`:
+The battle main loop is `func_800D8A88` in `src/battle/battle3.c`:
 
 ```c
 int func_800D8A88(void) {
@@ -346,7 +346,7 @@ colour to black, which is what the depth-cue stage blends toward.
 
 The actual vertex work happens inside the render helpers, which are still
 hand-written assembly. The pattern, from
-`asm/us/battle/nonmatchings/battle3/func_800D4D90.s`:
+`asm/us/battle/nonmatchings/battle2/func_800D4D90.s`:
 
 ```
     mtc2       $t0, $0      # VXY0  <- corner 0, x and y packed in one word
@@ -405,7 +405,7 @@ GPU packet in one instruction.
 That is the quad builder, which synthesises its corners in general registers
 and has to `mtc2` them across. The model renderer brizad uses does not. It has
 a real vertex table in memory, so it loads the coprocessor from RAM directly,
-at `0x800D2AFC` in `src/battle/model.s`:
+at `0x800D2AFC` in `asm/us/battle/nonmatchings/battle2/BattleDrawModel.s`:
 
 ```
     lwc2  $0, 0x0($t4)     # VXY0 <- vertex A, x and y

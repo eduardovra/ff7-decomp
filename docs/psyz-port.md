@@ -319,7 +319,7 @@ Eight functions. Everything else is behind them.
 ## Tier 1 -- what the spell overlays need
 
 All seven magic overlays are already at 100%. Once PSY-Q is discounted they
-need just **four** functions, in `src/battle/battle3.c` and `model.s`:
+need just **four** functions, all in `src/battle/battle2.c`:
 
     BattleGetPartPosition    BattleDrawModel  func_800D4368    func_800D4D90
 
@@ -651,7 +651,7 @@ grep -rc INCLUDE_ASM src/battle src/main --include='*.c' | grep -v ':0'
     SystemAkaoExecute                         func_8002FDA0                             func_8002FF4C
     func_80030038                             func_80030148
 
-### `src/battle/battle4.c` — 4
+### `src/battle/battle3.c` — 4
 
     func_800DBF8C                             func_800DC0CC                             func_800DCFD4
     func_800E16B8
