@@ -14,7 +14,7 @@ struct FieldRain {
 
 extern struct FieldRain g_FieldRain[64];
 
-void FieldRainInit(struct FieldRenderData* renderData) {
+void FieldRainInit(FieldRenderData* renderData) {
     LINE_F2* line;
     s32 i;
     s32 adjustedIndex;
@@ -24,22 +24,22 @@ void FieldRainInit(struct FieldRenderData* renderData) {
         g_FieldRain[i].rndSeed = i * 4;
         g_FieldRain[i].wait = i % 8;
 
-        line = &renderData->Rain[i];
+        line = &renderData->rain[i];
 
         SetLineF2(line);
         SetSemiTrans(line, 1);
 
-        renderData->Rain[i].r0 = 0x10;
-        renderData->Rain[i].g0 = 0x10;
-        renderData->Rain[i].b0 = 0x10;
+        renderData->rain[i].r0 = 0x10;
+        renderData->rain[i].g0 = 0x10;
+        renderData->rain[i].b0 = 0x10;
     }
 
-    SetDrawMode(&renderData->rainDm, 0, 0, GetTPage(0, 1, 0, 0) & 0xffff, NULL);
+    SetDrawMode(&renderData->rainDm, 0, 0, GetTPage(0, 1, 0, 0) & 0xFFFF, NULL);
 }
 
 void FieldRainAddToRender(u_long* ot, LINE_F2* rain, MATRIX* matrix, DR_MODE* rainDm) {
-    long p;
-    long flag;
+    int p;
+    int flag;
     s32 i;
     s32 j;
 
@@ -50,8 +50,8 @@ void FieldRainAddToRender(u_long* ot, LINE_F2* rain, MATRIX* matrix, DR_MODE* ra
     for (i = 0, j = 0; i < LEN(g_FieldRain); i++) {
         // 12 * sizeof(s16) = 24 bytes (0x18), the exact size of FieldRain
         if (g_FieldRain[i].render == 1) {
-            RotTransPers(&g_FieldRain[i].p1, (long*)&rain->x0, &p, &flag);
-            RotTransPers(&g_FieldRain[i].p2, (long*)&rain->x1, &p, &flag);
+            RotTransPers(&g_FieldRain[i].p1, (int*)&rain->x0, &p, &flag);
+            RotTransPers(&g_FieldRain[i].p2, (int*)&rain->x1, &p, &flag);
             AddPrim(ot, rain);
         }
         rain++;
@@ -59,22 +59,13 @@ void FieldRainAddToRender(u_long* ot, LINE_F2* rain, MATRIX* matrix, DR_MODE* ra
 
     PopMatrix();
 
-    *(u32*)rainDm = (*(u32*)rainDm & 0xFF000000) | (*ot & 0xFFFFFF);
-
-    *ot = (*ot & 0xFF000000) | ((u32)rainDm & 0xFFFFFF);
+    addPrim(ot, rainDm);
 }
-
-#ifndef NON_MATCHINGS
-INCLUDE_ASM("asm/us/field/nonmatchings/field_rain", FieldRainUpdate);
-#else
-
-extern FieldEntity g_FieldEntities[];
 
 void FieldRainUpdate(void) {
     s32 i;
     s32 limit;
     s32 player;
-    s32 max = 255;
     s32 vz;
 
     if ((Savemap.memory_bank_5[0x83] & 0x80) == 0) {
@@ -82,7 +73,7 @@ void FieldRainUpdate(void) {
             g_RainForce--;
         }
     } else {
-        if (g_RainForce != max) {
+        if (g_RainForce != 255) {
             g_RainForce++;
         }
     }
@@ -93,7 +84,6 @@ void FieldRainUpdate(void) {
     for (i = 0; i < 0x40; i++) {
         if (g_FieldRain[i].wait == 0) {
             if (i < limit) {
-
                 u8 seed3;
 
                 g_FieldRain[i].render = 1;
@@ -101,15 +91,15 @@ void FieldRainUpdate(void) {
                 g_FieldRain[i].wait = 7;
 
                 g_FieldRain[i].p2.vx =
-                    (g_FieldEntities[player].PosX >> 12) + g_RandomTable[g_FieldRain[i].rndSeed & 0xFF] * 12 - 0x600;
+                    (g_FieldEntity[player].PosX >> 12) + g_RandomTable[g_FieldRain[i].rndSeed & 0xFF] * 12 - 0x600;
 
                 seed3 = g_FieldRain[i].rndSeed * 3;
-                g_FieldRain[i].p2.vy = (g_FieldEntities[player].PosY >> 12) + g_RandomTable[seed3] * 12 - 0x600;
+                g_FieldRain[i].p2.vy = (g_FieldEntity[player].PosY >> 12) + g_RandomTable[seed3] * 12 - 0x600;
 
                 g_FieldRain[i].p1.vx = g_FieldRain[i].p2.vx;
                 g_FieldRain[i].p1.vy = g_FieldRain[i].p2.vy;
 
-                g_FieldRain[i].z = (g_FieldEntities[player].PosZ >> 12) - 0x300;
+                g_FieldRain[i].z = (g_FieldEntity[player].PosZ >> 12) - 0x300;
             } else {
                 g_FieldRain[i].wait = 1;
                 g_FieldRain[i].render = 0;
@@ -126,4 +116,3 @@ void FieldRainUpdate(void) {
         g_FieldRain[i].wait--;
     }
 }
-#endif

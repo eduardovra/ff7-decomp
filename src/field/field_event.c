@@ -435,8 +435,8 @@ done:
 static void FieldUpdateAnimationState(void) {
     s32 i;
     s32 modelEntryId;
-    u8* anims;
-    FieldModelEntry* model;
+    FieldModelAnimation* anims;
+    FieldModel* model;
 
     for (i = 0; i < g_FieldScripts->numEntities; i++) {
         if (g_EntityToModel[i] != 0xFF &&
@@ -448,16 +448,16 @@ static void FieldUpdateAnimationState(void) {
                     g_FieldModels[g_EntityToModel[i]].animSpeed = g_FieldModelEffAnimSpeed[g_EntityToModel[i]];
                     g_FieldModels[g_EntityToModel[i]].animCurrentFrame = 0;
                     modelEntryId = g_FieldModelLoaderData[g_EntityToModel[i]].modelEntryIndex;
-                    model = &g_FieldModelData->modelEntries[modelEntryId];
-                    anims = model->modelData + model->animationOffset;
+                    model = &g_FieldModelData->models[modelEntryId];
+                    anims = (FieldModelAnimation*)(model->modelData + model->animationOffset);
                     g_FieldModels[g_EntityToModel[i]].animLastFrame =
-                        *(u16*)&anims[g_FieldEntity[g_EntityToModel[i]].activeAnimId * 16] - 1;
+                        anims[g_FieldEntity[g_EntityToModel[i]].activeAnimId].frameCount - 1;
                 } else {
                     modelEntryId = g_FieldModelLoaderData[g_EntityToModel[i]].modelEntryIndex;
-                    model = &g_FieldModelData->modelEntries[modelEntryId];
-                    anims = model->modelData + model->animationOffset;
+                    model = &g_FieldModelData->models[modelEntryId];
+                    anims = (FieldModelAnimation*)(model->modelData + model->animationOffset);
                     g_FieldModels[g_EntityToModel[i]].animLastFrame =
-                        *(u16*)&anims[g_FieldEntity[g_EntityToModel[i]].activeAnimId * 16] - 1;
+                        anims[g_FieldEntity[g_EntityToModel[i]].activeAnimId].frameCount - 1;
                     if ((g_FieldModels[g_EntityToModel[i]].animCurrentFrame >> 4) >=
                         g_FieldModels[g_EntityToModel[i]].animLastFrame) {
                         g_FieldModels[g_EntityToModel[i]].animCurrentFrame = 0;
@@ -534,7 +534,6 @@ u8 FieldEventRequestRun(s16 entityId, s16 priority, s16 scriptId) {
 
     // Only request script if active script has lower priority.
     if (g_FieldScriptPriority[entityId] > priority) {
-
         // Entity is busy waiting for another script to return.
         if (g_FieldScriptSyncState[entityId][priority] != SYNC_NONE) {
             return g_FieldScriptSyncState[entityId][priority];
@@ -549,7 +548,6 @@ u8 FieldEventRequestRun(s16 entityId, s16 priority, s16 scriptId) {
 
         // Empty event scripts consist of just a RET (0x00) opcode.
         if (((u8*)g_FieldScripts)[offset] != 0) {
-
             // Save position of current active script of lower priority and
             // replace with new script.
             SavedScriptIds[entityId][priority] = scriptId;

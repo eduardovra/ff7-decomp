@@ -25,6 +25,9 @@
 #define ResetSpadStack()
 #endif
 
+const SVECTOR D_800A0000 = {0, 0, 0, 0};
+const VECTOR D_800A0008 = {0, 0x190, 0x1E8, 0};
+
 static void ChocoboDrawTrackProps(void);
 static void ChocoboDrawTrackPropRange(s32 start, s32 end);
 
@@ -45,7 +48,7 @@ void MINI_Chocobo(void) {
     s32* flags;
     Chocobo* model;
     POLY_F4* tile;
-    ChocoboModels* models;
+    FieldModelData* models;
     s32 i;
     s32 j;
     s32 k;
@@ -286,7 +289,7 @@ static void ChocoboDrawTrackProps(void) {
 
 static void ChocoboDrawTrackPropRange(s32 start, s32 end) {
     ChocoboTrackNode* prop;
-    ChocoboModel* model;
+    FieldModel* model;
     u16* anim;
     s32 flag;
     s32 i;
@@ -305,17 +308,17 @@ static void ChocoboDrawTrackPropRange(s32 start, s32 end) {
         gte_ldv0(prop);
         gte_rtps();
         model = &table->unk0->models[id];
-        anim = (u16*)(model->animOffset + model->data);
+        anim = (u16*)(model->animationOffset + model->modelData);
         gte_stflg(&flag);
         if (flag < 0) {
             continue;
         }
-        model->x = prop->x;
-        model->y = prop->y;
-        model->z = prop->z;
-        model->r = prop->r;
-        model->g = prop->g;
-        model->b = prop->b;
+        model->translationX = prop->x;
+        model->translationY = prop->y;
+        model->translationZ = prop->z;
+        model->rotationX = prop->r;
+        model->rotationY = prop->g;
+        model->rotationZ = prop->b;
         PushMatrix();
         *(u_long*)getScratchAddr(0) = 3;
         func_800AF11C(&table->unk0->models[id], &D_800B7544, 0, prop->frame);
@@ -332,5 +335,20 @@ static void ChocoboDrawTrackPropRange(s32 start, s32 end) {
         if (prop->frame < 0) {
             prop->frame = 0;
         }
+    }
+}
+
+void ChocoboResetRacerColors(void) {
+    Unk800B1254* table;
+    FieldModel* model;
+    Chocobo* chocobo;
+    s32 i;
+
+    for (i = 0, table = &D_800B1254; i < NUM_CHOCOBO; i++) {
+        chocobo = &D_800B75CC[i];
+        model = &table->unk0->models[chocobo->unk92];
+        table->unk0->models[chocobo->unk90].rotationX = model->rotationX = 0xC0;
+        table->unk0->models[chocobo->unk90].rotationY = model->rotationY = 0;
+        table->unk0->models[chocobo->unk90].rotationZ = model->rotationZ = 0x80;
     }
 }

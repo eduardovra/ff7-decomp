@@ -1,3 +1,6 @@
+#ifndef BATTLE_PRIVATE_H
+#define BATTLE_PRIVATE_H
+
 // should be imported only by the BATTLE overlay, not BATINI or similar
 #include "battle.h"
 #include "../magic/magic.h"
@@ -5,6 +8,42 @@
 #define CMD_OPCODE_DELIM 0x1F
 #define HIT_OPCODE_DELIM 0x08
 #define BATTLE_EVENT_QUEUE_SIZE 128
+
+// Battle timers
+// The timer accumulators are fixed-point values: the low *_FRAC_BITS bits are a fraction
+// carried to the next update, the rest is whole ticks. Status timers count down one per
+// tick. The HP change uses the same split, giving whole HP.
+// See the Battle Mechanics FAQ for more details.
+#define BATTLE_TIMER_FRAC_BITS 13       // global and var timers: 8192 per tick
+#define BATTLE_CONST_TIMER_FRAC_BITS 12 // const timer: 4096 per tick
+#define BATTLE_HP_CHANGE_FRAC_BITS 15
+
+#define BATTLE_CONST_SPEED_NORMAL ((1 << BATTLE_CONST_TIMER_FRAC_BITS) / 60) // 1 tick per 60 updates
+
+#define BATTLE_TICKS(x) ((x) >> BATTLE_TIMER_FRAC_BITS)
+#define BATTLE_CONST_TICKS(x) ((x) >> BATTLE_CONST_TIMER_FRAC_BITS)
+#define BATTLE_HP_DELTA(x) ((x) >> BATTLE_HP_CHANGE_FRAC_BITS)
+#define BATTLE_TIMER_FRAC(x) ((x) & ((1 << BATTLE_TIMER_FRAC_BITS) - 1))
+#define BATTLE_CONST_FRAC(x) ((x) & ((1 << BATTLE_CONST_TIMER_FRAC_BITS) - 1))
+#define BATTLE_HP_FRAC(x) ((x) & ((1 << BATTLE_HP_CHANGE_FRAC_BITS) - 1))
+
+// Timer accumulators are double buffered: BattleAdvanceTimers adds into the current set
+// from the VSync interrupt, while BattleProcessTimers (BATTLE_Main) flips the index and
+// consumes the other set, so an interrupt arriving mid-consume never loses an update.
+// volatile: shared with the interrupt handler, so it must be re-read from memory.
+extern volatile s32 g_BattleTimerBufferIndex;
+
+// Added to on every VSync by BattleAdvanceTimers.
+// Var timers scale with the Battle Speed setting and Haste/Slow, const timers only
+// with Haste/Slow, and the global timer only counts down Stop.
+extern s32 g_BattleGlobalTimerAccum[2];
+extern s32 g_BattleVarTimerAccum[2][NUM_BATTLE_ACTOR];
+extern s32 g_BattleConstTimerAccum[2][NUM_BATTLE_ACTOR];
+
+// Fractions carried over between BattleProcessTimers calls
+extern s32 g_BattleVarTimerFrac[NUM_BATTLE_ACTOR];
+extern s32 g_BattleConstTimerFrac[NUM_BATTLE_ACTOR];
+extern s32 g_BattleHpChangeFrac[NUM_BATTLE_ACTOR];
 
 enum QueueMethod {
     QUEUE_LOAD_IMAGE,
@@ -17,7 +56,7 @@ enum AccessWidthType { WIDTH_BIT, WIDTH_BYTE, WIDTH_HALF, WIDTH_WORD };
 
 typedef struct {
     s8 actionId;
-    s8 unk1;
+    s8 type;
     s8 unk2;
     s8 unk3;
     s8 unk4;
@@ -55,10 +94,8 @@ typedef struct {
     /* 0x0A */ s16 D_80162982;
     /* 0x0C */ s16 unkC;
     /* 0x0E */ s16 unkE;
-    /* 0x10 */ s16 unk10;
-    /* 0x12 */ s16 unk12;
-    /* 0x14 */ s16 unk14;
-    /* 0x16 */ s16 unk16;
+    /* 0x10 */ s32 unk10;
+    /* 0x14 */ s32 unk14;
     /* 0x18 */ u8 unk18;
     /* 0x19 */ u8 unk19;
     /* 0x1A */ s16 unk1A;
@@ -109,6 +146,7 @@ typedef struct {
 } Unk80162200;
 typedef union {
     u8* ptr;
+    s32 value;
     Unk80162200 unk;
 } Union80162200;
 
@@ -123,43 +161,12 @@ typedef struct {
 } Pair16x2;
 
 typedef struct {
-    s16 D_801621F0;
-    s16 D_801621F2;
-    s16 D_801621F4;
-    s16 D_801621F6; // player idx? 0, 1 or 2. See func_800D0C80
-    s16 unk8;
-    s16 unkA;
-    s16 unkC;
-    s16 unkE;
-    Union80162200 unk10;
-    s32 unk14;
-    u8 unk18;
-    s8 unk19;
-    s16 unk1A;
-    void* unk1C;
-} Unk801621F0; // size:0x20
-
-typedef struct {
-    /* 0x00 */ s16 unk0;
-    /* 0x02 */ s16 frame;
-    /* 0x04 */ SVECTOR pos;
-    /* 0x0C */ u8 unkC[0x14];
-} BattleHitFlashSlot; // size:0x20
-
-typedef struct {
     /* 0x00 */ s16 unk0;
     /* 0x02 */ s16 frame;
     /* 0x04 */ SVECTOR pos;
     /* 0x0C */ u8 unkC[0x10];
     /* 0x1C */ void (*spawnCallback)(void);
-} BattleTrailSlot; // size:0x20
-
-typedef struct {
-    /* 0x00 */ s16 unk0;
-    /* 0x02 */ s16 frame;
-    /* 0x04 */ SVECTOR pos;
-    /* 0x0C */ u8 unkC[0x14];
-} Unk800D6F78Slot; // size:0x20
+} BattleHitFlashSlot; // size:0x20
 
 typedef struct {
     /* 0x00 */ s16 palette;
@@ -199,13 +206,14 @@ typedef struct {
 } BattleKeyframeParticleSlot; // size:0x20
 
 typedef struct {
-    /* 0x00 */ s16 unk0;
+    /* 0x00 */ s16 unk0; // BattleEffectDustClouds keeps its actor here
     /* 0x02 */ s16 frame;
     /* 0x04 */ SVECTOR pos;
-    /* 0x0C */ s16 unkC;
+    /* 0x0C */ s16 delay;
     /* 0x0E */ s16 scaleX;
     /* 0x10 */ s16 scaleY;
-    /* 0x12 */ u8 unk12[0xE];
+    /* 0x12 */ s16 actor;
+    /* 0x14 */ u8 unk14[0xC];
 } BattleSparkleSlot; // size:0x20
 
 typedef struct {
@@ -299,11 +307,78 @@ typedef struct {
     /* 0x19 */ u8 unk19[7];
 } BattleEffectScriptSlot; // size:0x20
 
+typedef struct {
+    /* 0x00 */ s16 id;
+    /* 0x02 */ s16 state;
+    /* 0x04 */ u8 unk4[0x1C];
+} BattleDetachedHeader; // size:0x20
+
+typedef struct {
+    /* 0x00 */ s16 unk0;
+    /* 0x02 */ s16 state;
+    /* 0x04 */ s16 framesLeft;
+    /* 0x06 */ s16 screenX;
+    /* 0x08 */ s16 screenY;
+    /* 0x0A */ s16 baseY;
+    /* 0x0C */ s16 frame;
+    /* 0x0E */ s16 unkE;
+    /* 0x10 */ Union80162200 actor;
+    /* 0x14 */ s32 unk14;
+    /* 0x18 */ u8 unk18[8];
+} BattleDamagePopupSlot; // size:0x20
+
+typedef struct {
+    /* 0x00 */ s16 unk0;
+    /* 0x02 */ s16 unk2;
+    /* 0x04 */ s16 framesLeft;
+    /* 0x06 */ s16 unk6;
+    /* 0x08 */ s16 actor;
+    /* 0x0A */ s16 baseZ;
+    /* 0x0C */ u8 unkC[0x14];
+} BattleModelShakeSlot; // size:0x20
+
+typedef struct {
+    /* 0x00 */ s16 unk0;
+    /* 0x02 */ s16 state;
+    /* 0x04 */ s16 framesLeft;
+    /* 0x06 */ s16 unk6;
+    /* 0x08 */ s16 arg1;
+    /* 0x0A */ s16 arg0;
+    /* 0x0C */ u8 unkC[0x14];
+} BattleDelayedCleanupSlot; // size:0x20
+
+typedef struct {
+    /* 0x00 */ s16 unk0;
+    /* 0x02 */ s16 unk2;
+    /* 0x04 */ s32 unk4;
+    /* 0x08 */ s32 unk8;
+    /* 0x0C */ s32 unkC;
+    /* 0x10 */ u8* unk10;
+    /* 0x14 */ s16 unk14;
+    /* 0x16 */ s16 unk16;
+    /* 0x18 */ u8 unk18[8];
+} BattleBlinkSlot; // size:0x20
+
+typedef struct {
+    /* 0x00 */ s16 unk0;
+    /* 0x02 */ s16 elapsed;
+    /* 0x04 */ s16 unk4;
+    /* 0x06 */ s16 actor;
+    /* 0x08 */ s16 delay;
+    /* 0x0A */ s16 flags;
+    /* 0x0C */ u8 unkC[0xE];
+    /* 0x1A */ s16 depth;
+    /* 0x1C */ void* matrix;
+} BattleSpriteEffectSlot; // size:0x20
+
 typedef union {
-    Unk801621F0 raw; // kept around for accesses that haven't been typed yet
+    BattleDetachedHeader base;
+    BattleDamagePopupSlot damagePopup;
+    BattleModelShakeSlot modelShake;
+    BattleDelayedCleanupSlot delayedCleanup;
+    BattleBlinkSlot blink;
+    BattleSpriteEffectSlot spriteEffect;
     BattleHitFlashSlot hitFlash;
-    BattleTrailSlot trail;
-    Unk800D6F78Slot unk800D6F78;
     Unk800D6D8CSlot unk800D6D8C;
     BattleKeyframeEffectSlot keyframeEffect;
     BattleKeyframeParticleSlot keyframeParticle;
@@ -351,17 +426,13 @@ typedef struct {
 
 typedef struct {
     /* 0x00 */ s32 D_80151200;
-    /* 0x04 */ s32 D_80151204;
-    /* 0x08 */ s32 D_80151208;
+    /* 0x04 */ u16 values4[4];
     /* 0x0C */ s16 D_8015120C;
-    /* 0x0E */ s16 D_8015120E;
-    /* 0x10 */ s32 D_80151210;
-    /* 0x14 */ s32 D_80151214;
-    /* 0x18 */ s32 D_80151218;
-    /* 0x1C */ s32 D_8015121C;
-    /* 0x20 */ s32 D_80151220;
-    /* 0x24 */ s32 D_80151224;
-    /* 0x28 */ s32 D_80151228;
+    /* 0x0E */ u16 valuesE[6];
+    /* 0x1A */ u16 values1A[6];
+    /* 0x26 */ u16 height;
+    /* 0x28 */ u16 unk28;
+    /* 0x2A */ u16 unk2A;
     /* 0x2C */ s16 D_8015122C;
     /* 0x2E */ s16 D_8015122E;
     /* 0x30 */ u16 D_80151230;
@@ -374,19 +445,7 @@ typedef struct {
     /* 0x3A */ s16 D_8015123A;
     /* 0x3C */ s16 D_8015123C;
     /* 0x3E */ s16 D_8015123E;
-    /* 0x40 */ s32 D_80151240;
-    /* 0x44 */ s32 D_80151244;
-    /* 0x48 */ s32 D_80151248;
-    /* 0x4C */ s32 D_8015124C;
-    /* 0x50 */ s32 D_80151250;
-    /* 0x54 */ s32 D_80151254;
-    /* 0x58 */ s32 D_80151258;
-    /* 0x5C */ s32 D_8015125C;
-    /* 0x60 */ s32 D_80151260;
-    /* 0x64 */ s32 D_80151264;
-    /* 0x68 */ s32 D_80151268;
-    /* 0x6C */ s32 D_8015126C;
-    /* 0x70 */ s32 D_80151270;
+    /* 0x40 */ BattleModelSub bone;
 } Unk80151200; // size:0x74
 
 typedef struct {
@@ -404,15 +463,12 @@ typedef struct {
     /* 0x2F */ u8 unk2F;
 } Unk80151360; // size:0x30
 
-// Confirmed live via PCSX-Redux (exec breakpoint on func_800A4350, one command
+// Confirmed live via PCSX-Redux (exec breakpoint on BattleQueuePendingAction, one command
 // at a time, plus direct cmdIndex injection for the remaining gaps). "All"-
 // linked materia (Steal-All, Sense-All, etc) reuse their base command's
 // cmdIndex -- targetMask changes, not cmdIndex. 0x0E-0x10 and past 0x1B are
 // unused/no-op (injected directly, no visible effect and not reachable via
-// any known menu path). 0x11 forces a melee attack ignoring weapon range
-// (injected on Barret with a long-range weapon -- he closed to melee instead
-// of shooting), not reachable via any menu path either -- possibly an
-// internal command for a status-forced attack (Berserk?), unconfirmed.
+// any known menu path).
 typedef enum {
     CMD_ATTACK = 0x01,
     CMD_MAGIC = 0x02,
@@ -427,10 +483,10 @@ typedef enum {
     CMD_MANIPULATE = 0x0B,
     CMD_MIME = 0x0C,
     CMD_ENEMY_SKILL = 0x0D,
-    CMD_MELEE_ATTACK = 0x11, // ignores weapon range; not player-menu-reachable?
+    CMD_MUG = 0x11, // Steal + attack; Steal materia's second command once mastered
     CMD_CHANGE = 0x12,
     CMD_DEFEND = 0x13,
-    CMD_LIMIT = 0x14, // priority-5 special case in func_800A4350
+    CMD_LIMIT = 0x14, // priority-5 special case in BattleQueuePendingAction
     CMD_W_MAGIC = 0x15,
     CMD_W_SUMMON = 0x16,
     CMD_W_ITEM = 0x17,
@@ -442,28 +498,26 @@ typedef enum {
     CMD_NONE = 0xFF, // queued for an enemy turn; its real command is chosen later
 } BattleCommand;
 
-// Queued-action entry, matches
-// https://wiki.ffrtt.ru/index.php/FF7/Battle/Battle_Mechanics action-queue
-// layout exactly (priority/queue-pos/actorId/cmdIndex/attackIndex/targetMask).
-// D_800F3958 is a 16-entry ring buffer of these (D_800F39D8 read idx,
-// D_800F39DC write idx); the wiki describes up to 64 queued actions, so this
-// may be a smaller staging ring rather than the full logical queue --
-// unconfirmed. Drain chain: func_800A3ED0 drains this ring into a 64-slot
-// priority table (BattleCopyBattleActionToBattleQueue), which BattleBattleActionQueueExecute drains in priority
-// order into BattleCmdScriptDispatch, which runs the command as a byte-coded sequence
-// of opcodes (g_BattleCmdOpcodeOffs/g_BattleCmdOpcodeStream/g_BattleCmdOpcodeJmpTbl), not a single switch on
-// cmdIndex. Full writeup: ff7-re/reference/BATTLE_COMMAND_QUEUE.md
-typedef struct {
-    /* 0x0 */ u8 priority; // 0=limits/counters, 6=player spells (see func_800A4350)
-    /* 0x1 */ u8 queuePos; // position within priority band; not set by func_800A4350
-    /* 0x2 */ u8 actorId;
-    /* 0x3 */ s8 cmdIndex;     // BattleCommand, stored raw (not the enum type --
-                               // keeps this struct's confirmed 0x8-byte layout)
-    /* 0x4 */ s16 attackIndex; // command-dependent: spell id for CMD_MAGIC,
-                               // damage dealt for CMD_COIN, skill id for
-                               // CMD_ENEMY_SKILL, etc -- not a uniform lookup
-    /* 0x6 */ u16 targetMask;
-} QueuedAction; // size:0x8
+// Menus refreshed on demand by BattleRefreshMenu
+typedef enum {
+    /* 0 */ MENU_LIST_COMMAND,
+    /* 1 */ MENU_LIST_MAGIC,
+    /* 2 */ MENU_LIST_SUMMON,
+    /* 3 */ MENU_LIST_ENEMY_SKILL,
+} BattleMenuList;
+
+// BattleTurnWork.menuListFlags: lower nibble is used as "refresh"
+// flags, while the upper nibble is used as "disabled" flags
+typedef enum {
+    MENU_LIST_DIRTY_COMMAND = 1 << MENU_LIST_COMMAND,
+    MENU_LIST_DIRTY_MAGIC = 1 << MENU_LIST_MAGIC,
+    MENU_LIST_DIRTY_SUMMON = 1 << MENU_LIST_SUMMON,
+    MENU_LIST_DIRTY_ENEMY_SKILL = 1 << MENU_LIST_ENEMY_SKILL,
+    MENU_LIST_DISABLED_COMMAND = 0x10 << MENU_LIST_COMMAND, // unused
+    MENU_LIST_DISABLED_MAGIC = 0x10 << MENU_LIST_MAGIC,
+    MENU_LIST_DISABLED_SUMMON = 0x10 << MENU_LIST_SUMMON,
+    MENU_LIST_DISABLED_ENEMY_SKILL = 0x10 << MENU_LIST_ENEMY_SKILL,
+} BattleMenuListFlags;
 
 extern s32 D_800E7A38;
 extern u8 D_800E7A48[0x10];
@@ -472,7 +526,20 @@ extern u8 D_800E7A58[];
 // checked in order against the 3 landed reel symbols (g_BattleData.caitSithRolls) -- see
 // BattleResolveCaitSithSlotsResult in battle.c
 extern u8 D_800E7BA4[7][3];
-extern void (*g_BattleDmgFormulaJmpTbl[])(void); // per-action epilogue hook
+
+// func_800AA738 uses this to remap some party command IDs under certain conditions
+extern u8 D_800E7BBC[7][2];
+
+extern u8 g_BattleFormulaModifierFlagsTable[16];
+
+typedef void (*BattleFormula)(void);
+
+// hit formulas, indexed by g_BattleHitFormulaOpcodeStream opcodes
+extern const BattleFormula g_BattleHitFormulaJmpTbl[];
+
+// damage formulas, indexed by g_CurrentAction->dmgFormulaId
+extern BattleFormula g_BattleDmgFormulaJmpTbl[];
+
 extern Yamada D_800E8050[];
 extern VECTOR D_800E7D10;
 extern VECTOR D_800E7D20;
@@ -557,29 +624,34 @@ extern u8 D_800F381C[];
 extern u8 D_800F3828[];
 extern unsigned char D_800F384A[];
 extern s32 g_BattleCmdOpcodeOffs[];
-extern u8 D_800F38A0;
+extern u8 g_BattleMenuPartySlot;
 extern u8 D_800F38A1;
 extern s16 D_800F38A2;
-extern s32 D_800F4300;  // write cursor into the shared script buffer
-extern s32 D_800F4304;  // slot cursor, wraps at 0x40
-extern u8 D_800F7E04[]; // part of a struct
+extern s32 D_800F4300; // write cursor into the shared script buffer
+extern s32 D_800F4304; // slot cursor, wraps at 0x40
 extern u8 D_800F7ED4;
 extern u8 D_800F38A7;
 extern u8 D_800F389C;
 extern s16 D_800F389E;
-extern s16 D_800F3896; // btlmenu_activeWindowId
+extern s16 g_BattleMenuModalWidgetId; // btlmenu_activeWindowId
 extern s32 g_BattleActionQueueIndex;
 extern s32 g_BattleActionQueueTargIndex;
 extern s32 D_800F394C;
 extern s32 D_800F3950;
 extern s32 D_800F3954;
-extern QueuedAction D_800F3958[16];
-extern s32 D_800F39D8; // read index into D_800F3958
-extern s32 D_800F39DC; // write index into D_800F3958
+
+// 16-entry ring of actions queued from the VSync interrupt (ATB fills, the battle menu) by
+// BattleQueuePendingAction; func_800A3ED0 drains it into g_BattleWork.actionQueue once per frame.
+// The writer only advances WriteIdx and the reader only advances ReadIdx, so no locking is needed.
+extern BattleActionEntry g_BattlePendingActions[16];
+extern s32 g_BattlePendingActionReadIdx;
+extern s32 g_BattlePendingActionWriteIdx;
 extern s32 D_800F39E0;
 extern s32 D_800F39E4;
+extern s32 g_BattleFrameCount;  // Frame count since the battle started, incremented once per BattleUpdateRender call
 extern volatile s32 D_800F39EC; // polled by a tight wait loop
-extern u8 D_800F39F0[][6];
+extern ActiveCharCommandMenu g_BattleOriginalAttackCmd[NUM_PARTY];
+extern ActiveCharCommandMenu g_BattleFallbackAttackCmd[NUM_PARTY];
 extern s32 D_800F3A1C;     // write index into D_800F3A20
 extern s16 D_800F3A20[16]; // ring buffer, see BattleReqReturnReservedItems
 extern s8 D_800F3A80[];
@@ -587,20 +659,22 @@ extern u16 D_800F4280[];
 
 typedef struct {
     u8 unitId;
-    s8 callbackId;
-    s16 param;
+    u8 callbackId;
+    u16 param;
 } BattleCallbackEvent;
 extern BattleCallbackEvent g_BattleCallbackEvent[][128];
+extern void (**g_BattleEventHandlerTables[])(s32, s32);
 
 extern u8 g_BattleHitFormulaOpcodeStream[];
 extern s32 g_BattlePartyEventReadIdx[];
 extern s32 g_BattlePartyEventWriteIdx[];
 extern s32 g_BattleHitFormulaOffs[];
 extern s32 D_800F4920;
+extern u16 D_800F4924[];
 extern u16 D_800F4938[];
 extern s8 D_800F494C[];
 extern u16 D_800F4958;
-extern s32 D_800F4AC8;
+extern s32 g_BattleScriptActionPriority;
 extern s32 D_800F4ACC;
 extern s16 D_800F4AD0;
 extern s32 D_800F4AD4;
@@ -611,7 +685,7 @@ extern RECT g_BattleModelClutRect;
 extern RECT D_800F4B2C[];
 extern RECT D_800F4B6C[];
 extern Unk800F01DC D_800F4BAC[];
-extern u8 D_800F514C[];
+extern u8 g_BattleWidgetState[];
 extern s8 D_800F5760;
 extern u8 D_800F5764;
 extern u8 D_800F5774;
@@ -619,13 +693,44 @@ extern s32 D_800F57CC; // btlmenu_cursorMemory
 extern EffectModel* D_800F57D0;
 extern u8 D_800F57D4;
 extern u16 D_800F7DE2[]; // All Lucky 7s trigger count
-extern s8 D_800F7DE4;
-extern u8 D_800F7DF4;
-extern s32 D_800F7DF8[3];
+extern u8 D_800F7DE4;
+typedef struct {
+    s16 modelIndex;
+    ShortVectorXYZ position;
+    s32 flags;
+} BattleEnemyModelMapping;
+
+typedef struct {
+    u8 count;
+    s32 modelIds[3];
+    u8 enemyCount;
+    BattleEnemyModelMapping enemies[6];
+} BattleEnemyModelFiles;
+
+typedef struct {
+    s16 file;
+    s16 actor;
+} BattlePlayerModelFile;
+
+extern BattleEnemyModelFiles D_800F7DF4;
 typedef struct {
     /* 0x00 */ s16 D_800F7ED8;
     /* 0x02 */ s16 D_800F7EDA;
-    /* 0x04 */ u8 unk4[0x24];
+    /* 0x04 */ s16 unk4;
+    /* 0x06 */ s16 unk6;
+    /* 0x08 */ s16 unk8;
+    /* 0x0A */ s16 unkA;
+    /* 0x0C */ s16 unkC;
+    /* 0x0E */ s16 unkE;
+    /* 0x10 */ s16 unk10;
+    /* 0x12 */ s16 unk12;
+    /* 0x14 */ s16 unk14;
+    /* 0x16 */ s16 unk16;
+    /* 0x18 */ s16 unk18;
+    /* 0x1A */ s16 unk1A;
+    /* 0x1C */ s16 unk1C;
+    /* 0x1E */ s16 unk1E;
+    /* 0x20 */ u8 unk20[8];
 } Unk800F7ED8; // size:0x28
 
 extern Unk800F7ED8 g_BattleCameraSlots[];
@@ -640,13 +745,10 @@ enum BattleEffectModelState {
 };
 extern u8 g_BattleEffectModelState;
 extern u8 g_BattleModelFadeFrames;
-extern s32 D_800F7E10[16][3];
 extern u8 D_800F837C;
 extern u8 D_800F8380;
-extern u8* D_800F8384[3];
+extern u8* D_800F8384[7];
 extern s8 D_800F83AB[];
-extern u8* D_800F8390[3];
-extern s32* D_800F839C; // CD offset?
 extern u8 D_800F83A4[]; // shared battle-script variable bank (BattleOpcodeValOffs)
 extern u8 D_800F83A6;
 extern s8 D_800F8CF0;
@@ -663,14 +765,14 @@ typedef struct {
     /* 0xC */ s16 impactEffectId;
 } BattleImpactData; // size:0xE
 
-extern BattleImpactData D_800F9F3C[];
+extern BattleImpactData D_800F9F3C[128];
 extern u8 D_800F99E8;
 extern s32 D_800F99E4;
 extern u8 D_800F9D94;
 extern u8 D_800F9D98;
 extern u8 D_800F9D9C;
 extern u16 D_800F9DA4;
-extern u8 D_800F9DA8[];
+
 extern BattleWorldView g_BattleWorldView;
 extern s16 D_800FA69C;
 extern u8 D_800FA6A0;
@@ -682,27 +784,17 @@ extern MATRIX D_800FA958;
 extern void (*g_BattleCameraCallbacks[16])(void);
 extern s32 D_800FA9B8;
 extern s16 g_BattleCameraCount;
-extern s16 D_800FA9C4;
-extern s16 D_800FA9C6;
-extern s16 D_800FA9C8;
+extern BattlePlayerModelFile D_800FA9C4[3];
 extern u8 D_801031F4[12];
 extern u8 D_80151688[12];
 extern u8 g_BattleSavedSpecialFlags[10];
 extern s32 D_801516A4[10];
 extern s32 D_801516CC[10];
-extern s32 D_8015174C[10];
-extern s32 D_8015178C[10];
-extern s32 D_801517C8[10];
-typedef struct {
-    /* 0x0 */ u16 pos;
-    /* 0x2 */ u16 unk2;
-    /* 0x4 */ u8 unk4;
-    /* 0x5 */ u8 unk5[0x9];
-} BattleQueue1CamCursor; // size:0xE
+extern s32 g_BattleHpBarValue[10];
+extern s32 g_BattleMpBarValue[10];
+extern s32 g_BattleHpBarFill[10];
 
-extern BattleQueue1CamCursor g_BattleQueue1CamReadCursor[4]; // read cursor per category
-extern s32 D_8015187C[10];
-extern BattleQueue1CamCursor g_BattleQueue1CamWriteCursor[4]; // write cursor per category
+extern s32 g_BattleMpBarFill[10];
 // queued-action-ish record, allocated by BattleQueue2GetPtr (unk3 set to -1,
 // marking it unassigned) and searched by func_800A34CC. Traced through
 // BattleCreateImpactData's callers (func_800AB830/BattleMainDmgCalculation):
@@ -730,11 +822,18 @@ extern s32 D_800FAFF0;
 extern DB g_db;
 extern u8 D_801031E0;
 extern s32 D_801031E4;
-extern s16 g_BattleCameraTarget;
+extern SVECTOR g_BattleCameraTarget;
 extern u8 D_801031F0;
 extern u8 D_80103200[];
 extern u8 D_80130200[];
-extern Unk80151200 D_80151200[3];
+
+typedef struct {
+    s16 parent;
+    u16 z;
+    s32 modelOffset;
+} BattleModelBoneEntry;
+
+extern Unk80151200 D_80151200[NUM_BATTLE_ACTOR];
 extern Unk80151360 D_80151360;
 extern u16 D_80151694;
 extern s16 g_BattleEffectCursor;
@@ -762,7 +861,7 @@ extern u8 D_800F3163[];
 extern ModelScreenPos g_modelScreenPos[10];
 extern u8 D_801517BC;
 extern u8 D_801517C4;
-extern s16 g_BattleCameraPos;
+extern SVECTOR g_BattleCameraPos;
 extern s32 D_80158D08;
 extern u_long D_80158D0C[];
 extern u8 D_801518DC;
@@ -824,42 +923,90 @@ extern s8 D_80166F64;
 extern u8 D_80166F68;
 extern u16 g_BattleScreenFadeR;
 
-void func_800A4350(s16, s16, s16, u16);
+void BattleMorphEnemy(void);
+void BattleQueuePendingAction(s16, s16, s16, u16);
+void func_800A3534(s32 unused, s16 index);
+static void func_800A4D2C(s32 arg0);
+void BattleRefreshMenu(s32 arg0, s32 menuType);
+static s32 BattleRefreshMagicMenu(s32 arg0, u32 status, s32 start, s32 count);
+static void BattleRefreshCmdMenu(s32 arg0, u32 status);
+void BattleReturnReservedItems(void);
+static s32 BattleAddMessageToStringBuffer(u8* src, u16* args);
+void BattleProcessEventQueue(s32);
+static void BattleSetActionEffect(s32 effectId, s32 effectModifier);
 void func_800A8E84(s32);
-void func_800AA950(BattleQueueTargetEntry*);
-void func_800AB308(void);
-void func_800AB480(void);
+void BattleResolveCover(BattleQueueTargetEntry*);
+void BattleResolveAffinityPreDamage(void);
+void BattleResolveAffinityPostDamage(void);
 static void BattleLearnEnemySkill(void);
 void BattleCreateImpactData(BattleQueueTargetEntry*, s16, u16, s16, s16);
 void func_800AC6B4(s32);
 void BattleCalcTargStats(s32);
 void func_800ACA24(void);
 s32 func_800ACD88(s32);
+s32 BattleRollStatusHit(void);
 static s32 BattleIsDamageNullified(s32);
 static void BattleQueueUnassignedResultDisplay(BattleQueueTargetEntry*);
-void func_800AD0FC(void);
+void BattleApplyDamageAndChargeLimitGauge(void);
 void func_800AD324(s32, s32, s32, s32);
 static void BattleApplyDefaultAbsorbEffect(void);
 void BattleDmgFormulaRun(void);
-void func_800AE82C(void);
+void BattleLowerFunc00(void);
+void BattleSetTmpDmgAsPhysical(void);
+void BattleSetTmpDmgAsMagical(void);
+void BattleSetTmpDmgFromCurrent(void);
+void BattleSetTmpDmgFromMax(void);
+void BattleLowerFunc05(void);
+void BattleLowerFunc06(void);
+void BattleLowerFunc07(void);
+void BattleLowerFunc08(void);
+void BattleLowerFunc09(void);
+void BattleLowerFunc0a(void);
+void func_battle_800ADFC0(void);
+void BattleSetTmpDmgAsMaxHpMinusCurrentHp(void);
+void func_800AE050(void);
+void func_800AE058(void);
+void func_800AE060(void);
+void func_800AE068(void);
+void func_800AE070(void);
+void func_800AE078(void);
+void BattleLowerFunc18(void);
+void BattleSetTmpDmgAsNumOfEscapes(void);
+void BattleSetTmpDmgAsTargHpMinusOne(void);
+void func_800AE2A0(void);
+void BattleApplyKillCountBonus(void);
+void BattleCalcMateriaSlotScore(void);
+static s32 func_800AE6C0(s32, s32, s32);
+void BattleCalcAffinityFlags(void);
 s32 BattleGetStatusProtectionMask(s32, s32, s32);
+void func_800AF9C8(void);
+static s32 BattleUnitGetPendingConstTicks(s32 arg0);
+void BattleAdvanceTimers(void);
+void func_800B0234(void);
+s32 BattleCalcDefPercent(s32);
+void func_800B0C14(void);
+static void func_800B0DF8(void);
+static s32 BattleApplyFuryHitChanceReduction(s32);
+u16 BattleGetRndItemIdForSteal(void*, s32, s32, s32);
+static void BattleAddStringToDisplay(s32, s32, s32, s16*);
+static s32 BattleGetRnd164(void);
 s32 BattleOpcodeGetRndBit(u16);
 void BattlePlayerModelsUpdateBonesPos(void);
 s32 BattleLoadEnemyModel(s32);
 void BattleLoadEnemyTexture(s32);
 void BattleInitModelsAnimAndColor(s32, s32);
 void BattleCdromReadChain(void);
-static s32 func_800B1218(s32 arg0, s32 arg1, s32 arg2);
+static s32 BattleApplyStatMult(s32 arg0, s32 value, s32 statIndex);
 // definition takes 3 args (a2 -> D_800F4ACC), but existing callers only pass 2
 void BattleInitScriptContext(/*s32, s32, s32*/);
 s16 func_800B888C(s32);
 void func_800B8438(void);
-void func_800B8A34(s16, s32);
+void func_800B8A34(s32, s32);
 static void func_800BA40C();
 static void func_800BB030(s16 arg0);
 void func_800BB2A8(u8);
-void func_800BB9B8(s32);
-void func_800BBA84(u16 arg0, s32 arg1, s32 arg2);
+void BattlePlayMenuSound(u16 soundId);
+void func_800BBA84(u16 sound, s16 actor, s32 pan);
 static void func_800C1908(u8 arg0);
 void BattleSelectPlayerModelFiles(void);
 void AkaoDispatchCommand(void*);
@@ -868,6 +1015,7 @@ void func_800D0C80(u8 arg0);
 void BattleEffectSingleDustCloud();
 void BattleSetVsyncMode(s8);
 int BattleFlipDoubleBuffer(void);
+void BattleLookAt(MATRIX*, SVECTOR*, SVECTOR*, VECTOR*);
 void func_800D91DC(s32, s32, s16, u8, s32, s32);
 void BattleMenuWidgetOpen(s16, s16, s16);
 void func_800DCFD4(u_long*);
@@ -879,11 +1027,18 @@ void BattleEnqueueLoadImage(RECT* rect, u_long* ptr);
 void BattleReqReturnReservedItems(s16 arg0);
 void BattleQueueEvent(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
 static void BattleInvalidateQueuedMessages(s32 arg0, s32 arg1);
+static void func_800A32C0(s32 arg0);
+static void BattleQueueImmediateAction(s32 unitId, s32 prio, s32 type, s32 index, s32 target);
+static s32 BattleGetBerserkToadAttackTypeId(s32 arg0);
+static s32 BattleRunToResultScreen(void);
+void BattleRunUnitScript(s32 actorId, s32 scriptType, s32 priority);
+static s32 BattleGetAttackIdInSceneByAttackId(s32 arg0);
+void BattleCmdScriptDispatch(BattleActionEntry*);
 
 // func_800A6278 does not match if this is forward declared because the types do not agree
 // but the modern build fails if it is not declared
 #ifdef PLATFORM_PSYZ
-static void BattleQueueOpcodeAction(s16 unitId, s16 actionType, s16 attackIndex);
+static void BattleQueueOpcodeAction(s16 unitId, s16 cmdIndex, s16 attackIndex);
 #endif
 
 /* battle menu widget block (one per widget id, 0x240 apart) -- partial */
@@ -981,9 +1136,106 @@ extern u8 D_800F5638;
 extern u8 D_800F563C;
 extern u16 D_800F7DE0[];
 extern BattleMenuSlot D_800F90B4[];
-extern MenuTable D_800F9144;
 extern u8 D_800F977C;
 extern u8 D_80151698;
 extern u8 D_80166F74;
 extern u8 D_80166F75;
 extern BattleItemEntry D_801671B8[];
+
+ActiveCharacterData* SysGetPartyPlayerStructureAddressByPartyId(s32 partyId);
+extern u8 D_80163F34[NUM_PARTY][0x100C];
+void func_8001C3CC(void* dst, const void* src, u32 size);
+
+typedef struct {
+    s16 stringId;
+    s16 playSound;
+    u8 delay;
+    u8 duration;
+} BattleBannerMessage; // size:0x6
+
+typedef struct {
+    u16 unk0;
+    u16 unk2;
+    s16 unk4;
+    s16 unk6;
+    u16 actor;
+    u16 targetIndex;
+} BattleTargetEffectSettings; // size:0xC
+
+typedef struct {
+    BattleModelSub bones[256];
+    u8 unk3400[0x400];
+    u8 state[256][2];
+} StageParticles; // size:0x3A00
+
+typedef union {
+    EffectModelHeader header;
+    struct {
+        s32 numOffsets;
+        s32 layoutOffset;
+        s32 modelOffset;
+    } modelHeader;
+    u8 bytes[0x8D04];
+    struct {
+        u8 modelData[0x5104];
+        StageParticles particles;
+    } stage;
+} BattleStageFile; // size:0x8D04
+
+typedef struct {
+    MATRIX* parent;
+    MATRIX matrix;
+} BattleMatrixScratch; // size:0x24
+
+extern Yamada D_800E7D50[];
+extern Yamada D_800E7D98[];
+extern RECT D_800F4B1C;
+extern BattleModelSub D_800F8158[NUM_BATTLE_ACTOR];
+extern BattleStageFile D_801590E4;
+extern CVECTOR D_800F5B70;
+extern SVECTOR D_800E7D08;
+extern Yamada D_800E8C90[];
+extern s8 D_800F8378;
+extern BattleTargetEffectSettings D_800F99EC[];
+extern u16 D_801517B4;
+extern u8 D_800FAFE0;
+extern u16 D_80161DE8;
+extern u16 D_80162088;
+extern s8 D_80162090;
+extern u8 D_80161EEC;
+extern BattleModelSub D_80163A9C[NUM_PARTY];
+extern u8 D_800F9774;
+extern s16 D_800F5B74;
+
+typedef struct {
+    /* 0x0 */ s16 x;
+    /* 0x2 */ s16 y;
+    /* 0x4 */ s16 z;
+    /* 0x6 */ u16 unk6;
+    /* 0x8 */ u16 cursor;
+    /* 0xA */ u16 wait;
+    /* 0xC */ u8 flags;
+    /* 0xD */ u8 unkD;
+} BattleCameraScriptState; // size:0xE
+extern s32 D_800EA470[];
+extern u8 D_800F4B00;
+extern BattleCameraScriptState D_80151844[4];
+extern BattleCameraScriptState D_801518A4[4];
+extern u8 D_80163B3C;
+extern u8 D_80158CFC;
+
+s16 BattleGetStatusFlashState(s16 status);
+extern SVECTOR D_800E7D08;
+extern u8 D_800EA230[];
+extern SVECTOR* D_800F4B04;
+extern u8 D_800EA1E8[4];
+extern u16 D_800EA1EC;
+extern SVECTOR D_800EA264[4];
+extern SVECTOR D_800EA284[2];
+extern SVECTOR* D_800F4B08;
+extern s16 D_800F4B0C[4];
+extern BattleBannerMessage D_800F9DA8[64];
+extern MATRIX D_800E7D30;
+extern SVECTOR D_800EA1C8[4];
+
+#endif

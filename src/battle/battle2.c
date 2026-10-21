@@ -1175,7 +1175,7 @@ static void BattleModelRestoreVelocity(u8 arg0) {
 
 static void BattleClearEffectAndFlag(void) {
     D_801590DC = 1;
-    g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
+    g_BattleDetachedSlots[g_BattleDetachedCursor].base.id = -1;
 }
 
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800CD860);
@@ -1197,7 +1197,7 @@ void BattleApplyToggleFlag(void) {
 static void BattleSpawnPartEffectTick(void) {
     func_800BBA84(g_BattleDetachedSlots[g_BattleDetachedCursor].partEffect.unk4, D_801590CC, 0);
     BattleSpawnPartEffect(D_801590CC, g_BattleDetachedSlots[g_BattleDetachedCursor].partEffect.hitFlashType);
-    g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
+    g_BattleDetachedSlots[g_BattleDetachedCursor].base.id = -1;
 }
 
 static void BattleApplyFacingFlipTick(void) {
@@ -1207,7 +1207,7 @@ static void BattleApplyFacingFlipTick(void) {
     }
     BattleSpawnFloatingIcon(g_BattleDetachedSlots[g_BattleDetachedCursor].facingFlip.actor,
                             g_BattleDetachedSlots[g_BattleDetachedCursor].facingFlip.unk14);
-    g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
+    g_BattleDetachedSlots[g_BattleDetachedCursor].base.id = -1;
 }
 
 void BattleQueueImpactEffect(s32 arg0, s16 arg1) {
@@ -1219,7 +1219,7 @@ void BattleQueueImpactEffect(s32 arg0, s16 arg1) {
 static void BattleFadeToGreyTick(void) {
     if (!g_BattleDetachedSlots[g_BattleDetachedCursor].delay.framesLeft) {
         D_80163C74 = (DR_MODE*)func_800C4FC8(0xFA, 0xFA, 0xFA);
-        g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].base.id = -1;
         return;
     }
     g_BattleDetachedSlots[g_BattleDetachedCursor].delay.framesLeft--;
@@ -1333,7 +1333,7 @@ static void BattleEffectScriptTick(void) {
 
     if (D_80151200[g_BattleDetachedSlots[g_BattleDetachedCursor].effectScript.actor].D_80151234 !=
         g_BattleDetachedSlots[g_BattleDetachedCursor].effectScript.unk2) {
-        g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].base.id = -1;
         return;
     }
     if (g_BattleDetachedSlots[g_BattleDetachedCursor].effectScript.framesLeft) {
@@ -1358,7 +1358,7 @@ static void BattleEffectScriptTick(void) {
             g_BattleDetachedSlots[g_BattleDetachedCursor].effectScript.scriptPos = 0;
             break;
         case 0xFF:
-            g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
+            g_BattleDetachedSlots[g_BattleDetachedCursor].base.id = -1;
             do_work = 0;
             break;
         default:
@@ -1369,17 +1369,17 @@ static void BattleEffectScriptTick(void) {
 }
 
 static void BattleEffectDelayedCleanupTick(void) {
-    switch (g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F2) {
+    switch (g_BattleDetachedSlots[g_BattleDetachedCursor].delayedCleanup.state) {
     case 0:
-        g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F4 = 3;
-        g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F2++;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].delayedCleanup.framesLeft = 3;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].delayedCleanup.state++;
     case 1:
-        if (g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F4 == 0) {
-            g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
-            func_800A3534(g_BattleDetachedSlots[g_BattleDetachedCursor].raw.unkA,
-                          g_BattleDetachedSlots[g_BattleDetachedCursor].raw.unk8);
+        if (g_BattleDetachedSlots[g_BattleDetachedCursor].delayedCleanup.framesLeft == 0) {
+            g_BattleDetachedSlots[g_BattleDetachedCursor].base.id = -1;
+            func_800A3534(g_BattleDetachedSlots[g_BattleDetachedCursor].delayedCleanup.arg0,
+                          g_BattleDetachedSlots[g_BattleDetachedCursor].delayedCleanup.arg1);
         }
-        g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F4--;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].delayedCleanup.framesLeft--;
         break;
     }
 }
@@ -1402,19 +1402,18 @@ static void BattleFixedPointRampSpawnChildEffects(void) {
         if (g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk6 != -1) {
             BattleDispatchFlagEffect();
             dst = BattleDetachedRegister(func_800C2928);
-            g_BattleDetachedSlots[dst].raw.unk14 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkE;
-            g_BattleDetachedSlots[dst].raw.unkE = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkA;
-            g_BattleDetachedSlots[dst].raw.unk10.ptr =
+            g_BattleDetachedSlots[dst].damagePopup.unk14 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkE;
+            g_BattleDetachedSlots[dst].damagePopup.unkE = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkA;
+            g_BattleDetachedSlots[dst].damagePopup.actor.ptr =
                 (u8*)(u32)g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk8;
             dst = BattleDetachedRegister(BattleEffectDelayedCleanupTick);
-            g_BattleDetachedSlots[dst].raw.unkA = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk19;
-            g_BattleDetachedSlots[dst].raw.unk8 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk6;
+            g_BattleDetachedSlots[dst].delayedCleanup.arg0 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk19;
+            g_BattleDetachedSlots[dst].delayedCleanup.arg1 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk6;
         }
         g_BattleEffectSlots[g_BattleEffectCursor].raw.D_80162978 = -1;
         return;
-    } else {
-        g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.framesLeft--;
     }
+    g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.framesLeft--;
 }
 
 void func_800CEB48(void);
@@ -1429,19 +1428,18 @@ void BattleFixedPointRampSpawnChildEffectsWithFade(void) {
             g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk18 != 1) {
             BattleDispatchFlagEffect();
             dst = BattleDetachedRegister(func_800C2928);
-            g_BattleDetachedSlots[dst].raw.unk14 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkE;
-            g_BattleDetachedSlots[dst].raw.unkE = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkA;
-            g_BattleDetachedSlots[dst].raw.unk10.ptr =
+            g_BattleDetachedSlots[dst].damagePopup.unk14 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkE;
+            g_BattleDetachedSlots[dst].damagePopup.unkE = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unkA;
+            g_BattleDetachedSlots[dst].damagePopup.actor.ptr =
                 (u8*)(u32)g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk8;
             dst = BattleDetachedRegister(BattleEffectDelayedCleanupTick);
-            g_BattleDetachedSlots[dst].raw.unkA = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk19;
-            g_BattleDetachedSlots[dst].raw.unk8 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk6;
+            g_BattleDetachedSlots[dst].delayedCleanup.arg0 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk19;
+            g_BattleDetachedSlots[dst].delayedCleanup.arg1 = g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.unk6;
         }
         func_800CEB48();
         return;
-    } else {
-        g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.framesLeft--;
     }
+    g_BattleEffectSlots[g_BattleEffectCursor].rampSpawn.framesLeft--;
 }
 
 INCLUDE_ASM("asm/us/battle/nonmatchings/battle2", func_800CEB48);
@@ -1677,7 +1675,7 @@ static void BattleApplyDelayedFlagTick(void) {
     if (g_BattleDetachedSlots[g_BattleDetachedCursor].delay.framesLeft == 0) {
         BattleSpawnFloatingIcon(g_BattleDetachedSlots[g_BattleDetachedCursor].delay.actor,
                                 g_BattleDetachedSlots[g_BattleDetachedCursor].delay.unk6);
-        g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].base.id = -1;
         return;
     }
     g_BattleDetachedSlots[g_BattleDetachedCursor].delay.framesLeft--;
@@ -1686,7 +1684,7 @@ static void BattleApplyDelayedFlagTick(void) {
 static void BattleApplyDelayedActionTick(void) {
     if (g_BattleDetachedSlots[g_BattleDetachedCursor].delay.framesLeft == 0) {
         func_800BBA84(g_BattleDetachedSlots[g_BattleDetachedCursor].delay.unk6, D_801590CC, 0);
-        g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].base.id = -1;
         return;
     }
     g_BattleDetachedSlots[g_BattleDetachedCursor].delay.framesLeft--;
@@ -1696,7 +1694,7 @@ static void BattleApplyGatedDelayedTick(void) {
     if (g_BattleDetachedSlots[g_BattleDetachedCursor].delay.framesLeft == 0) {
         if (D_801518DC == 0) {
             func_800D0C80(g_BattleDetachedSlots[g_BattleDetachedCursor].delay.unk6);
-            g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
+            g_BattleDetachedSlots[g_BattleDetachedCursor].base.id = -1;
         }
     } else {
         g_BattleDetachedSlots[g_BattleDetachedCursor].delay.framesLeft--;
@@ -1745,7 +1743,7 @@ void BattleInitMagicCastEffect(void) {
 
 static void BattleEffectTimeoutTick(void) {
     if (!g_BattleDetachedSlots[g_BattleDetachedCursor].delay.framesLeft) {
-        g_BattleDetachedSlots[g_BattleDetachedCursor].raw.D_801621F0 = -1;
+        g_BattleDetachedSlots[g_BattleDetachedCursor].base.id = -1;
         func_800BB978();
         return;
     }

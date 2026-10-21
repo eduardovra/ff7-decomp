@@ -9,6 +9,7 @@ set(FF7_PSYZ
     src/pc/unzip.c
     src/pc/stubs.c
     src/pc/stubs_akao.c
+    src/pc/stubs_field.c
     src/pc/lzs.c
     src/pc/jet_gte.c
 )
@@ -59,15 +60,22 @@ set(FF7_BATTLE
 )
 
 set(FF7_FIELD
-    src/field/field_dialog.c
-    src/field/field_debug.c
-    src/field/field_fileInfo.c
     src/field/field_main.c
     src/field/field_loop.c
     src/field/field_bg.c
-    src/field/field_rand.c
+    src/field/field_entity.c
+    src/field/field_camera.c
+    src/field/field_rain.c
+    src/field/field_battle.c
+    src/field/field_arrow.c
+    src/field/field_model.c
+    src/field/field_kawai_char_model.c
     src/field/field_event.c
     src/field/field_opcodes.c
+    src/field/field_dialog.c
+    src/field/field_debug.c
+    src/field/field_fileInfo.c
+    src/field/field_rand.c
 )
 
 set(FF7_WORLD
@@ -77,7 +85,14 @@ set(FF7_WORLD
 
 set(FF7_MINI
     src/mini/chocobo/chocobo.c
-    src/mini/chocobo/chocobo2.c
+    src/mini/chocobo/ch_init.c
+    src/mini/chocobo/ch_track.c
+    src/mini/chocobo/ch_racer.c
+    src/mini/chocobo/ch_camera.c
+    src/mini/chocobo/ch_angle.c
+    src/mini/chocobo/ch_hud.c
+    src/mini/chocobo/ch_bet.c
+    src/mini/chocobo/ch_data.c
     src/mini/chocobo/chocobo_model.c
 )
 
@@ -95,6 +110,7 @@ set(FF7_MAGIC
     src/magic/brizad.c
     src/magic/lv5deth.c
     src/magic/mabaria.c
+    src/magic/sennkoku.c
     src/magic/thunder.c
     src/magic/refrec.c
     src/magic/fire.c
@@ -192,7 +208,8 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/strd/src/mini/jet/jet_ob
     PROPERTIES COMPILE_OPTIONS -fgnu89-inline)
 
 add_executable(${PROJECT_NAME}
-    ${FF7_STR_PSYZ} ${FF7_STR_MAIN} ${FF7_STR_MENU} ${FF7_STR_MISC} ${FF7_STR_JET})
+    ${FF7_STR_PSYZ} ${FF7_STR_MAIN} ${FF7_STR_MENU} ${FF7_STR_MISC}
+    ${FF7_STR_FIELD} ${FF7_STR_JET})
 ff7_configure(${PROJECT_NAME})
 
 add_library(${PROJECT_NAME}_lib

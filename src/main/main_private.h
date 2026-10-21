@@ -49,6 +49,7 @@ typedef enum {
     KERNEL_TEXT_NAME_KEY_ITEM,   // 0x0F
     KERNEL_TEXT_BATTLE_MESSAGES, // 0x10
     KERNEL_TEXT_NAME_SUMMON,     // 0x11
+    KERNEL_TEXT_INVALID = 0xFF
 } KernelTextBlockID;
 
 typedef struct {
@@ -108,7 +109,7 @@ extern s16 D_800694FC[6];
 extern u8 D_80069800[48];
 extern DISPENV D_8007075C[2]; // active display environments (double-buffered)
 extern struct {
-    u16 battleId;
+    u16 sceneId;
     u16 mode;
 } D_800707BC;
 extern u8 D_800716D0;
@@ -119,17 +120,13 @@ extern ArmorRecord g_ArmorTable[];         // armor kernel table, indexed by arm
 extern u_long* D_800722C8;                 // LBA dst for func_80014540
 extern WeaponRecord g_WeaponTable[];       // weapon kernel table, by weapon id
 extern s32 D_80095DD8;                     // LBA len for func_80014540
-void BROM_Handle(void);                    // battle/brom entrypoint
+void BROM_Main(void);                      // battle/brom entrypoint
 void BATTLE_Main(void);                    // battle/battle entrypoint
 
 void SysGzipBinDecompress(GzHeader* src, u8* dst);
-void SysGzipSetDataBlock(u8* arg0);
-u16 SysGzipGetType(void);
 u16 SysGzipGetSize(void);
-u32 SysGzipPackDecompressNextBlock(u8* dst);
 u16 SaveCalcChecksum(u16 len, u8* data);
 u8* SysGetKernTextPtrByBlock(s32 arg0, s32 arg1, s32 arg2);
-u8* SysGetKernBattleTextPtr(s32 arg0);
 u8 SysMenuIsWindowActive(void);
 void SysAddStats(s32 battleCharId, s32 statId, u8 amount);
 void SysAddElementalDefense(s32 battleCharId, s32 effect, u16 mask);
@@ -146,5 +143,4 @@ u8* func_80014C80(s32 arg0);
 void SysMenuDrawScrollbarSlider(RECT* rect);
 void SysMenuDrawScrollbarTrack(RECT* rect);
 void SysMenuDrawSingleFontLetter(s16 x, s16 y, s32 ch, u8 color);
-void SystemCdWaitCallback(void (*cb)(void));
 int HandleTitle(void);

@@ -37,7 +37,7 @@
 /* 80062F44 */ glabel g_AkaoVolMulMusicSlideSteps;          .space 4     # !!GP!! akao.c (AkaoInitData)
 /* 80062F48 */ glabel g_AkaoTempoMulMusicSlideSteps;        .space 4     # !!GP!! akao.c (AkaoInitData)
 /* 80062F4C */ glabel D_80062F4C;                           .space 4     # !!GP!! 1F6B4.c
-/* 80062F50 */ glabel D_80062F50;                           .space 8     # !!GP!! 1F6B4.c
+/* 80062F50 */ glabel g_MenuLocationFlags;                   .space 8     # !!GP!! 1F6B4.c
 /* 80062F58 */ glabel g_MenuRenderBufferIndex;              .space 4     # !!GP!! 1F6B4.c
 /* 80062F5C */ glabel g_AkaoVolMulMusic;                    .space 4     # !!GP!! akao.c (AkaoInitData)
 /* 80062F60 */ glabel D_80062F60;                           .space 4     # !!GP!! 14C70.c (func_800155B0)
@@ -50,7 +50,7 @@
 /* 80062F7C */ glabel D_80062F7C;                           .space 4     # !!GP!! 17238.c
 /* 80062F80 */ glabel D_80062F80;                           .space 4     # !!GP!! 1F6B4.c
 /* 80062F84 */ glabel g_AkaoEffectsAllSeq;                           .space 4     # !!GP!! akao.c (AkaoStart)
-/* 80062F88 */ glabel D_80062F88;                           .space 4     # !!GP!! btlinit.c (func_800148A0)
+/* 80062F88 */ glabel D_80062F88;                           .space 4     # !!GP!! btlinit.c (SysBattleModeReset)
 /* 80062F8C */ glabel g_AkaoMutex;                           .space 4     # !!GP!! akao.c (AkaoInitData)
 /* 80062F90 */ glabel D_80062F90;                           .space 4     # !!GP!! 1F6B4.c
 /* 80062F94 */ glabel g_PartyMenuSelectedMenuId;            .space 4     # !!GP!! 1F6B4.c
@@ -91,7 +91,7 @@
 /* 80063028 */ glabel transform_matrix;                     .space 0x20
 /* 80063048 */ glabel D_80063048;                           .space 0x518
 /* 80063560 */ glabel D_80063560;                           .space 0x100
-/* 80063660 */ glabel D_80063660;                           .space 0x30
+/* 80063660 */ glabel D_80063660;                           .space 0x30  # 14C70.c (SysKernGetString)
 /* 80063690 */ glabel g_KernelTextBuffer;                   .space 0x5dec  # 14C70.c (SysGetPointerToTextInKernWithBlockAndTextId, func_80014C80)
 /* 8006947C */ glabel D_8006947C;                           .space 0x10
 /* 8006948C */ glabel D_8006948C;                           .space 0x4

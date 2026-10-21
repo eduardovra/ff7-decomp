@@ -385,6 +385,8 @@ overlays:
       - [0x33548, c, battle3]
       - [0x38A04, c, battle4]
       - [0x47A38, data]
+      - [0x47BCC, .data, battle]
+      - [0x47C7C, data]
       - [0x4F5B0, .data, battle2]
       - [0x501DC, data]
       - [0x538AC, bss]
@@ -399,7 +401,7 @@ overlays:
     vram_start: 0x800A0000
     segments:
       - [0x0, c, brom]
-      - [0x6B4, data]
+      - [0x6B4, .data, brom]
   - name: dschange
     disk_path: disks/us/FIELD/DSCHANGE.X
     sha1: e884441c5ceacdeb94e16a603b73ca53706078e8
@@ -410,8 +412,8 @@ overlays:
     vram_start: 0x800A0000
     segments:
       - [0x0, c, dschange]
-      - [0x1580, data]
-      - [0x15E0, bss]
+      - [0x1580, .data, dschange]
+      - [0x15E0, .bss, dschange]
   - name: ending
     disk_path: disks/us/FIELD/ENDING.X
     sha1: 1b3fbf999913024209b23a1bb8a6874a66fc19ba
@@ -554,18 +556,27 @@ overlays:
     imports: [main]
     symbol_addrs_path:
       - config/symbols.chocobo.us.txt
-    migrate_rodata_to_functions: false
+    migrate_rodata_to_functions: true
     vram_start: 0x800A0000
     segments:
-      - [0x0, rodata]
-      - [0x34, rodata]
-      - [0x68, rodata]
-      - [0x294, rodata]
+      - [0x0, .rodata, chocobo]
+      - [0x18, .rodata, ch_init]
+      - [0x30, .rodata, ch_track]
+      - [0x34, .rodata, ch_racer]
+      - [0x68, .rodata, ch_camera]
+      - [0xC0, .rodata, ch_hud]
+      - [0xDC, .rodata, ch_bet]
       - [0x2d0, c, chocobo]
-      - [0x157C, c, chocobo2]
+      - [0x1630, c, ch_init]
+      - [0x2984, c, ch_track]
+      - [0x3308, c, ch_racer]
+      - [0x7840, c, ch_camera]
+      - [0x89A0, c, ch_angle]
+      - [0x8AE8, c, ch_hud]
+      - [0x9D94, c, ch_bet]
       - [0xD91C, c, chocobo_model]
       - [0x11250, data]
-      - [0x122D0, .data, chocobo2]
+      - [0x122D0, .data, ch_data]
       - [0x166CC, data]
       - [0x167B8, .data, chocobo_model]
       - [0x16BB8, data]
@@ -599,10 +610,10 @@ overlays:
     imports: [main]
     symbol_addrs_path:
       - config/symbols.condor.us.txt
-    migrate_rodata_to_functions: false
+    migrate_rodata_to_functions: true
     vram_start: 0x800A0000
     segments:
-      - [0x0, rodata, condor]
+      - [0x0, .rodata, condor]
       - [0x37C, c, condor]
       - [0x1E7D8, data, condor]
   - name: highway
@@ -616,7 +627,8 @@ overlays:
     vram_start: 0x800A0000
     segments:
       - [0x0, .rodata, highway_track]
-      - [0x10, rodata, highway]
+      - [0x10, .rodata, highway_collide]
+      - [0x50, .rodata, highway_race]
       - [0xD0, c, highway]
       - [0x3BC8, c, highway_node]
       - [0x4144, c, highway_track]
@@ -630,7 +642,8 @@ overlays:
       - [0x112B0, c, highway_model_gte]
       - [0x12760, c, highway_model2]
       - [0x13BF8, asm, highway_gte]
-      - [0x141C8, data, highway]
+      - [0x141C8, .data, highway]
+      - [0x143BC, data, highway_remaining]
   - name: barrier
     disk_path: disks/us/MAGIC/BARRIER.BIN
     sha1: e93c458117a937879f1a6d8c956dfbdacd6286e0
@@ -787,3 +800,16 @@ overlays:
       - [0, c, thundera]
       - [0x97c, data, thundera_model]
       - [0x190BC, .data, thundera]
+  # SENNKOKU.BIN -- "Death Sentence" and "Roulette" (enemy skills)
+  - name: sennkoku
+    disk_path: disks/us/MAGIC/SENNKOKU.BIN
+    sha1: 122301325eed5dc29a99482f897cc98bc8cf9344
+    base_path: magic
+    imports: [main, battle]
+    vram_start: 0x801B0000
+    symbol_addrs_path:
+      - config/symbols.magic-sennkoku.us.txt
+    segments:
+      - [0, c, sennkoku]
+      - [0x930, data, sennkoku_model]
+      - [0x559C, data, sennkoku_buffers]

@@ -18,10 +18,10 @@ void FieldArrowsInit(SPRT_16* arrows, DR_MODE* drawMode) {
     SetDrawMode(drawMode, 0, 1, GetTPage(0, 0, 960, 256), NULL);
 }
 
-void FieldArrowsAddToRender(struct FieldRenderData* renderData, MATRIX* matrix, FieldGateway* gateways) {
+void FieldArrowsAddToRender(FieldRenderData* renderData, MATRIX* matrix, FieldGateway* gateways) {
     SVECTOR pos;
-    long p;
-    long flag;
+    int p;
+    int flag;
     s16 i;
 
     if ((Savemap.memory_bank_4[30] == 1 && !g_FieldState.characterLock) || Savemap.memory_bank_4[30] == 2) {
@@ -35,7 +35,7 @@ void FieldArrowsAddToRender(struct FieldRenderData* renderData, MATRIX* matrix, 
                 pos.vy = (gateways[i].pos.y1 + gateways[i].pos.y2) / 2;
                 pos.vz = (gateways[i].pos.z1 + gateways[i].pos.z2) / 2;
                 if (pos.vx || pos.vy) {
-                    RotTransPers(&pos, (long*)&pos, &p, &flag);
+                    RotTransPers(&pos, (int*)&pos, &p, &flag);
                     setUV0(&renderData->arrows[i], ((D_8011446C * 4) & 0x30) + 48, 208);
                     renderData->arrows[i].x0 = pos.vx - 7;
                     renderData->arrows[i].y0 = pos.vy - 8;
@@ -49,7 +49,7 @@ void FieldArrowsAddToRender(struct FieldRenderData* renderData, MATRIX* matrix, 
                 pos.vx = g_FieldTriggers->arrows[i].x;
                 pos.vy = g_FieldTriggers->arrows[i].z;
                 pos.vz = g_FieldTriggers->arrows[i].y;
-                RotTransPers(&pos, (long*)&pos, &p, &flag);
+                RotTransPers(&pos, (int*)&pos, &p, &flag);
                 setUV0(&renderData->arrows[i + 12], ((D_8011446C * 4) & 0x30) + 48, 208);
                 renderData->arrows[i + 12].x0 = pos.vx - 7;
                 renderData->arrows[i + 12].y0 = pos.vy - 8;

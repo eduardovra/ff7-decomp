@@ -4,6 +4,7 @@
 #include <common.h>
 #include <libgte.h>
 #include <libgpu.h>
+#include "item.h"
 #include "sfx.h"
 #include "bgm.h"
 #include "akao.h"
@@ -12,7 +13,7 @@
 #include <psyz.h>
 #include <psyz/log.h>
 // psyz's libetc.h has no getScratchAddr yet
-#define getScratchAddr(offset) ((u_long*)(0x1f800000 + (offset) * 4))
+#define getScratchAddr(offset) ((u_long*)(0x1F800000 + (offset) * 4))
 #else
 #define INFOF(...) (void)0
 #endif
@@ -28,12 +29,52 @@
 #define NUM_MATERIA_ROW 8 // maximum amount of materia per row (weapon or armor)
 #define NUM_BATTLE_COMMANDS 16
 #define NUM_MAGICS 56
-#define NUM_MAGICS_ALL (NUM_MAGICS + 40)
+#define NUM_MAGICS_ALL (NUM_MAGICS + NUM_SUMMONS + NUM_ENEMY_SKILLS)
 #define NUM_SUMMONS 16
+#define NUM_ENEMY_SKILLS 24
 #define MAX_INVENTORY_COUNT 320
 #define MAX_MATERIA_COUNT 200
 #define NUM_MENU_COLOR 12
 #define LABEL_SIZE 12
+#define STAT_MAX 255
+#define MAX_HP 10000
+#define MAX_MP 10000
+
+// Index ranges for spells, summons and enemy skills. The same layout is used by
+// enabledMagic[] slots and by attack ids. Ends are exclusive (start + count).
+// Useful because these are stored in one long list in the kernel, and code often
+// requires operating on specific subregions of this list.
+#define MAGIC_START 0
+#define MAGIC_END (MAGIC_START + NUM_MAGICS)
+#define SUMMON_START MAGIC_END
+#define SUMMON_END (SUMMON_START + NUM_SUMMONS)
+#define ENEMY_SKILL_START SUMMON_END
+#define ENEMY_SKILL_END (ENEMY_SKILL_START + NUM_ENEMY_SKILLS)
+
+#define KAWAI_READ_S16(params, offset) ((s16)((((params)[(offset) + 1] << 8) & 0xFF00) | ((params)[(offset)] & 0xFF)))
+#define KAWAI_READ_S32(params, offset)                                                                                 \
+    ((s32)((((params)[(offset) + 3] << 24) & 0xFF000000) | (((params)[(offset) + 2] << 16) & 0xFF0000) |               \
+           (((params)[(offset) + 1] << 8) & 0xFF00) | ((params)[(offset)] & 0xFF)))
+#define KAWAI_WRITE_S16(params, offset, value) ((params)[(offset)] = (value), (params)[(offset) + 1] = (value) >> 8)
+#define KAWAI_WRITE_S32(params, offset, value)                                                                         \
+    ((params)[(offset)] = (value), (params)[(offset) + 1] = (value) >> 8, (params)[(offset) + 2] = (value) >> 16,      \
+     (params)[(offset) + 3] = (value) >> 24)
+
+typedef enum {
+    CHAR_CLOUD = 0,
+    CHAR_BARRET = 1,
+    CHAR_TIFA = 2,
+    CHAR_AERITH = 3,
+    CHAR_RED = 4,
+    CHAR_YUFFIE = 5,
+    CHAR_CAITSITH = 6,
+    CHAR_VINCENT = 7,
+    CHAR_CID = 8,
+    CHAR_YOUNGCLOUD = 9,
+    CHAR_SEPHIROTH = 10,
+    CHAR_CHOCOBO = 11,
+    CHAR_EMPTY = 0xFF
+} CharacterId;
 
 enum PadButtons {
     PAD_NONE = 0x0000,
@@ -120,7 +161,7 @@ typedef struct {
     s32 len; // file size in bytes
 } Yamada;
 
-typedef enum {
+typedef enum Lba {
     LBA_SYSTEM_CNF = 23,         // SYSTEM.CNF
     LBA_SOUND_INSTR_ALL = 219,   // SOUND/INSTR.ALL
     LBA_SOUND_EFFECT = 455,      // SOUND/EFFECT.ALL
@@ -155,6 +196,20 @@ typedef enum {
     LBA_FIELD_FIELD = 55000,     // FIELD/FIELD.BIN
     LBA_FIELD_DSCHANGE = 126886, // FIELD/DSCHANGE.X
     LBA_FIELD_ENDING = 126889,   // FIELD/ENDING.X
+    LBA_MOVIE_OVER = 128000,     // MOVIE/OVER.LZS
+    LBA_MOVIE_OVER2 = 128128,    // MOVIE/OVER2.SND
+    LBA_MOVIE_DISK1 = 128129,    // MOVIE/DISK1.LZS
+    LBA_MOVIE_DISK2 = 128143,    // MOVIE/DISK2.LZS
+    LBA_MOVIE_DISK3 = 128157,    // MOVIE/DISK3.LZS
+    LBA_MOVIE_CHANGE0 = 128171,  // MOVIE/CHANGE0.LZS
+    LBA_MOVIE_CHANGE1 = 128243,  // MOVIE/CHANGE1.LZS
+    LBA_MOVIE_CHANGE2 = 128322,  // MOVIE/CHANGE2.LZS
+    LBA_MOVIE_CHANGE3 = 128378,  // MOVIE/CHANGE3.LZS
+    LBA_MOVIE_CHANGE4 = 128444,  // MOVIE/CHANGE4.LZS
+    LBA_MOVIE_CHANGE5 = 128514,  // MOVIE/CHANGE5.LZS
+    LBA_MOVIE_CHANGE6 = 128609,  // MOVIE/CHANGE6.LZS
+    LBA_MOVIE_CHANGE7 = 128685,  // MOVIE/CHANGE7.LZS
+    LBA_MOVIE_CHANGE8 = 128751,  // MOVIE/CHANGE8.LZS
     LBA_MOVIE_STAFF = 128825,    // MOVIE/STAFF.BIN
     LBA_MOVIE_STAFF2 = 129036,   // MOVIE/STAFF2.BIN
     LBA_MOVIE_OPENING = 129179,  // MOVIE/OPENING.BIN
@@ -302,6 +357,42 @@ typedef enum {
     ANIMSTATUS_PLAY_ONCE_THEN_HOLD,  // Non-blocking one-shot, go to HOLD_FRAME
                                      // when done.
 } ModelAnimationStatus;
+
+// full standard FF7 status bitmask
+typedef enum {
+    STATUS_DEATH = 0x1,
+    STATUS_NEAR_DEATH = 0x2,
+    STATUS_SLEEP = 0x4,
+    STATUS_POISON = 0x8,
+    STATUS_SADNESS = 0x10,
+    STATUS_FURY = 0x20,
+    STATUS_CONFU = 0x40,
+    STATUS_SILENCE = 0x80,
+    STATUS_HASTE = 0x100,
+    STATUS_SLOW = 0x200,
+    STATUS_STOP = 0x400,
+    STATUS_FROG = 0x800,
+    STATUS_SMALL = 0x1000,
+    STATUS_SLOW_NUMB = 0x2000,
+    STATUS_PETRIFY = 0x4000,
+    STATUS_REGEN = 0x8000,
+    STATUS_BARRIER = 0x10000,
+    STATUS_M_BARRIER = 0x20000,
+    STATUS_REFLECT = 0x40000,
+    STATUS_DUAL = 0x80000,
+    STATUS_SHIELD = 0x100000,
+    STATUS_D_SENTENCE = 0x200000,
+    STATUS_MANIPULATE = 0x400000,
+    STATUS_BERSERK = 0x800000,
+    STATUS_PEERLESS = 0x1000000,
+    STATUS_PARALYSIS = 0x2000000,
+    STATUS_DARKNESS = 0x4000000,
+    STATUS_DUAL_DRAIN = 0x8000000,
+    STATUS_DEATH_FORCE = 0x10000000,
+    STATUS_RESIST = 0x20000000,
+    STATUS_LUCKY_GIRL = 0x40000000,
+    STATUS_IMPRISONED = 0x80000000,
+} BattleStatusFlags;
 
 typedef struct {
     s16 x1;
@@ -492,101 +583,6 @@ typedef struct {
     u8 labels[23][LABEL_SIZE];
 } MainMenuColorLabels;
 
-typedef struct {
-    s32 actorId;
-    s32 characterLevel;
-    s32 unk8;
-    s32 unkC;
-    s32 relativeActionIndex; // index within its own category (spell #, summon
-                             // #, etc) -- see D_800A0290 in battle.c
-    s32 unk14;
-    s32 allowedTargetsMask;
-    s32 unk1C;
-    s32 unk20; // pending message/animation id, -1 = none
-    s32 unk24;
-    s32 cmdIndex;
-    s32 absoluteActionIndex; // relativeActionIndex remapped into the single
-                             // shared spell/summon/enemy-skill/limit name
-                             // table (kernel.bin section 18) via
-                             // D_800A0290's per-category base offset
-    s32 unk30;
-    u8 unk34[4]; // character spacing array
-    s32 unk38;
-    s32 unk3C;
-    s32 unk40;
-    s32 elements;
-    s32 power;
-    s32 attackStat;
-    s32 targetFlags;
-    s32 unk54;
-    s32 unk58;
-    s32 unk5C;
-    s32 unk60;
-    s32 unk64;
-    s32 unk68;
-    s32 unk6C;
-    s32 unk70;
-    s32 unk74;
-    s32 unk78;
-    s32 unk7C;
-    s32 unk80;
-    s32 unk84;
-    s32 unk88;
-    s32 unk8C;
-    s32 unk90;
-    s32 unk94;
-    s32 unk98;
-    s32 unk9C;
-    s32 unkA0;
-    s32 unkA4;
-    s32 unkA8;
-    s32 unkAC;
-    s32 unkB0;
-    s32 unkB4;
-    s32 unkB8;
-    s32 unkBC;
-    s32 unkC0;
-    s32 unkC4;
-    s32 attackerStatus;
-    s32 unkCC;
-    u8 unkD0[8];
-    s32 unkD8;
-    s32 unkDC;
-    s32 unkE0;
-    s32 unkE4;
-    s32 unkE8;
-    s32 unkEC;
-    s32 unkF0;
-    s32 unkF4;
-    s32 unkF8;
-    s32 unkFC;
-    s32 unk100[0x40];
-    void* unk200;
-    void* unk204;
-    s32 targetId;
-    s32 unk20C;
-    s32 targetDefense;
-    s32 tmpDamage;
-    s32 unk218;
-    s32 unk21C;
-    s32 damageFlags;
-    s32 unk224;
-    u32 unk228;
-    s32 unk22C;
-    s32 unk230;
-    s32 unk234;
-    s32 unk238;
-    s32 unk23C;
-    s32 unk240;
-    s32 unk244;
-    s32 unk248;
-    s32 unk24C;
-    s32 unk250;
-    s32 unk254;
-    s32 unk258;
-    s32 unk25C;
-} Unk800A8D04; // size: ???
-
 // Targeting byte shared by weapons, magic, items and battle commands.
 // Bit meanings per https://ff7-mods.github.io/ff7-flat-wiki/FF7/Battle/Targeting_Data.html
 typedef enum {
@@ -600,15 +596,23 @@ typedef enum {
     TARGET_RANDOM = 0x80,           // one of the selected targets is picked at random
 } TargetFlags;
 
+// MagicRecord.menuOptionFlags and ActiveCharCommandMenu.menuOptionFlags
+typedef enum {
+    MENU_OPTION_NONE = 0x00,
+    MENU_OPTION_UNK1 = 0x01,
+    MENU_OPTION_DISABLED = 0x02,     // greyed out and can't be selected
+    MENU_OPTION_MULTI_TARGET = 0x10, // shows the multi-target icon (red arrow >)
+} BattleMenuOptionFlags;
+
 typedef struct {
-    u8 id;
-    u8 mpCost;
-    u8 quadraAttacksLeft;
-    u8 quadEnabled;
-    u8 allAttacksLeft;
-    u8 targetFlags;
-    u8 menuflags;
-    u8 costModifier;
+    /* 0x0 */ u8 id;
+    /* 0x1 */ u8 mpCost;
+    /* 0x2 */ u8 quadraAttacksLeft;
+    /* 0x3 */ u8 quadEnabled;
+    /* 0x4 */ u8 allAttacksLeft;
+    /* 0x5 */ u8 targetFlags;
+    /* 0x6 */ u8 menuOptionFlags;
+    /* 0x7 */ u8 costModifier;
 } MagicRecord; // size: 0x8
 
 typedef struct {
@@ -666,7 +670,7 @@ typedef struct {
     /* 0x0A */ u16 cameraMultiID;
     /* 0x0C */ u8 targetFlags;
     /* 0x0D */ u8 attackEffectID;
-    /* 0x0E */ u8 damageCalcID;
+    /* 0x0E */ u8 damageCalcID; // Packed byte contains hit and damage formulas (hit formula << 4 | damage formula)
     /* 0x0F */ u8 strength;
     /* 0x10 */ u8 conditionSubmenu;
     /* 0x11 */ u8 statusChange;
@@ -772,12 +776,40 @@ typedef struct {
                           // 0x04 use in menu (0xFFFE on every accessory)
 } AccessoryRecord;
 
-// Kernel limit-break record, one per character: the HP divisor for each of the
-// four limit levels, followed by the rest of the 0x38-byte stride.
+// Per-character record of KERNEL.BIN section 3 (battle and growth data), 0x38 bytes
+// each, nine of them from 0x80082268. The limit commands and HP divisors the
+// limit-break code reads are the third and last fields.
 typedef struct {
-    s32 hpDivisor[4];
-    u8 rest[0x28];
-} KernelLimitRecord;
+    /* 0x00 */ u8 curve[9]; // growth curve ids: str, vit, mag, spr, dex, lck, hp, mp, exp
+    /* 0x09 */ u8 unk9;
+    /* 0x0A */ s8 startLevelBias; // 0, -2, -4 ... added to the average party level
+    /* 0x0B */ u8 unkB;
+    /* 0x0C */ u8 limitCmdId[12]; // 3 per limit level; 0x80 + command id, 0xFF none
+    /* 0x18 */ u16 killsToLevel[2];
+    /* 0x1C */ u16 limitUses[6]; // (uses, 0xFFFF) pairs needed to learn the next limit
+    /* 0x28 */ s32 hpDivisor[4]; // by limit level
+} KernelCharRecord;
+
+typedef struct {
+    u32 materiaId : 8;
+    u32 ap : 24;
+} Materia;
+
+enum MateriaType {
+    MATERIA_TYPE_UNK_0 = 0,
+    MATERIA_TYPE_UNK_1 = 1,
+    MATERIA_TYPE_COMMAND_REPLACE = 2,
+    MATERIA_TYPE_W_COMMAND = 3,
+    MATERIA_TYPE_MEGA_ALL = 4,
+    MATERIA_TYPE_SUPPORT = 5,
+    MATERIA_TYPE_COMMAND = 6,
+    MATERIA_TYPE_ENEMY_SKILL = 7,
+    MATERIA_TYPE_MASTER_COMMAND = 8,
+    MATERIA_TYPE_MAGIC = 9,
+    MATERIA_TYPE_MASTER_MAGIC = 10,
+    MATERIA_TYPE_SUMMON = 11,
+    MATERIA_TYPE_MASTER_SUMMON = 12,
+};
 
 typedef struct {
     u16 levelUpApLimits[4];
@@ -795,12 +827,12 @@ typedef struct {
 } ActiveCharEnabledCounter; // size: 0x3
 
 typedef struct {
-    u8 id;
-    u8 initialCursorAction;
-    u8 targetFlags;
-    u8 unk4;
-    u8 allCount;
-    u8 materiaEffectFlags;
+    /* 0x0 */ u8 id;
+    /* 0x1 */ u8 initialCursorAction;
+    /* 0x2 */ u8 targetFlags;
+    /* 0x3 */ u8 menuOptionFlags;
+    /* 0x4 */ u8 allCount;
+    /* 0x5 */ u8 materiaEffectFlags;
 } ActiveCharCommandMenu; // size: 0x6
 
 // The character's three limit techniques: their ids, the learned-limit filter
@@ -827,50 +859,50 @@ typedef enum {
 // Field names and offsets per the "Active Character Data" table in
 // https://ff7-mods.github.io/ff7-flat-wiki/FF7/Battle/Battle_Mechanics.html
 typedef struct {
-    u8 id;
-    u8 coverChance;
-    u8 strength;
-    u8 vitality;
-    u8 magic;
-    u8 spirit;
-    u8 dexterity;
-    u8 luck;
-    u16 physAttack;
-    u16 physDefence;
-    u16 magAttack;
-    u16 magDefence;
-    s16 hp;
-    s16 baseHp;
-    s16 mp;
-    s16 baseMp;
-    u16 atbTimer; // seeded from BattleWork.turn[].unk4
-    u16 unk1A;    // BattlePartyWork.limitBar << 8
-    u16 counterActionIndex;
-    u16 counterChance;
-    s8 limitLevel; // 1-based, unlike BattlePartyWork.limitLevel
-    u8 unk21;
-    s8 unk22;
-    u8 characterFlags;
-    ActiveCharEnabledCounter enabledCounters[8];
-    u16 physicalAttackElements;
-    u16 halvedElements;
-    u16 nullifiedElements;
-    u16 absorbedElements;
-    u32 physicalAttackStatuses;
-    u32 immuneStatuses;
-    ActiveCharCommandMenu commandMenu[NUM_BATTLE_COMMANDS];
-    BattleLimitData limits;
-    MagicRecord enabledMagic[NUM_MAGICS_ALL];
-    WeaponRecord weapon;
-    s16 unk434;
-    u8 unk436;
-    u8 encounterDownRate;
-    s16 unk438;
-    s16 unk43A;
-    u8 gilBonus;
-    u8 encounterRate;
-    u8 chocoboChance;
-    u8 preemptiveChance;
+    /* 0x000 */ u8 id;
+    /* 0x001 */ u8 coverChance;
+    /* 0x002 */ u8 strength;
+    /* 0x003 */ u8 vitality;
+    /* 0x004 */ u8 magic;
+    /* 0x005 */ u8 spirit;
+    /* 0x006 */ u8 dexterity;
+    /* 0x007 */ u8 luck;
+    /* 0x008 */ u16 physAttack;
+    /* 0x00A */ u16 physDefence;
+    /* 0x00C */ u16 magAttack;
+    /* 0x00E */ u16 magDefence;
+    /* 0x010 */ s16 hp;
+    /* 0x012 */ s16 baseHp;
+    /* 0x014 */ s16 mp;
+    /* 0x016 */ s16 baseMp;
+    /* 0x018 */ u16 atbTimer; // seeded from BattleWork.turn[].atbGauge
+    /* 0x01A */ u16 unk1A;    // only upper 8 bits seem to be used
+    /* 0x01C */ u16 counterActionIndex;
+    /* 0x01E */ u16 counterChance;
+    /* 0x020 */ s8 limitLevel; // 1-based, unlike BattlePartyWork.limitLevel
+    /* 0x021 */ u8 unk21;
+    /* 0x022 */ s8 unk22;
+    /* 0x023 */ u8 characterFlags;
+    /* 0x024 */ ActiveCharEnabledCounter enabledCounters[8];
+    /* 0x03C */ u16 physicalAttackElements;
+    /* 0x03E */ u16 halvedElements;
+    /* 0x040 */ u16 nullifiedElements;
+    /* 0x042 */ u16 absorbedElements;
+    /* 0x044 */ u32 physicalAttackStatuses;
+    /* 0x048 */ u32 immuneStatuses;
+    /* 0x04C */ ActiveCharCommandMenu commandMenu[NUM_BATTLE_COMMANDS];
+    /* 0x0AC */ BattleLimitData limits;
+    /* 0x108 */ MagicRecord enabledMagic[NUM_MAGICS_ALL];
+    /* 0x408 */ WeaponRecord weapon;
+    /* 0x434 */ s16 unk434;
+    /* 0x436 */ u8 unk436;
+    /* 0x437 */ u8 encounterDownRate;
+    /* 0x438 */ s16 unk438;
+    /* 0x43A */ s16 unk43A;
+    /* 0x43C */ u8 gilBonus;
+    /* 0x43D */ u8 encounterRate;
+    /* 0x43E */ u8 chocoboChance;
+    /* 0x43F */ u8 preemptiveChance;
 } ActiveCharacterData; // size: 0x440
 
 typedef struct {
@@ -900,8 +932,8 @@ typedef struct {
 typedef struct {
     /* 0x00 */ LinePos pos;
     /* 0x0C */ DVECTOR destFieldPos;
-    /* 0x10 */ s16 pcWalkMeshTriangleId;
-    /* 0x12 */ u16 fieldId;
+    /* 0x10 */ s16 pcPosI;
+    /* 0x12 */ u16 fieldMapId;
     /* 0x14 */ u8 pcDirection;
     /* 0x15 */ u8 unk15[3];
 } FieldGateway; // size: 0x18
@@ -978,8 +1010,7 @@ typedef struct {
     s32 MoveStartY;       // 0x1C
     s32 MoveStartZ;       // 0x20
     s8 Unk24[8];          // 0x24-0x2B
-    s16 MoveB;            // 0x2C
-    u8 Unk2E[2];          // 0x2E-0x2F
+    s32 MoveB;            // 0x2C
     s16 MoveSteps;        // 0x30
     s16 MoveStep;         // 0x32
     u8 Unk34;             // 0x34
@@ -1023,7 +1054,7 @@ typedef struct {
     u16 TalkRange;        // 0x6E
     u16 MoveSpeed;        // 0x70
     u16 PosI;             // 0x72
-    s16 MoveEndI;         // 0x74
+    u16 MoveEndI;         // 0x74
     u16 Pad76;
     s32 MoveEndX; // 0x78
     s32 MoveEndY; // 0x7C
@@ -1035,7 +1066,7 @@ typedef struct {
     /* 0x01 */ u8 boneCount;       // number of bones
     /* 0x02 */ u8 partCount;       // number of model parts
     /* 0x03 */ u8 animationCount;  // number of animations
-    /* 0x04 */ u8 modelEntryIndex; // index into FieldModelData->modelEntries
+    /* 0x04 */ u8 modelEntryIndex; // index into FieldModelData->models
     /* 0x05 */ u8 npcFlag;         // NPC/model type flag?
     /* 0x06 */ u8 globalModelLoaded;
     /* 0x07 */ s8 globalModelId; // BCX/global model lookup id
@@ -1050,7 +1081,7 @@ typedef struct {
 typedef struct {
     s16 length;
     s8 parentIndex;
-    u8 hasPart;
+    s8 hasPart;
 } FieldModelBone;
 
 typedef struct {
@@ -1095,28 +1126,99 @@ typedef struct {
     /* 0x02 */ u8 boneCount;
     /* 0x03 */ u8 partCount;
     /* 0x04 */ u8 animationCount;
-    /* 0x05 */ s8 rotationX;
-    /* 0x06 */ s8 rotationY;
-    /* 0x07 */ s8 rotationZ;
+    /* 0x05 */ u8 rotationX;
+    /* 0x06 */ u8 rotationY;
+    /* 0x07 */ u8 rotationZ;
     /* 0x08 */ s32 translationX;
     /* 0x0C */ s32 translationY;
     /* 0x10 */ s32 translationZ;
     /* 0x14 */ u8 globalModelId;
     /* 0x15 */ u8 textureFaceId;
-    /* 0x16 */ u16 scale;
+    /* 0x16 */ s16 scale;
     /* 0x18 */ u16 partsOffset;
     /* 0x1A */ u16 animationOffset;
     /* 0x1C */ u8* modelData;
-    /* 0x20 */ u8* partMatrices; // part matrix data
-} FieldModelEntry;               // size:0x24
+    /* 0x20 */ MATRIX* partMatrices; // part matrix data
+} FieldModel;                        // size:0x24
 
 typedef struct {
     /* 0x00 */ u8 modelCount;
-    /* 0x01 */ u8 unk1;                       // (initialized to 0)
-    /* 0x02 */ u16 unk2;                      // (initialized to 0)
-    /* 0x04 */ FieldModelEntry* modelEntries; // per-model-file records
-    /* 0x08 */ void* unk8;                    // (initialized to NULL)
-} FieldModelData;                             // size:0xC
+    /* 0x01 */ u8 unk1;            // (initialized to 0)
+    /* 0x02 */ u16 unk2;           // (initialized to 0)
+    /* 0x04 */ FieldModel* models; // per-model-file records
+    /* 0x08 */ void* unk8;         // (initialized to NULL)
+} FieldModelData;                  // size:0xC
+
+typedef struct {
+    /* 0x00 */ u8 r;
+    /* 0x01 */ u8 g;
+    /* 0x02 */ u8 b;
+    /* 0x03 */ u8 normalIndex;
+} FieldModelColor; // size:0x04
+
+typedef struct {
+    /* 0x00 */ u8 vertexIndices[4];
+    /* 0x04 */ FieldModelColor colors[4];
+    /* 0x14 */ u8 texCoordIndices[4];
+} FieldModelPolyGT4; // size:0x18
+
+typedef struct {
+    /* 0x00 */ u8 vertexIndices[3];
+    /* 0x03 */ u8 pad1;
+    /* 0x04 */ FieldModelColor colors[3];
+    /* 0x10 */ u8 texCoordIndices[3];
+    /* 0x13 */ u8 pad2;
+} FieldModelPolyGT3; // size:0x14
+
+typedef struct {
+    /* 0x00 */ u8 vertexIndices[4];
+    /* 0x04 */ FieldModelColor color;
+    /* 0x08 */ u8 texCoordIndices[4];
+} FieldModelPolyFT4; // size:0x0C
+
+typedef struct {
+    /* 0x00 */ u8 vertexIndices[3];
+    /* 0x03 */ u8 pad1;
+    /* 0x04 */ FieldModelColor color;
+    /* 0x08 */ u8 texCoordIndices[3];
+    /* 0x0B */ u8 pad2;
+} FieldModelPolyFT3; // size:0x0C
+
+typedef struct {
+    /* 0x00 */ u8 vertexIndices[3];
+    /* 0x03 */ u8 pad;
+    /* 0x04 */ FieldModelColor color;
+} FieldModelPolyF3; // size:0x08
+
+typedef struct {
+    /* 0x00 */ u8 vertexIndices[4];
+    /* 0x04 */ FieldModelColor color;
+} FieldModelPolyF4; // size:0x08
+
+typedef struct {
+    /* 0x00 */ u8 vertexIndices[3];
+    /* 0x03 */ u8 pad;
+    /* 0x04 */ FieldModelColor colors[3];
+} FieldModelPolyG3; // size:0x10
+
+typedef struct {
+    /* 0x00 */ u8 vertexIndices[4];
+    /* 0x04 */ FieldModelColor colors[4];
+} FieldModelPolyG4; // size:0x14
+
+typedef struct {
+    /* 0x00 */ s16 normal[3];
+    /* 0x06 */ s16 distance;
+    /* 0x08 */ s16 unitNormal[3];
+    /* 0x0E */ s16 anchor[3];
+    /* 0x14 */ s16 rotation[3][3];
+} KawaiClipPlane; // size:0x26
+
+typedef struct {
+    /* 0x00 */ s32 screen;
+    /* 0x04 */ u32 depth;
+    /* 0x08 */ SVECTOR position;
+} KawaiClippedVertex; // size:0x10
 
 typedef struct {
     u8 enabled;
@@ -1165,14 +1267,14 @@ typedef struct {
     u16 cameraScrollNumSteps;
     // Following two variables are set when exiting from field to mini games,
     // world map, or another field map.
-    u16 pcWalkMeshId;      // Walk mesh triangle id player is inside of.
+    u16 pcPosI;            // Walk mesh triangle id player is inside of.
     s16 pcDirection;       // Direction player is facing.
     s16 movieCommandState; // enum MovieCommandState.
     s16 modelCount;
     s16 pcModelId;
-    u16 idleAnimId;
-    u16 walkAnimId;
-    u16 runAnimId;
+    s16 idleAnimId;
+    s16 walkAnimId;
+    s16 runAnimId;
     u8 characterLock;
     u8 suspendWalkAndAnim;
     u8 menuDisabled; // Set by MENU2.
@@ -1231,13 +1333,13 @@ typedef struct {
     FieldShakeData shakeX;
     FieldShakeData shakeY;
     // Set by BGSCR. Affects parallax effect on camera movements.
-    u16 layer2_bgScrollXSpeed;
-    u16 layer2_bgScrollYSpeed;
-    u16 layer3_bgScrollXSpeed;
-    u16 layer3_bgScrollYSpeed;
+    u16 layer2ScrollXSpeed;
+    u16 layer2ScrollYSpeed;
+    u16 layer3ScrollXSpeed;
+    u16 layer3ScrollYSpeed;
     // Can be overridden by BGPDH.
-    u16 layer3_depth; // Default: 1.
-    u16 layer2_depth; // Default: 4095.
+    u16 layer3Depth; // Default: 1.
+    u16 layer2Depth; // Default: 4095.
     // Bit fields that define which walk mesh triangles
     // the player can't travel between. IDLCK can override the accesses.
     u8 blockedAccesses[64];
@@ -1265,10 +1367,26 @@ typedef struct {
 } FieldScriptHeader; // size:Varies
 
 typedef struct {
-    s32 unk0;
-    s32 unk4;
+    MATRIX lookAt;
+    DVECTOR offset;
+    s16 zoom;
+    u16 unk;
+} FieldCamera; // size: 0x28
+
+extern FieldCamera* g_MovieCamera;
+
+typedef struct {
+    u16 unk0;
+    u16 unk2;
+    u16 unk4;
+    u16 unk6;
     u32 unk8;
-} Unk80075D00;
+    u32 unkC;
+    u16 unk10;
+    u16 unk12;
+    u32 unk14;
+    u32 unk18;
+} Unk80075D00; // size:0x1C
 
 typedef struct WindowData {
     u8* text;
@@ -1299,18 +1417,10 @@ typedef struct WindowData {
 } WindowData; // size:0x30
 
 typedef struct {
-    u16 opcode;
-    s16 pad;
-    s32 params[6];
-} AkaoCmd;
-
-typedef struct {
-    /* 0x00 */ u8 unk0;
-    /* 0x01 */ u8 unk1;
-    /* 0x02 */ s16 unk2;
-    /* 0x04 */ u8 unk4[16];
-    /* 0x14 */ u8 unk14;
-} Unk8009D7BC;
+    /* 0x00 */ u16 opcode;
+    /* 0x02 */ u16 pad;
+    /* 0x04 */ u_long params[8];
+} AkaoCmd; // size:0x24
 
 extern u8* D_8003623C;
 extern u8* D_80036240;
@@ -1332,16 +1442,19 @@ extern u8 D_80062D98;
 extern volatile u8 g_SavemapBusy;
 extern s32 D_80062DCC;
 extern u8 _D_80062DFD;
+extern s32 D_80062F14; // engine error code, -1 = none; set by SysSetEngineErrorCode
 extern u8 D_80062F18;
 extern u8 D_80062F19; // Enemy Lure/Away Modifier
 extern u8 D_80062F1A;
 extern u8 D_80062F1B;
+extern s32 D_80062F54;
+extern s32 D_80062F60;
 extern Gpu g_PolyPtr;
 extern u16 g_SaveSlotMask;
 extern s32 g_MenuRenderBufferIndex;
 extern s32 D_80062F88;
 extern OT_TYPE* g_CurrentOT;
-extern Unk800A8D04* g_CurrentAction;
+extern struct Unk800A8D04* g_CurrentAction;
 extern DRAWENV D_800706A4[2];
 extern u8 g_FieldMusicLock; // MUSIC/FMUSC skip the sound engine while nonzero
                             // (set by the MULCK opcode)
@@ -1357,7 +1470,6 @@ extern s8 g_FieldDebugCurPage;
 extern u8 D_80071E24;
 extern u8 g_WindowCount;
 extern u8 g_BattleLock;
-extern MATRIX* D_80071E40;
 extern u8 g_PartyUpdatedByFieldScript;
 extern u8 g_CurrentEntity; // entity owning the currently executing script
 extern MateriaData g_MateriaData[100];
@@ -1371,13 +1483,20 @@ extern AttackData D_800722CC[];            // magic/summon/skill table
 extern WeaponRecord g_WeaponTable[];       // 0x800738A0, by weapon id
 extern AccessoryRecord g_AccessoryTable[]; // 0x80071C24, by accessory id
 extern ArmorRecord g_ArmorTable[];         // 0x80071E44, by armor id
-extern KernelLimitRecord D_80082290[];     // 0x80082290, by character id
+extern KernelCharRecord D_80082268[];      // 0x80082268, by character id
 extern FieldEntity g_FieldEntity[];
 extern u8 g_FieldModelAnimStatus[16]; // per-model flags, indexed by field model id
 extern s32 g_PartyPortraitClut[];
 extern Unk80075D00* D_80075D00;
-extern s32 D_80075D04;
-extern s32 D_80075D08[];
+typedef struct {
+    /* 0x00 */ s32 displayExp[4];
+    /* 0x10 */ s32 exp[4];
+    /* 0x20 */ s32 levelExp[4][12];
+    /* 0xE0 */ u8 expFrac[4];
+    /* 0xE4 */ u8 startLevel[4];
+} BatresSummary;
+
+extern BatresSummary g_BatresSummary;
 extern volatile s16 D_80075DEC;  // buffer index, also updated by the VSync callback
 extern u8 g_FieldMapVars[256];   // map-local memory bank for field scripts
 extern s8 D_80077F64[2][0x3400]; // polygon buffer
@@ -1417,7 +1536,7 @@ extern u8 D_80099FFC;
 extern AkaoCmd g_AkaoCmd;
 extern s32 g_MemcardEvents[8];
 extern u8 g_FieldCurrentOpcode;
-extern s16 g_CurrentFieldIndex;
+extern s16 g_FieldCurrentMap;
 extern s32 D_8009A064;
 extern MenuTable g_PartyMenuTables[3];
 extern u8 g_FieldScriptPriority[48]; // active scripts execution priority
@@ -1433,7 +1552,6 @@ extern SaveWork Savemap;          // 0x8009C6E4
 extern u8 g_DebugLevel;           // field debug related
 extern CharacterLevelData g_CharacterLevelData[3];
 extern u8 D_8009D824;
-extern Unk8009D7BC D_8009D7BC;
 extern s16 g_FieldModelBaseAnimSpeed[16]; // per-model base animation speed
 extern BattleItemReward g_BattleItemsEarned[4];
 extern ActiveCharacterData g_ActiveCharacters[9];
@@ -1452,14 +1570,25 @@ s32 SetGraphDebug(s32);
 void SystemError(char c, long n);
 void SysMemCopy32(void* dst, const void* src, const s32 len);
 void SysIncSeedForRandom(void);
+u16 SysRandomTwoBytes(void);
 s32 SysGetKernBattleTextById(s32);
-const char* SysKernGetString(s32 arg0, s32 arg1, s32 arg2);
+u8* SysGetKernBattleTextPtr(s32 textId);
+const char* SysKernGetString(s32 type, s32 index, s32 blockOffset);
 void SysSetEngineErrorCode(s32, ...);
+u32 SysAddSubWithMaxMinBound(u32 val, u32 addend, u32 max, u32 isAdd);
 void SysGiveApToEquippedMateria(s16 partyId, u16 ap);
+void func_80014578(s32 fileNo, void* dst, void (*cb)(void));
+void SystemCdWaitCallback(void (*cb)(void));
+void SysLoadUncompressImg(u8* tim);
+s32 SysGetLsbNumber(u32 arg0);
+s32 SysSelectRandomBit(u32 mask);
+void SysGzipSetDataBlock(u8* arg0);
+u16 SysGzipGetType(void);
+u32 SysGzipPackDecompressNextBlock(u8* dst);
 void func_8001C3C4(void);
 u32 InputReadPadsRaw(); // jet passes a pad id the main exe ignores
 u32 InputReadPads(void);
-void SysMenuCreateDrawenvDispenv(DRAWENV* draw_env, DISPENV* disp_env);
+void SysMenuCreateDrawenvDispenv(DRAWENV* drawEnv, DISPENV* dispEnv);
 s32 SysMenuGetMenuListState(void);
 void SysMenuSetMenuListAnimation(s32 state, s32 menuId);
 u8* GetCharacterName(s32 battleCharId);
@@ -1468,7 +1597,7 @@ void SysMenuSetCursorMovement(MenuTable* table, s32 column, s32 row, s32 numColu
                               s32 rowOffset, s32 numTotalColumns, s32 numTotalRows, s32 scrollAnimX, s32 scrollAnimY,
                               s32 wrapModeX, s32 wrapModeY, u16 scrolling);
 void SysMenuHandleButtons(MenuTable* table);
-void SysMenuSetPoly(void* poly);
+void SysMenuSetPoly(void* prim);
 void SysMenuSavePoly(void);
 void SysMenuRestorePoly(void);
 void SysMenuSetOtag(OT_TYPE* otag);
@@ -1480,38 +1609,38 @@ void SysMenuStoreFontVram(u_long* image);
 void SysMenuRestoreFontVram(u_long* image);
 void SysMenuLoadPartyPortraits(void);
 void SysMenuUnkNoop(s32 arg0);
-void SysMenuDrawDigitsWithoutLeadingZeroes(s32 x, s32 y, s32 value, s32 digits, s32 color);
+void SysMenuDrawDigitsWithoutLeadingZeroes(s32 x, s32 y, u32 value, s32 digits, s32 clutY);
 s32 SysGetSingleStringWidth(unsigned char* str);
 void SysMenuDrawString(s32 x, s32 y, const char*, s32 color); // print FF7 string
 s32 AkaoExec(void);
 void AkaoPlaySoundEffect(u16 soundId);
 void SysInitRndTablePos(s32 seed);
-void SysInitPlayerStatFromEquip(s32 arg0);
+void SysInitPlayerStatFromEquip(s32 charId);
 void SysInitPlayerStatFromMateria(s32 arg0);
 void SysCalcTotalLureGilPreempVal(void);
-s32 SysMenuGetMateriaColorByType(s32 arg0);
+s32 SysMenuGetMateriaColorByType(s32 materiaId);
 void SysMemCopy32(void* dst, const void* src, const s32 len);
 s32 SysAddCommandToTemp(s32);
 void SysMenuSetDrawMode(s32 dfe, s32 dtd, s32 tpage, RECT* tw);
 void SysMovieAbortPlay(void);
 s32 func_80034410(void);
-void SysMoviePlay(void* ptr, s16);
+void* SysMoviePlay(void* buffer, s32 movie);
 void* SysCdromGetPackPointer(void* ptr, s32);
 void SysCdromSetLzsExtract(void* src, void* dst);
 s32 func_80034D5C(void);
 s32 func_80036244(void* anim, u16 frame);
-void func_800354CC(void);
+s32 func_800354CC(void);
 void MENU_LoadTim(u_long* addr, s32 px, s32 py, s32 cx, s32 cy);
 void MENU_SetWindowColors(u8* menuColors);
 
-int func_80033DAC(int sector_no, void (*cb)());
-int func_80033DE4(int sector_no);
-int SystemLoadFileBySector(int sector_no, size_t size, u_long* dst, void (*cb)());
-int SysCdromStartLoadLzs(int sector_no, size_t size, u_long* dst, void (*cb)());
-int func_80033EDC(int sector_no, void (*cb)());
-int SysCdromLoadFile(int sector_no, size_t size, u_long* dst, void (*cb)());
-int SysCdromLoadLzs(int sector_no, size_t size, u_long* dst, void (*cb)());
-void SystemLzsDecompress(u8* dst, u8* src);
+int func_80033DAC(int sectorNo, void (*cb)());
+int func_80033DE4(int sectorNo);
+int SystemLoadFileBySector(int sectorNo, size_t size, u_long* dst, void (*cb)());
+int SysCdromStartLoadLzs(int sectorNo, size_t size, u_long* dst, void (*cb)());
+int func_80033EDC(int sectorNo, void (*cb)());
+int SysCdromLoadFile(int sectorNo, size_t size, u_long* dst, void (*cb)());
+int SysCdromLoadLzs(int sectorNo, size_t size, u_long* dst, void (*cb)());
+void SystemLzsDecompress(u8* src, u8* dst);
 u32 SystemCdromReadChain(void);
 s32 SysGetLimitCmdId(s32 charId, s32 limitIndex);
 int SYS_GetDiskNo(void);

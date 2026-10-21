@@ -20,14 +20,6 @@ typedef union {
 } AkaoCdVol; /* size = 0x4 */
 
 typedef struct {
-    /* 0x0 */ s32 opcode;
-    /* 0x4 */ s8 start;
-    /* 0x5 */ s8 pad5[3];
-    /* 0x8 */ s32 steps;
-    /* 0xC */ s8 target;
-} AkaoTempoPitchSlide;
-
-typedef struct {
     /* 0x00 */ u32 voice_id;
     /* 0x04 */ u32 mask;
     /* 0x08 */ u32 addr;
@@ -151,73 +143,6 @@ typedef struct {
     /* 0xDC */ AkaoVoiceAttr voiceAttr;
 } AkaoChannel;
 
-// Each sound effect slot occupies a stereo voice pair (2 audio channels, 0x210 bytes).
-typedef struct {
-    AkaoChannel voices[2];
-} AkaoSoundSlot; // size: 0x210
-
-typedef struct {
-    /* 0x00 */ u16 opcode;
-    /* 0x02 */ u16 pad;
-    /* 0x04 */ s32 param0;
-    /* 0x08 */ s32 param1;
-    /* 0x0C */ s32 param2;
-    /* 0x10 */ s32 param3;
-    /* 0x14 */ s32 param4;
-    /* 0x18 */ s32 param5;
-    /* 0x1C */ s32 param6;
-    /* 0x20 */ s32 param7;
-} AkaoQueuedCommand; // size:0x24
-
-typedef struct {
-    /* 0x0 */ u32 opcode;
-    /* 0x4 */ s32 steps;
-    /* 0x8 */ s32 targetVol;
-} AkaoVolSlideFromCurr;
-
-typedef struct {
-    /* 0x0 */ u32 opcode;
-    /* 0x4 */ s32 steps;
-    /* 0x8 */ s32 startVol;
-    /* 0xC */ s32 targetVol;
-} AkaoVolSlideBetweenTargets;
-
-typedef struct {
-    /* 0x0 */ u32 opcode;
-    /* 0x4 */ u16 vol;
-} AkaoSetCdVol;
-
-typedef struct {
-    /* 0x0 */ u32 opcode;
-    /* 0x4 */ s32 steps;
-    /* 0x8 */ u16 targetVol;
-} AkaoCdVolSlideFromCurr;
-
-typedef struct {
-    /* 0x0 */ u32 opcode;
-    /* 0x4 */ s32 steps;
-    /* 0x8 */ u16 startVol;
-    /* 0xA */ u16 padA;
-    /* 0xC */ u16 targetVol;
-    /* 0xE */ u16 padE;
-} AkaoCdVolSlideBetweenTargets;
-
-typedef struct {
-    /* 0x0 */ s32 opcode;
-    /* 0x4 */ s32 steps;
-    /* 0x8 */ s8 target;
-} AkaoSlideFromCurr;
-
-typedef struct {
-    /* 0x0 */ u32 opcode;
-    /* 0x4 */ u16 pan;
-} AkaoSetReverbPan;
-
-typedef struct {
-    /* 0x0 */ u32 opcode;
-    /* 0x4 */ u8 mul;
-} AkaoSetReverbMul;
-
 typedef void (*AkaoCommandHandler)();
 extern AkaoCommandHandler g_AkaoCommandHandler[0x100];
 extern u8 g_AkaoOpcodeParamLength[0x60];
@@ -234,11 +159,7 @@ extern u8 g_AkaoDefaultSound[0x20];
 extern u32 g_AkaoSoundEvent;
 extern s32 g_AkaoStreamMask;
 extern u32 g_AkaoStreamLoopSize;
-typedef struct {
-    u16 flags;
-    u16 pitch;
-} AkaoStreamFormat;
-extern AkaoStreamFormat g_AkaoStreamFormat;
+extern u32 g_AkaoStreamFormat;
 // Music-driver slide state: each MulMusic value is a fixed-point scalar for
 // pitch/volume/tempo (current value in the upper 16 bits, lower 16 bits are
 // fractional precision the driver accumulates every tick for a smooth
@@ -272,18 +193,17 @@ extern s32 g_AkaoControlFlags;
 extern u8* g_AkaoStreamLoopSrc;
 extern u32 g_AkaoStreamRemainingBytes;
 extern s32 g_AkaoCommandQueueId; // sound message queue count
-extern AkaoVoiceAttr g_AkaoVoiceAttr[1];
+extern AkaoVoiceAttr g_AkaoVoiceAttr;
 extern u16 g_AkaoMusicFadeSteps; // music fade/transition steps (default 0x10)
 extern AkaoChannel g_AkaoSavedChannels0[AKAO_NUM_VOICES];
 extern AkaoChannel g_AkaoSavedChannels1[AKAO_NUM_VOICES];
-extern AkaoQueuedCommand g_AkaoCommandQueue[32]; // sound messages queue
+extern AkaoCmd g_AkaoCommandQueue[32]; // sound messages queue
 extern s32 g_AkaoMusicBuffer[];
-extern AkaoChannel g_Channel1[];
-extern AkaoChannel g_Channel2[];
+extern u8 g_AkaoEffectsBuffer[0xC800];
+extern AkaoChannel g_Channels[];
 extern s32 g_AkaoStreamVoice16UpdateMask;
 extern s32 g_AkaoStreamVoice17UpdateMask;
-extern AkaoSoundSlot g_AkaoSoundSlots[];
-extern s32 g_AkaoMusicSlot; // 0 while g_Channel1 is being sequenced, 1 for g_Channel2
+extern s32 g_AkaoMusicSlot; // Set of g_Channels being sequenced, 0 = first set, 1 = second set
 
 // Integer part of a 16.16 fixed point global, and the low byte of it.
 #define FIXED_HI(x) (*((u16*)&(x) + 1))
@@ -304,7 +224,6 @@ extern u16 g_AkaoLastHcount;    // VSync(1) horizontal count at the previous Aka
 
 extern AkaoInstrument g_AkaoInstrument[AKAO_INSTR_COUNT];
 extern u8 g_AkaoSpuMallocRec[SPU_MALLOC_RECSIZ * (4 + 1)];
-extern u8 g_AkaoEffectsBuffer[0xC800];
 
 long AkaoMain(void);
 

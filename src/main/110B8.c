@@ -52,7 +52,7 @@ static void func_800111E4(void) {
     if (!(Savemap.memory_bank_4[97] & 0x30)) {
         AkaoPlaySoundEffect(SFX_BATTLE_SWIRL);
     }
-    D_800707BC.battleId = g_FieldState.eventCmdParam;
+    D_800707BC.sceneId = g_FieldState.eventCmdParam;
     D_800707BC.mode = g_FieldState.battleMode2;
     D_800707BC.mode = D_800716D0 | D_800707BC.mode;
     func_800146A4();
@@ -99,16 +99,16 @@ void func_800112E8(void) {
         } else {
             D_80071E28 = 0;
         }
-        D_800730CC = g_CurrentFieldIndex;
+        D_800730CC = g_FieldCurrentMap;
     }
-    if (g_CurrentFieldIndex != D_80071A5C || g_CurrentFieldIndex == 0) {
+    if (g_FieldCurrentMap != D_80071A5C || g_FieldCurrentMap == 0) {
         D_80075DEC = WORLD_Main(&D_80071E28, &D_800730CC, &D_80095DDC, 0);
     } else {
         D_80075DEC = WORLD_Main(&D_80071E28, &D_800730CC, &D_80095DDC, 0x801B0000);
         D_80071A5C = 0;
         g_IsFieldLoading = 0;
     }
-    g_CurrentFieldIndex = g_FieldState.eventCmdParam;
+    g_FieldCurrentMap = g_FieldState.eventCmdParam;
 }
 
 INCLUDE_ASM("asm/us/main/nonmatchings/110B8", SysBgFadeRender);
@@ -232,7 +232,7 @@ static void InitWorldFromSavemap(void) {
         Savemap.worldmap_exit_action = 0;
         Savemap.current_module = 1;
     }
-    Savemap.current_location_id = g_CurrentFieldIndex;
+    Savemap.current_location_id = g_FieldCurrentMap;
     modelId = g_PlayerModelId;
     Savemap.field_x = g_FieldEntity[modelId].PosX >> 12;
     Savemap.field_y = g_FieldEntity[modelId].PosY >> 12;
@@ -251,11 +251,11 @@ static void InitFieldFromSavemap(void) {
     if (g_GameState == 0) {
         g_GameState = 1;
     }
-    g_CurrentFieldIndex = Savemap.current_location_id;
+    g_FieldCurrentMap = Savemap.current_location_id;
     g_FieldState.prevFieldId = Savemap.current_location_id;
     g_FieldState.pcPosX = Savemap.field_x;
     g_FieldState.pcPosY = Savemap.field_y;
-    g_FieldState.pcWalkMeshId = Savemap.field_triangle;
+    g_FieldState.pcPosI = Savemap.field_triangle;
     g_FieldState.pcDirection = Savemap.field_direction;
     D_8009C540 = Savemap.step_id;
     D_8009AD2C = Savemap.step_offset;
@@ -290,7 +290,7 @@ void main(void) {
     while (1) {
         g_FieldState.battleMode2 = 0;
         g_FieldState.battlesDisabled = 0;
-        func_800148A0();
+        SysBattleModeReset();
         AkaoInit();
         InputInit();
         SysCdromLoadFile(yama_field_ending.loc, yama_field_ending.len, (u_long*)0x800A0000, NULL);
@@ -349,7 +349,7 @@ void main(void) {
                             if (g_FieldState.nextBattleMusic) {
                                 AkaoCmd* cmd = &g_AkaoCmd;
                                 cmd->opcode = AKAO_PLAY_MUSIC_SAVE_CURR;
-                                cmd->params[0] = (s32)g_FieldState.nextBattleMusic;
+                                cmd->params[0] = (u_long)g_FieldState.nextBattleMusic;
                                 AkaoExec();
                             }
                             D_800722C8 = (u_long*)0x801C0000;
@@ -603,11 +603,12 @@ void main(void) {
                 func_80033BE0();
                 AkaoDeinit();
                 break;
-            } else if (g_FieldState.eventCmd == EVTCMD_GAME_OVER) {
+            }
+            if (g_FieldState.eventCmd == EVTCMD_GAME_OVER) {
                 g_FieldState.eventCmd = EVTCMD_NONE;
                 AkaoExec();
                 SysCdromLoadFile(yama_field_dschange.loc, yama_field_dschange.len, (u_long*)0x800A0000, NULL);
-                func_800A0C58();
+                DSCHANGE_GameOver();
                 {
                     AkaoCmd* cmd = &g_AkaoCmd;
                     cmd->opcode = AKAO_VOLUME_SET;
@@ -617,7 +618,8 @@ void main(void) {
                 func_80033BE0();
                 AkaoDeinit();
                 break;
-            } else if (g_FieldState.eventCmd == EVTCMD_TITLE_SCREEN) {
+            }
+            if (g_FieldState.eventCmd == EVTCMD_TITLE_SCREEN) {
                 g_FieldState.eventCmd = EVTCMD_NONE;
                 func_80033BE0();
                 AkaoDeinit();

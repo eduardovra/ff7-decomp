@@ -5,16 +5,29 @@
 #define GET_ENTITY_NAME(entityId) ((char*)g_FieldScripts + sizeof(FieldScriptHeader) + (entityId) * 8)
 
 #define GET_FIELD_SCRIPT_OFFSET(dst, scriptOffset, entityDataOffset, extrasHeaderSize)                                 \
-    (dst) = *((u8*)((scriptOffset) + (entityDataOffset) + (extrasHeaderSize) + (s32)g_FieldScripts) +                  \
+    (dst) = *((u8*)((scriptOffset) + (entityDataOffset) + (extrasHeaderSize) + (u_long)g_FieldScripts) +               \
               sizeof(FieldScriptHeader));                                                                              \
-    (dst) |= *((u8*)((scriptOffset) + ((entityDataOffset) + (s32)g_FieldScripts) + (extrasHeaderSize)) +               \
+    (dst) |= *((u8*)((scriptOffset) + ((entityDataOffset) + (u_long)g_FieldScripts) + (extrasHeaderSize)) +            \
                sizeof(FieldScriptHeader) + 1)                                                                          \
              << 8
 
-struct FieldRenderData {
-    OT_TYPE ot[0x1000];   // 0x00000: Main scene ordering table
-    SPRT_16 arrows[0x18]; // 0x04000: Field arrow sprite packets
-    DR_MODE arrowsDm;     // 0x04180: Arrow sprite draw mode
+typedef struct {
+    u8 parameter;
+    u8 state;
+} FieldBgAnimEntry;
+
+typedef struct {
+    u32 layer1Offset;
+    u32 texturePageOffset;
+    u32 layer2Offset;
+    u32 layer3Offset;
+    s16 data[1];
+} FieldTilemap;
+
+typedef struct {
+    OT_TYPE ot[4096];   // 0x00000: Main scene ordering table
+    SPRT_16 arrows[24]; // 0x04000: Field arrow sprite packets
+    DR_MODE arrowsDm;   // 0x04180: Arrow sprite draw mode
 
     OT_TYPE otFadeDrenv;  // 0x0418c: Fade draw environment OT entry
     OT_TYPE otSceneDrenv; // 0x04190: Scene draw environment OT entry
@@ -32,19 +45,26 @@ struct FieldRenderData {
     SPRT_16 bg1[2500]; // 0x04914: Background layer 1/2 sprites
     SPRT bg2[512];     // 0x0e554: Background layer 3/4 sprites
 
-    u16 bgAnim[3012];   // 0x10d54: Background animation data
-    DR_MODE bgDm[1700]; // 0x124dc: Background draw mode packets
+    FieldBgAnimEntry bgAnim[3012]; // 0x10d54: Background animation data
+    DR_MODE bgDm[1700];            // 0x124dc: Background draw mode packets
 
     OT_TYPE otUi;     // 0x1748c: UI ordering table
     DR_MODE rainDm;   // 0x17490: Rain draw mode
-    LINE_F2 Rain[64]; // 0x1749c: Rain line primitives
-};
+    LINE_F2 rain[64]; // 0x1749c: Rain line primitives
+} FieldRenderData;
 
 // Staged in scratchpad at 0x1F800004; describes the LZS blob to stream off the CD.
-typedef struct FieldModelLzsRequest {
+typedef struct {
     /* 0x0 */ s32 sector;
     /* 0x4 */ s32 size;
 } FieldModelLzsRequest;
+
+typedef struct {
+    /* 0x0 */ Yamada* globalModels;
+    /* 0x4 */ FieldModelLzsRequest* faceTexture;
+} FieldModelScratch;
+
+#define FIELD_MODEL_SCRATCH ((FieldModelScratch*)getScratchAddr(0))
 
 typedef struct {
     u32 size;
@@ -59,25 +79,63 @@ typedef struct {
     s16 standard[6];
     s16 special[4];
     s16 pad;
-} FieldEncounterTable;
+} FieldEncounters;
+
+typedef struct {
+    s16 access1;
+    s16 access2;
+    s16 access3;
+} FieldWalkmeshAccess; // size: 0x06
+
+typedef struct {
+    u16 triangleCount;
+    u16 pad;
+    u8 data[1];
+    /*
+    SVECTOR triangles[triangleCount][3];
+    FieldWalkmeshAccess[triangleCount];
+    */
+} FieldWalkmesh; // data offset: 0x04
+
+typedef struct {
+    /* 0x00 */ FieldScriptHeader* scripts;
+    /* 0x04 */ FieldWalkmesh* walkmesh;
+    /* 0x08 */ FieldTilemap* tilemap;
+    /* 0x0C */ FieldCamera* camera;
+    /* 0x10 */ FieldTriggers* triggers;
+    /* 0x14 */ FieldEncounters* encounters;
+    /* 0x18 */ FieldModelLoaderHeader* modelLoader;
+} FieldDatHeader; // size: 0x1C
+
+#define FIELD_DAT ((u8*)0x80115000)
+#define FIELD_DAT_HEADER ((FieldDatHeader*)(FIELD_DAT - sizeof(FieldDatHeader)))
+// MIM during map loading then face textures after the MIM is uploaded.
+#define FIELD_TEXTURE_BUFFER ((void*)0x80128000)
+// Shared by map preloads, BSX staging, and movie playback.
+#define FIELD_LOAD_BUFFER ((void*)0x801B0000)
 
 extern u8* D_80075E10;
-extern MATRIX* D_80083270;
-extern MATRIX** D_80083578;
+extern FieldTilemap** g_FieldTilemap;
+extern FieldCamera* g_FieldCamera;
+extern FieldCamera** D_80083578;
 extern u32 g_FieldFileInfo[787 * 6]; // Yamada pair for DAT, MIM, BSX
 
-extern struct FieldRenderData g_FieldRenderData[2];
+extern FieldRenderData g_FieldRenderData[2];
 extern FieldTriggers* g_FieldTriggers;
-extern FieldEncounterTable* g_FieldEncounters;
-extern FieldEncounterTable** g_FieldEncountersP;
+extern FieldEncounters* g_FieldEncounters;
+extern FieldEncounters** g_FieldEncountersP;
 extern volatile s16 g_FieldMoviePlayed;
+extern s32 g_CameraCenterX;
+extern s32 g_CameraCenterY;
 extern s16 g_CameraScrollX;
 extern s16 g_CameraScrollY;
 extern s16 g_CameraScrollEnabled;
 extern u8 g_RandomTable[256];
 extern u8 g_RainForce;
 extern u8 g_FieldPrimitiveBufferIndex;
-extern SVECTOR (*D_800E4274)[3];
+extern FieldWalkmesh** D_8009A044;
+extern SVECTOR* g_WalkmeshTriangles;
+extern FieldWalkmeshAccess* g_WalkmeshAccesses;
 extern DRAWENV D_80113F2C[2];
 extern s16 D_801142C8;
 extern u8 D_80114498[48];
@@ -91,7 +149,7 @@ extern char g_DebugText[];
 extern char g_DebugMessageBuffer[];
 
 extern FieldFaceTextureHeader* g_FieldFaceTextureData;
-extern u8* D_800E0204;
+extern u8* g_FieldModelLoadCursor;
 extern volatile s16 g_FieldMovieJustStarted;
 extern u8 SavedScriptIds[48][8];
 extern s32 (*g_FieldOpcodes[256])(void);
@@ -100,22 +158,21 @@ void StopFieldMapPreload(void);
 void PreloadNextFieldMap(FieldEntity* player, FieldGateway* gateways);
 s32 FieldMainLoop(void);
 void FieldLoadMimToVram(s32 arg0, void* mimData);
-void FieldBackgroundInitPackets(SPRT_16* bg1, SPRT* bg2, u16* animation, DR_MODE* drawMode);
-void AddBackgroundToRender(struct FieldRenderData* renderData);
+void FieldBackgroundInitPackets(SPRT_16* sprite16, SPRT* sprite, FieldBgAnimEntry* animation, DR_MODE* drawMode);
+void AddBackgroundToRender(FieldRenderData* renderData);
 s32 FieldCalcWorldToScreenPos(SVECTOR* worldPos, SVECTOR* screenPos);
-s32 FieldEntityGetDirVectorY(u8 angle);
 u8 FieldEntityDirByVec(VECTOR* start, VECTOR* target, s32* distance);
 void FieldEntityLineClear(FieldLine* lines);
 void DebugRunEveryLoop(void);
-void FieldRainInit(struct FieldRenderData* renderData);
+void FieldRainInit(FieldRenderData* renderData);
 void FieldRainAddToRender(u_long* ot, LINE_F2* rain, MATRIX* matrix, DR_MODE* rainDm);
 u8* FieldModelStructInit(FieldModelLoaderHeader* header, FieldModelData* modelData);
-u8* FieldModelLoadGlobalModels(FieldModelLoaderHeader* header, FieldModelData* modelData, u8* buffer, s32 arg3);
+u8* FieldModelLoadGlobalModels(FieldModelLoaderHeader* header, FieldModelData* modelData, u8* buffer, s32 loadTextures);
 u8* LoadLocalFieldModelAndInitAll(
-    FieldModelLoaderHeader* header, FieldModelData* modelData, const u32* arg2, void* arg3);
-void FieldModelAnimCalcMtrxs(FieldModelEntry* model, MATRIX* matrix, u8 animationId, s32 frame);
-s32 KawaiLoadEyesMouthTexToVram(FieldModelEntry* entry, u8* params);
-s32 KawaiSetColorToModelPkts(FieldModelEntry* model, u8* params);
+    FieldModelLoaderHeader* header, FieldModelData* models, const u32* options, void* data);
+void FieldModelAnimCalcMtrxs(FieldModel* model, MATRIX* matrix, u8 animationId, s32 frame);
+s32 KawaiLoadEyesMouthTexToVram(FieldModel* model, u8* params);
+s32 KawaiSetColorToModelPkts(FieldModel* model, u8* params);
 void KawaiClearData(void);
 
 void DebugPrintToFieldWindow(const char* str);
@@ -123,7 +180,7 @@ void DebugUpdateActor(s16 arg0, s16 entityId);
 void FieldDebugAddParseValueToPage2(const char* str, s32 val, s32 kind);
 void FieldDebugStringCopy(char* dst, const char* src);
 void FieldDebugStringConcat(char* dest, const char* src);
-void AddStrNextDebugRow(s32 val, const char* msg_out);
+s32 AddStrNextDebugRow(s16 pageId, const char* msg);
 void FieldDebugPageInit(s16 pageId, s16 x, s16 y, s16 width, s16 height);
 s32 SetStrToDebugRow(s16 pageId, s16 row, const char* str);
 

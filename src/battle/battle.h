@@ -1,3 +1,6 @@
+#ifndef BATTLE_H
+#define BATTLE_H
+
 #include <game.h>
 
 #define EFFECT_MODEL_SLOT (NUM_PARTY) // holds the model an effect overlay supplies
@@ -8,8 +11,9 @@
 
 // https://github.com/petfriendamy/ff7-scarlet/blob/main/src/SceneEditor/BattleFlags.cs#L4
 typedef enum {
-    SETUP_CANNOT_ESCAPE = 4,
-    SETUP_NO_VICTORY_POSE = 8,
+    SETUP_UNK2 = 0x2,
+    SETUP_CANNOT_ESCAPE = 0x4,
+    SETUP_NO_VICTORY_POSE = 0x8,
     SETUP_NO_PREEMPTIVE_STRIKE = 0x10,
 } BattleSetupFlags;
 
@@ -53,48 +57,44 @@ typedef enum {
     EVENT_BATTLE_SQUARE = 0x40,
 } BattleEventType;
 
-// full standard FF7 status bitmask (wiki.ffrtt.ru/FF7/Battle/Status_Effects)
-// for BattleUnit.status. NOTE: the standard table's bit 0x2 (Near Death)
-// does not appear to be set here -- this engine computes Near Death live
-// from curHP/maxHP instead (see func_800B10B4), not via this flag. Bits
-// actually confirmed live in decompiled code so far: Death, Confu, Silence,
-// Frog, Small, Petrify, D.Sentence, Manipulate, Berserk, Peerless -- the
-// rest are the documented table entries, not yet independently confirmed
-// in this engine's own code.
+// Battle message IDs, the entries of KERNEL_TEXT_BATTLE_MESSAGES.
 typedef enum {
-    STATUS_DEATH = 0x1,
-    STATUS_NEAR_DEATH = 0x2,
-    STATUS_SLEEP = 0x4,
-    STATUS_POISON = 0x8,
-    STATUS_SADNESS = 0x10,
-    STATUS_FURY = 0x20,
-    STATUS_CONFU = 0x40,
-    STATUS_SILENCE = 0x80,
-    STATUS_HASTE = 0x100,
-    STATUS_SLOW = 0x200,
-    STATUS_STOP = 0x400,
-    STATUS_FROG = 0x800,
-    STATUS_SMALL = 0x1000,
-    STATUS_SLOW_NUMB = 0x2000,
-    STATUS_PETRIFY = 0x4000,
-    STATUS_REGEN = 0x8000,
-    STATUS_BARRIER = 0x10000,
-    STATUS_M_BARRIER = 0x20000,
-    STATUS_REFLECT = 0x40000,
-    STATUS_DUAL = 0x80000,
-    STATUS_SHIELD = 0x100000,
-    STATUS_D_SENTENCE = 0x200000,
-    STATUS_MANIPULATE = 0x400000,
-    STATUS_BERSERK = 0x800000,
-    STATUS_PEERLESS = 0x1000000,
-    STATUS_PARALYSIS = 0x2000000,
-    STATUS_DARKNESS = 0x4000000,
-    STATUS_DUAL_DRAIN = 0x8000000,
-    STATUS_DEATH_FORCE = 0x10000000,
-    STATUS_RESIST = 0x20000000,
-    STATUS_LUCKY_GIRL = 0x40000000,
-    STATUS_IMPRISONED = 0x80000000,
-} BattleStatusFlags;
+    BATTLE_TEXT_LIMIT_BREAK = 0x26,
+    BATTLE_TEXT_STOLE_ITEM = 0x2F,
+    BATTLE_TEXT_STEAL_FAILED = 0x30,
+    BATTLE_TEXT_NOTHING_TO_STEAL = 0x31,
+    BATTLE_TEXT_PREEMPTIVE_ATTACK = 0x32,
+    BATTLE_TEXT_BACK_ATTACK = 0x33,
+    BATTLE_TEXT_SIDE_ATTACK = 0x34,
+    BATTLE_TEXT_PINCER_ATTACK = 0x35,
+    BATTLE_TEXT_CANNOT_ESCAPE = 0x36,
+    BATTLE_TEXT_RECEIVED_ITEM = 0x52,
+    BATTLE_TEXT_ITEM_STOLEN = 0x53,
+    BATTLE_TEXT_RECEIVED_GIL = 0x54,
+    BATTLE_TEXT_MORPH_ITEM = 0x56,
+    BATTLE_TEXT_CANNOT_MIMIC = 0x57,
+    BATTLE_TEXT_USELESS_IMITATION = 0x58,
+    BATTLE_TEXT_CANNOT_MANIPULATE = 0x59,
+    BATTLE_TEXT_MANIPULATED = 0x5A,
+    BATTLE_TEXT_NOT_ENOUGH_MP = 0x5B,
+    BATTLE_TEXT_SKILL_POWER_USED_UP = 0x5C,
+    BATTLE_TEXT_ELEMENT_NAMES_START = 0x5D,
+    BATTLE_TEXT_WEAK_AGAINST_ELEMENT = 0x6D,
+    BATTLE_TEXT_DATA_ERROR_START = 0x6E,
+    BATTLE_TEXT_SENSE_HP = 0x72,
+    BATTLE_TEXT_LEARNED_ENEMY_SKILL = 0x73,
+    BATTLE_TEXT_SENSE_NAME_LEVEL = 0x74,
+    BATTLE_TEXT_SENSE_HP_MP = 0x75,
+    BATTLE_TEXT_SENSE_FAILED = 0x76,
+    BATTLE_TEXT_OFFSET_ENTRY = 0x7E,
+} BattleTextId;
+
+typedef enum {
+    FORMULA_MODIFIER_NONE = 0x0,
+    FORMULA_MODIFIER_FORCE_PHYSICAL = 0x1, // clears attackFlags 0x04 (magical attack)
+    FORMULA_MODIFIER_CUSTOM_DMG = 0x2,     // adds 16 to dmgFormulaId (custom formula slots)
+    FORMULA_MODIFIER_SPECIAL_EFFECT = 0x4, // selects effect from table, forces physical damage formula
+} BattleFormulaModifierFlags;
 
 // Used to index BattleTurnWork.statusTimers; g_StatusBitTable[index] is the bit
 // number (0-31) of the BattleUnit.status flag that timer belongs to, and also
@@ -127,6 +127,17 @@ typedef enum {
 } BattleStatMultIndex;
 
 typedef enum {
+    AFFINITY_DEATH = 0x1,
+    AFFINITY_UNK2 = 0x2,
+    AFFINITY_DOUBLE = 0x4,
+    AFFINITY_UNK8 = 0x8, // Unused?
+    AFFINITY_HALF = 0x10,
+    AFFINITY_NULLIFY = 0x20,
+    AFFINITY_ABSORB = 0x40,
+    AFFINITY_FULL_CURE = 0x80,
+} BattleAffinityFlags;
+
+typedef enum {
     SPRITE_QUAD_FLIP_U = 0x1,
     SPRITE_QUAD_FLIP_V = 0x2,
     SPRITE_QUAD_SEMI_TRANS = 0x100,
@@ -140,7 +151,7 @@ enum CombatantStateFlags {
 
 typedef enum {
     BATTLE_MSG_ARG_CHAR_NAME = 0xEA,
-    BATTLE_MSG_ARG_UNK_EB = 0xEB, // item name maybe? Haven't traced SysKernGetString(4, arg, 8)
+    BATTLE_MSG_ARG_ITEM_NAME = 0xEB,
     BATTLE_MSG_ARG_NUMBER = 0xEC,
     BATTLE_MSG_ARG_UNIT_NAME = 0xED,
     BATTLE_MSG_ARG_MAGIC_NAME = 0xEE,
@@ -164,7 +175,7 @@ typedef struct {
     /* 0x0B */ s8 minElemInfluence;
     /* 0x0C */ s8 formationIndex;
     /* 0x0D */ u8 physAttack;
-    /* 0x0E */ s8 magAttack;
+    /* 0x0E */ u8 magAttack;
     /* 0x0F */ u8 physEvade;
     /* 0x10 */ s8 idleActionId;
     /* 0x11 */ u8 hurtActionId;
@@ -177,12 +188,12 @@ typedef struct {
     /* 0x18 */ u16 attackMask;
     /* 0x1A */ u16 attackerMask;
     /* 0x1C */ s32 statusAppliedMask;
-    /* 0x20 */ s16 physDefence;
-    /* 0x22 */ s16 magDefence;
+    /* 0x20 */ u16 physDefence;
+    /* 0x22 */ u16 magDefence;
     /* 0x24 */ u16 enemyId;
     /* 0x26 */ u16 elemAbsorbExtra;
-    /* 0x28 */ s16 curMP;
-    /* 0x2A */ s16 maxMP;
+    /* 0x28 */ u16 curMP;
+    /* 0x2A */ u16 maxMP;
     /* 0x2C */ u32 curHP;
     /* 0x30 */ u32 maxHP;
     /* 0x34 */ u32 elemHalve;
@@ -276,8 +287,8 @@ typedef struct {
     /* 0x25 */ u8 defense;
     /* 0x26 */ u8 magic;
     /* 0x27 */ u8 magicDef;
-    /* 0x28 */ u8 elementTypes[8];
-    /* 0x30 */ u8 elementRates[8];
+    /* 0x28 */ u8 affinityIds[8];   // which element or status bit (0-63, 0xFF empty)
+    /* 0x30 */ u8 affinityTypes[8]; // 4 = half, 5 = nullify, 6 = absorb
     /* 0x38 */ u8 actionAnimeIdx[16];
     /* 0x48 */ u16 attackID[16];
     /* 0x68 */ u16 cameraMovementIDs[16];
@@ -333,7 +344,7 @@ typedef struct {
     /* 0x04 */ u8 D_801636BC;
     /* 0x05 */ s8 D_801636BD;
     /* 0x06 */ s16 D_801636BE;
-    /* 0x08 */ s32 D_801636C0;
+    /* 0x08 */ s32 status;
     /* 0x0C */ s32 D_801636C4;
 } BattleActor; // size:0x10
 
@@ -353,7 +364,7 @@ typedef struct {
     /* 0x15A */ u16 downedActors;
     /* 0x15C */ u16 unk15C;
     /* 0x15E */ u16 flags;
-    /* 0x160 */ u16 isMultiBattle;
+    /* 0x160 */ u16 isMultiBattle;           // This is actually a counter for consecutive battles (battle square?)
     /* 0x162 */ u16 unitZoneMask[NUM_ZONES]; // set by BattleInitFormation; [1] is the middle in pincer/side attacks
     /* 0x168 */ u8 caitSithRolls[4];         // Dice: packed die values, 2 per byte; Slots: the 3 landed reel symbols
     /* 0x16C */ u8 unk16C[7];
@@ -362,62 +373,26 @@ typedef struct {
     /* 0x176 */ u16 unk176;
 } BattleData; // size:0x178
 
+// Action entry, matches
+// https://wiki.ffrtt.ru/index.php/FF7/Battle/Battle_Mechanics action-queue
+// layout exactly (priority/queue-pos/slot/cmdIndex/attackIndex/targetMask).
+// Entries reach g_BattleWork.actionQueue (a 64-slot priority table) through BattleScheduleAction,
+// either directly (BattleQueueImmediateAction) or via the g_BattlePendingActions ring
+// (BattleQueuePendingAction). BattleBattleActionQueueExecute drains the table in priority
+// order into BattleCmdScriptDispatch, which runs the command as a byte-coded sequence
+// of opcodes (g_BattleCmdOpcodeOffs/g_BattleCmdOpcodeStream/g_BattleCmdOpcodeJmpTbl), not a single switch on
+// cmdIndex. Full writeup: ff7-re/reference/BATTLE_COMMAND_QUEUE.md
 typedef struct {
-    u8 priority;
-    s8 orderInPriority;
-    s8 unitID;
-    u8 actionType;
-    s16 attackIndex;
-    s16 targetMask;
-} BattleActionEntry; // size:8
-
-typedef struct {
-    /* 0x0000 */ SceneEnemy enemy[3];
-    /* 0x0228 */ AttackData attacks[0x20];
-    /* 0x05A8 */ u16 attackIDs[0x20];
-    /* 0x05E8 */ u8 attackNames[0x20][0x20];
-    /* 0x09E8 */ BattleActionEntry currentAction;
-    /* 0x09F0 */ BattleActionEntry actionQueue[64];
-    /* 0x0BF0 */ BattleActionEntry subActionSlots[10];
-    /* 0x0C40 */ BattleActionEntry postExecAction[2];
-    /* 0x0C50 */ u8 partySlotMap[6];
-    /* 0x0C56 */ u8 activeTargetSlot;
-    /* 0x0C57 */ u8 enemySlotMap[6];
-    /* 0x0C5D */ u8 cursorFocusSlot;
-    /* 0x0C5E */ u8 unkC5E[2];
-    /* 0x0C60 */ FormationAIScripts formationAI;
-    /* 0x0E60 */ u8 aiScriptBuffer[0x1000];
-    /* 0x1E60 */ u16 configFlags;
-    /* 0x1E62 */ u16 battleSpeed;
-    /* 0x1E64 */ u16 avgPartyDexterity;
-    /* 0x1E66 */ u16 atbWaitMode;
-    /* 0x1E68 */ u16 activeUnitCmdMask;
-    /* 0x1E6A */ u16 pad1E6A;
-    /* 0x1E6C */ u16 pad1E6C;
-    /* 0x1E6E */ u16 escapeCounter1;
-    /* 0x1E70 */ u16 escapeSubCounter;
-    /* 0x1E72 */ u16 escapeCounter2;
-    /* 0x1E74 */ u16 isQueueExecuting;
-    /* 0x1E76 */ u16 currentQueuePriority;
-    /* 0x1E78 */ u16 activeScriptMask;
-    /* 0x1E7A */ u16 lucky7777StringID;
-    /* 0x1E7C */ u16 lucky7777ActionParam;
-    /* 0x1E7E */ u16 turnReadyUnitMask;
-    /* 0x1E80 */ u16 disabledUnitMask;
-    /* 0x1E82 */ u16 imprisonedType;
-    /* 0x1E84 */ u16 encounterType;
-    /* 0x1E86 */ u16 manipulatedUnitMask;
-    /* 0x1E88 */ u16 unk1E88;
-    /* 0x1E8A */ u16 petrifiedMask;
-    /* 0x1E8C */ u16 unk1E8C;
-    /* 0x1E8E */ u16 reviveMask;
-    /* 0x1E90 */ u8 enemyTypeCount[3];
-    /* 0x1E93 */ u8 pad1E93;
-    /* 0x1E94 */ u16 attackerUnitMask;
-    /* 0x1E96 */ u16 playerContextOffset;
-    /* 0x1E98 */ u16 pad1E98;
-    /* 0x1E9A */ s16 pendingActionPriority;
-} BattleSceneContext; // size:0x1E9C
+    /* 0x0 */ u8 priority;        // BattleQueuePendingAction: 5 = CMD_LIMIT, 6 = other commands
+    /* 0x1 */ s8 orderInPriority; // position within the priority band, set by BattleScheduleAction
+    /* 0x2 */ s8 unitSlot;
+    /* 0x3 */ s8 cmdIndex;     // BattleCommand, stored raw (not the enum type -- keeps the 0x8-byte layout);
+                               // -1 = the AI picks the command
+    /* 0x4 */ s16 attackIndex; // command-dependent: spell id for CMD_MAGIC,
+                               // damage dealt for CMD_COIN, skill id for
+                               // CMD_ENEMY_SKILL, etc -- not a uniform lookup
+    /* 0x6 */ s16 targetMask;
+} BattleActionEntry; // size:0x8
 
 #define BATTTLE_SCENE 7
 
@@ -444,8 +419,8 @@ typedef struct {
     /* 0x002 */ s16 animId;
     /* 0x004 */ s16 queuedActionId;
     /* 0x006 */ s16 scale;
-    /* 0x008 */ s16 modelSetting1;
-    /* 0x00A */ s16 modelSetting2;
+    /* 0x008 */ u16 modelSetting1;
+    /* 0x00A */ u16 modelSetting2;
     /* 0x00C */ s16 modelSetting3;
     /* 0x00E */ s16 nextAnimId;
     /* 0x010 */ s16 numBones;
@@ -474,7 +449,7 @@ typedef struct {
     /* 0x03E */ u8 animControlFlags;
     /* 0x03F */ u8 boneFlags[53];
     /* 0x074 */ s32 animInProgress;
-    /* 0x078 */ u8 unk5C[0xC8];
+    /* 0x078 */ s32* boneModels[50];
     /* 0x140 */ MATRIX stageMatrix;
     /* 0x160 */ SVECTOR rootRot;
     /* 0x168 */ SVECTOR rootTrans;
@@ -589,15 +564,15 @@ typedef struct {
 } BattleSpriteDesc;      // size:0x10
 
 typedef struct {
-    /* 0x00 */ s16 unitSpeed;
-    /* 0x02 */ s16 atbIncrement;
-    /* 0x04 */ u16 atbGauge; // ATB fill gauge, saturates/compares at 0xFFFF -- unsigned
-    /* 0x06 */ s16 unk6;
+    /* 0x00 */ u16 varSpeed;
+    /* 0x02 */ u16 atbIncrement;
+    /* 0x04 */ u16 atbGauge;     // ATB fill gauge, saturates/compares at 0xFFFF -- unsigned
+    /* 0x06 */ s16 hpChangeRate; // HP per 4 var ticks: +maxHP/32 Regen, -maxHP/32 Dual Drain
     /* 0x08 */ s16 limitSpeedFlag;
-    /* 0x0A */ u16 atbSpeedMultiplier;
+    /* 0x0A */ u16 constSpeed;
     /* 0x0C */ u8 senseTargetMask;
     /* 0x0D */ u8 accessoryEffectId;
-    /* 0x0E */ u8 hasLimitBreak;
+    /* 0x0E */ u8 menuListFlags;
     /* 0x0F */ u8 formationIndex;
     /* 0x10 */ u8 statusTimers[NUM_STATUS_TIMERS];
     /* 0x20 */ s8 statMults[NUM_STAT_MULTS];
@@ -608,7 +583,7 @@ typedef struct {
     /* 0x2C */ s32 action09Data1;
     /* 0x30 */ s32 action09Data2;
     /* 0x34 */ s32 statusProtectionMask;
-    /* 0x38 */ u8* enemyNamePtr;
+    /* 0x38 */ SceneEnemy* enemy;
     /* 0x3C */ u16 prevHP;
     /* 0x3E */ u16 prevMP;
     /* 0x40 */ s32 unk40;
@@ -649,8 +624,7 @@ typedef struct {
     /* 0x12 */ u16 maxHP;
     /* 0x14 */ u16 capMP;
     /* 0x16 */ u16 capHP;
-    /* 0x18 */ u16 unk18;
-    /* 0x1A */ u16 unk1A;
+    /* 0x18 */ u16 unk18[2];
     /* 0x1C */ u32 limitBreakHPDivisor;
     /* 0x20 */ u32 accessoryStatusMask; // status mask granted by the equipped accessory
     /* 0x24 */ u32 enemySkillMateriaData;
@@ -670,7 +644,7 @@ typedef struct {
     /* 0x05 */ u8 criticalHitChance;
     /* 0x06 */ u8 unk06;
     /* 0x07 */ u8 unk07;
-    /* 0x08 */ u16 attackSound[3]; // [0] normal hit, [1] critical, [2] miss; 0x100 set from WeaponRecord.soundIdMask
+    /* 0x08 */ s16 attackSound[3]; // [0] normal hit, [1] critical, [2] miss; 0x100 set from WeaponRecord.soundIdMask
     /* 0x0E */ u16 attackElement;
     /* 0x10 */ u16 cameraMovementId;
     /* 0x12 */ u16 specialAttackFlags;
@@ -678,14 +652,145 @@ typedef struct {
 } BattleUnitAttackSetup; // size:0x18
 
 typedef struct {
-    /* 0x000 */ BattleTurnWork turn[NUM_BATTLE_ACTOR];
-    /* 0x2A8 */ BattlePartyWork party[NUM_PARTY];
-    /* 0x344 */ BattleUnitAttackSetup setup[NUM_PARTY];
-} BattleWork; // size:0x38C
+    /* 0x0000 */ BattleTurnWork turn[NUM_BATTLE_ACTOR];
+    /* 0x02A8 */ BattlePartyWork party[NUM_PARTY];
+    /* 0x0344 */ BattleUnitAttackSetup setup[NUM_PARTY];
+    /* 0x038C */ SceneEnemy enemy[3];
+    /* 0x05B4 */ AttackData attacks[0x20];
+    /* 0x0934 */ u16 attackIDs[0x20];
+    /* 0x0974 */ u8 attackNames[0x20][0x20];
+    /* 0x0D74 */ BattleActionEntry currentAction;
+    /* 0x0D7C */ BattleActionEntry actionQueue[64];
+    /* 0x0F7C */ BattleActionEntry subActionSlots[10];
+    /* 0x0FCC */ BattleActionEntry postExecAction[2];
+    /* 0x0FDC */ u8 nextOrderToExecute[7];
+    /* 0x0FE3 */ u8 nextOrderToAssign[7];
+    /* 0x0FEA */ u8 unkFEA[2];
+    /* 0x0FEC */ FormationAIScripts formationAI;
+    /* 0x11EC */ u8 aiScriptBuffer[0x1000];
+    /* 0x21EC */ u16 configFlags;
+    /* 0x21EE */ u16 battleSpeed;
+    /* 0x21F0 */ u16 avgPartyDexterity;
+    /* 0x21F2 */ u16 atbWaitMode;
+    /* 0x21F4 */ u16 activeUnitCmdMask;
+    /* 0x21F6 */ u16 escapeHoldTicks;
+    /* 0x21F8 */ u16 escapeTicks;
+    /* 0x21FA */ u16 escapeCounter1;
+    /* 0x21FC */ u16 escapeSubCounter;
+    /* 0x21FE */ u16 escapeCounter2;
+    /* 0x2200 */ u16 isQueueExecuting;
+    /* 0x2202 */ u16 currentQueuePriority;
+    /* 0x2204 */ u16 activeScriptMask;
+    /* 0x2206 */ u16 lucky7777StringID;
+    /* 0x2208 */ u16 lucky7777ActionParam;
+    /* 0x220A */ u16 turnReadyUnitMask;
+    /* 0x220C */ u16 disabledUnitMask;
+    /* 0x220E */ u16 imprisonedType;
+    /* 0x2210 */ u16 encounterType;
+    /* 0x2212 */ u16 manipulatedUnitMask;
+    /* 0x2214 */ u16 unk2214;
+    /* 0x2216 */ u16 petrifiedMask;
+    /* 0x2218 */ u16 frameRnd; // Random u16 roll every frame, used for steal and escape
+    /* 0x221A */ u16 reviveMask;
+    /* 0x221C */ u8 enemyTypeCount[3];
+    /* 0x221F */ u8 pad221F;
+    /* 0x2220 */ u16 attackerUnitMask;
+    /* 0x2222 */ u16 playerContextOffset[2];
+    /* 0x2226 */ s16 pendingActionPriority;
+} BattleWork; // size:0x2228
+
+typedef struct Unk800A8D04 {
+    /* 0x000 */ s32 actorId;
+    /* 0x004 */ s32 characterLevel;
+    /* 0x008 */ s32 unk8;
+    /* 0x00C */ s32 unkC;
+    /* 0x010 */ s32 relativeActionIndex; // index within its own category (spell #, summon
+                                         // #, etc) - see MAGIC_START in game.h for range defines
+    /* 0x014 */ s32 unk14;
+    /* 0x018 */ s32 allowedTargetsMask;
+    /* 0x01C */ s32 unk1C;
+    /* 0x020 */ s32 unk20; // pending message/animation id, -1 = none
+    /* 0x024 */ s32 unk24;
+    /* 0x028 */ s32 cmdIndex;
+    /* 0x02C */ s32 absoluteActionIndex; // relativeActionIndex remapped into the single
+                                         // shared spell/summon/enemy-skill/limit name
+                                         // table (kernel.bin section 18) - see MAGIC_START
+                                         // in game.h for range defines
+    /* 0x030 */ s32 unk30;
+    /* 0x034 */ u8 unk34[4]; // character spacing array
+    /* 0x038 */ s32 unk38;
+    /* 0x03C */ s32 attackPercent;
+    /* 0x040 */ s32 formulaIds;
+    /* 0x044 */ s32 elements;
+    /* 0x048 */ s32 power;
+    /* 0x04C */ s32 attackStat;
+    /* 0x050 */ s32 targetFlags;
+    /* 0x054 */ s32 impactSfxIds[3];
+    /* 0x060 */ s32 unk60;
+    /* 0x064 */ s32 unk64;
+    /* 0x068 */ s32 impactEffectId;
+    /* 0x06C */ s32 attackFlags;
+    /* 0x070 */ s32 unk70;
+    /* 0x074 */ s32 unk74;
+    /* 0x078 */ s32 unk78;
+    /* 0x07C */ s32 unk7C;
+    /* 0x080 */ s32 unk80[3];
+    /* 0x08C */ s32 statusChangeChance;
+    /* 0x090 */ s32 unk90;
+    /* 0x094 */ s32 unk94;
+    /* 0x098 */ s32 unk98;
+    /* 0x09C */ s32 unk9C;
+    /* 0x0A0 */ s32 hitFormulaId;
+    /* 0x0A4 */ s32 dmgFormulaId;
+    /* 0x0A8 */ s32 unkA8;
+    /* 0x0AC */ s32 unkAC;
+    /* 0x0B0 */ s32 unkB0;
+    /* 0x0B4 */ s32 unkB4;
+    /* 0x0B8 */ s32 unkB8;
+    /* 0x0BC */ s32 effectId;
+    /* 0x0C0 */ s32 effectModifier;
+    /* 0x0C4 */ s32 unkC4;
+    /* 0x0C8 */ s32 attackerStatus;
+    /* 0x0CC */ s32 unkCC;
+    /* 0x0D0 */ u8 unkD0[8];
+    /* 0x0D8 */ s32 unkD8;
+    /* 0x0DC */ s32 unkDC;
+    /* 0x0E0 */ s32 landedHitCount;
+    /* 0x0E4 */ s32 unkE4;
+    /* 0x0E8 */ s32 unkE8;
+    /* 0x0EC */ s32 unkEC;
+    /* 0x0F0 */ s32 unkF0;
+    /* 0x0F4 */ s32 unkF4;
+    /* 0x0F8 */ s32 unkF8;
+    /* 0x0FC */ s32 unkFC;
+    /* 0x100 */ s32 unk100[0x40];
+    /* 0x200 */ BattleTurnWork* turnWork;
+    /* 0x204 */ BattlePartyWork* partyWork;
+    /* 0x208 */ s32 targetId;
+    /* 0x20C */ s32 targetEnemyId;
+    /* 0x210 */ s32 targetDefense;
+    /* 0x214 */ s32 tmpDamage;
+    /* 0x218 */ s32 unk218;
+    /* 0x21C */ s32 unk21C;
+    /* 0x220 */ s32 damageFlags;
+    /* 0x224 */ s32 hurtAnimScript;
+    /* 0x228 */ u32 targetStatus;
+    /* 0x22C */ s32 targetProtectionStatus;
+    /* 0x230 */ s32 affinityFlags;
+    /* 0x234 */ s32 unk234;
+    /* 0x238 */ s32 unk238[3];
+    /* 0x244 */ s32 unk244;
+    /* 0x248 */ s32 targetImpactSfxId;
+    /* 0x24C */ s32 targetImpactEffectId;
+    /* 0x250 */ s32 unk250;
+    /* 0x254 */ s32 targetLevel;
+    /* 0x258 */ s32 targetHP;
+    /* 0x25C */ s32 targetMP;
+    /* 0x260 */ s32 targetAttackPercent;
+} Unk800A8D04; // size: 0x264
 
 extern s16 D_800F5B74;
 extern BattleWork g_BattleWork;
-extern BattleSceneContext g_BattleSceneContext;
 extern u16 D_800F7DE8;
 extern u8 g_EncounterType;
 extern BattleState g_BattleState;
@@ -698,6 +803,8 @@ extern BattleModel g_BattleModels[NUM_BATTLE_ACTOR];
 extern short g_BattleEffectCount;
 extern s32 D_801620A8;
 extern BattleData g_BattleData;
+// pending battle-start status flags, one bit per entry of D_801B001C / D_801B002C (bit 4 = full-heal)
+extern u8 g_BattleStartFXFlags;
 extern s32 D_800F87F0[NUM_BATTLE_ACTOR][32]; // per-combatant battle-script variable bank, 0x80 B
                                              // each (BattleOpcodeValOffs)
 extern Unk80166F78 D_80166F78[NUM_ENEMY][16];
@@ -705,7 +812,7 @@ extern Unk80166F78 D_80166F78[NUM_ENEMY][16];
 // Scratch copy of a party member's save record, taken when g_BattleData.flags bit EVENT_BATTLE_SQUARE is set.
 extern SavePartyMember D_80167938;
 
-s32 BattleEffectRegister(void (*func)(void));
+s32 BattleEffectRegister(void (*callback)(void));
 void BattleSetLoadTimToVram(u_long* addr, s16 imgXY, s16 clutX, s16 clutY);
 void BattleEnqueueClearImage(RECT* rect, s32 arg1, s32 arg2, s32 arg3);
 void* BattleDrawModel(ModelRenderDesc* desc, u_long** ot, int otLen, void* prim);
@@ -734,17 +841,21 @@ s32 BattleEntityGetStereoPan(s32 arg0);
 void func_800D5774(u32 targetIndex);
 void BattleRunFrame(void);
 void BattleQueueEvent(s32 arg0, s32 arg1, s32 arg2, s32 arg3);
-void BattleRecalcUnitSpeed(s32 index);
+void BattleUnitCalcSpeed(s32 index);
 void BattleUpdateUnitMasks(void);
 void BattleCheckAllLucky7s(void);
 void BattleActionQueueReset(void);
 void BattleCmdScriptInitTbl(void);
 void BattleHitFormulaInit(void);
 void BattleEventQueueInit(void);
-void BattleBannerSetEncounterString(s16 arg0);
+void BattleBannerSetEncounterString(s16 stringId);
 void BattleResetReservedItems(void);
 void BattleExecFormationAIScripts(void);
 void BattleInitTurnWorkHPMP(void);
-void BattleAddAutoBattleActionByChance(s32 arg0, s32 arg1);
+void BattleAddAutoBattleActionByChance(s32 arg0, s32 mode);
 void BattleInitUnitAction(s32 index);
 void BattleEnableLimitToPlayerWithSpeed(s32 index);
+s32 BattleCopyMessageWithArgs(u8* dst, const u8* src, const u16* args);
+s8* BattleGetStringPtrFromStringBuffer(s32 arg0);
+
+#endif

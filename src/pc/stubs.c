@@ -2,6 +2,7 @@
 #include <libcd.h>
 #include <libspu.h>
 #include "../battle/battle.h"
+#include "../main/cd.h"
 
 u16 g_BattleMode;
 s16 g_isFieldLoading;
@@ -15,7 +16,8 @@ s16 D_8009A000[1];
 u_long D_8009A004[1];
 s32 D_8009A008[1];
 u8 D_80062D99;
-Unk80075D00* D_80075D00;
+static Unk80075D00 D_80075DF0; // no movie is ever playing
+Unk80075D00* D_80075D00 = &D_80075DF0;
 DRAWENV* D_8007EBD0;
 DISPENV* D_8007EBD8;
 
@@ -27,13 +29,8 @@ s32 D_800698EC;        // seek retries
 u8 D_800698F0[0x4800]; // disc buffer
 int D_8006E0F0;
 int D_8006E0F4;
-u32 D_8006E0F8;           // sectors in the current lzs chunk read
-s32 D_80071A60;           // current chain operation
-int D_80071A64;           // disk number
-CdlLOC D_80071A68;        // read position
-size_t D_80071A6C;        // sectors left to read
-u_long* D_80071A80;       // read destination
-void (*D_80071A84)(void); // completion callback
+u32 D_8006E0F8; // sectors in the current lzs chunk read
+Unk80071A60 D_80071A60;
 
 void CdOpMovieBuffer(void) { NOT_IMPLEMENTED; }
 void CdOpMoviePlay(void) { NOT_IMPLEMENTED; }
@@ -45,28 +42,36 @@ s32 func_800484A8(void) { return 0; }
 s32 func_80048540(s32 arg0) { return 0; }
 MATRIX* MulMatrix2(MATRIX* m0, MATRIX* m1) { return m0; }
 void SysMovieAbortPlay(void) { NOT_IMPLEMENTED; }
-void SysMoviePlay(void* ptr, s16 a) { NOT_IMPLEMENTED; }
+void* SysMoviePlay(void* buffer, s32 movie) {
+    NOT_IMPLEMENTED;
+    return NULL;
+}
 void SystemAkaoExecute(void) { NOT_IMPLEMENTED; }
 s32 EndingOpcode15(void) { return 0; }
-void FIELD_Main(void) { NOT_IMPLEMENTED; }
 s32 EndingOpcode1C(void) { return 0; }
 s32 EndingOpcode1D(void) { return 0; }
 s32 func_800A1EEC(void) { return 0; }
 s32 func_800A1F48(void) { return 0; }
-void FIELD_Init(void) { NOT_IMPLEMENTED; }
 int func_8001117C(void) { return 0; }
 int func_80029818(void) { return 0; }
 int func_8002988C(void) { return 0; }
 int func_80029998(void) { return 0; }
 int func_80034444(void) { return 0; }
 int func_80034F3C(void) { return 0; }
-void func_800354CC(void) { NOT_IMPLEMENTED; }
+s32 func_800354CC(void) {
+    NOT_IMPLEMENTED;
+    return 0;
+}
 int func_80036298(void) { return 0; }
 int func_8003DDA4(void) { return 0; }
 int func_8003DE2C(void) { return 0; }
 int func_800D8D78(void) { return 0; }
 int SysBattleSwirlRender(void) { return 0; }
-int SysBgFadeRender(void) { return 0; }
+// Finish the fade at once, as FIELD_Main spins until the VSync callback clears D_80095DD4
+int SysBgFadeRender(void) {
+    D_80095DD4 = 0;
+    return 0;
+}
 int SysMenuDrawBattleResult(void) { return 0; }
 int SysMovieLoadMovieSettings(void) { return 0; }
 
@@ -75,10 +80,6 @@ void* func_800A358C(void* a, s32 b, void* c, void* d) { return a; }
 
 void SysMenuInitInput(void) { NOT_IMPLEMENTED; }
 void SysMenuAddItem(s32 item) { NOT_IMPLEMENTED; }
-s32 SysGetLimitCmdId(s32 charId, s32 limitIndex) {
-    NOT_IMPLEMENTED;
-    return 0;
-}
 s32 func_800A0514(s32 arg0) {
     NOT_IMPLEMENTED;
     return 0;
@@ -88,7 +89,7 @@ void func_801D080C(void) { NOT_IMPLEMENTED; }
 
 Gpu g_PolyPtr;
 u16 g_SaveSlotMask;
-u16 D_80062F50;
+u16 g_MenuLocationFlags;
 u8 g_KernRndTable[256];
 DRAWENV D_800706A4[2];
 DISPENV D_8007075C[2];
@@ -204,15 +205,6 @@ int SysGetMinutesFromSeconds() {
     NOT_IMPLEMENTED;
     return 0;
 }
-const char* SysKernGetString(s32 arg0, s32 arg1, s32 arg2) {
-    NOT_IMPLEMENTED;
-    return 0;
-}
-int SysMenuDrawDigitsWithLeadingZeroes() {
-    NOT_IMPLEMENTED;
-    return 0;
-}
-void SysMenuDrawDigitsWithoutLeadingZeroes(s32 x, s32 y, s32 value, s32 digits, s32 color) { NOT_IMPLEMENTED; }
 int SysMenuDrawMenuList() {
     NOT_IMPLEMENTED;
     return 0;
@@ -225,7 +217,10 @@ void SysMenuSetMenuListAnimation(s32 state, s32 menuId) { NOT_IMPLEMENTED; }
 void SysBattleSwirlInit(void) { NOT_IMPLEMENTED; }
 
 s32 D_80010100[64];
+u8 D_80063560[0x100];
 u8 D_80063690[0x5E00];
+BattleItemReward g_BattleItemsEarned[4];
+KernelCharRecord D_80082268[NUM_CHARACTERS];
 u8 D_800696F0[NUM_MENU_COLOR];
 BattleCommandData D_800707C4[32];
 AttackData D_800708C4[256];
@@ -233,24 +228,34 @@ s32 D_80071744;
 u_long* D_800722C8;
 s32 D_80095DD8;
 volatile s16 D_8009C560;
-s32 D_80062F88;
 s32 D_80062F90;
 u8 D_80062F18;
 u8 D_80062F19;
 u8 D_80062F1A;
 u8 D_80062F1B;
 u32 D_8006966C[16];
-Unk8009D7BC D_8009D7BC;
 u8 D_80063048[0x648];
-const char* SysDecompKernStringWithF9(s32 a, s32 b, s32 c) { return 0; }
-void BROM_Handle(void) { NOT_IMPLEMENTED; }
+DRAWENV D_800A06CC;
+DISPENV D_800A0728;
+u8 D_800A073C[2][0x2000];
+OT_TYPE D_800A473C[2];
+void func_80025174(void) { NOT_IMPLEMENTED; }
 void func_801D11A8(void) { NOT_IMPLEMENTED; }
 void SysCopyBoostedStatToUnitStructure(void) { NOT_IMPLEMENTED; }
 void SysSortMagicInUnitStructure(s32 partyId) { NOT_IMPLEMENTED; }
 void BATTLE_Main(void) { NOT_IMPLEMENTED; }
+s32 BattleCopyMessageWithArgs(u8* dst, const u8* src, const u16* args) {
+    NOT_IMPLEMENTED;
+    return 0;
+}
+s8* BattleGetStringPtrFromStringBuffer(s32 arg0) {
+    NOT_IMPLEMENTED;
+    return 0;
+}
 // battle overlay globals read by main (14C70.c)
+BattleWork g_BattleWork;
+BattleState g_BattleState;
 BattleData g_BattleData;
-BattleSceneContext g_BattleSceneContext;
 s32 g_FFTextLetterOffset;
 s32 g_FFTextNumberOffset;
 
@@ -299,27 +304,18 @@ void func_800A00D0(void) { NOT_IMPLEMENTED; }
 void MINI_Chocobo(void) { NOT_IMPLEMENTED; }
 void func_800A0390(void) { NOT_IMPLEMENTED; }
 void func_800A0448(void) { NOT_IMPLEMENTED; }
-void func_800A0C58(void) { NOT_IMPLEMENTED; }
 void func_800B6B58(void) { NOT_IMPLEMENTED; }
 
 // Unmatched pieces of src/main/17238.c, referenced by the matched ones.
-void SysAddMateriaLongRange(u8 arg0) { NOT_IMPLEMENTED; }
 void SysAddMagicSummonSkillToUnitStructure(u8 arg0, u8 arg1, u8 arg2) { NOT_IMPLEMENTED; }
 s32 SysAddCommandToTemp(s32 arg0) {
     NOT_IMPLEMENTED;
     return 0;
 }
 void SysAddMateria00(u8 arg0, s32 arg1) { NOT_IMPLEMENTED; }
-void SysAddMateria20(u8 arg0, s32 arg1) { NOT_IMPLEMENTED; }
 void SysAddMateria40(u8 arg0, s32 arg1) { NOT_IMPLEMENTED; }
-void SysRemoveStealIfMug(void) { NOT_IMPLEMENTED; }
 void SysAddMateriaEquipStatBonus(u8 materiaId) { NOT_IMPLEMENTED; }
-void SysAddMateriaX1(u8 materiaSubType, u8 materiaId, s32 materiaAp) { NOT_IMPLEMENTED; }
-void SysAddMateriaX2(u8 materiaSubType, u8 materiaId, s32 materiaAp) { NOT_IMPLEMENTED; }
 void SysAddMateriaX3(u8 materiaSubType, u8 materiaId, s32 materiaAp) { NOT_IMPLEMENTED; }
-void SysAddMateriaX5(u8 materiaSubType, u8 materiaId, s32 materiaAp) { NOT_IMPLEMENTED; }
-void SysAddMateriaX6(u8 materiaId, s32 materiaAp) { NOT_IMPLEMENTED; }
-void SysAddMateriaX8(void) { NOT_IMPLEMENTED; }
 void SysAddMateriaX9(u8 materiaId, s32 materiaAp) { NOT_IMPLEMENTED; }
 void SysAddMateriaXa(void) { NOT_IMPLEMENTED; }
 void SysAddMateriaXb(u8 materiaId, s32 materiaAp) { NOT_IMPLEMENTED; }
@@ -328,8 +324,17 @@ u8 SysGetCommandOrder(u8 commandId) {
     NOT_IMPLEMENTED;
     return 0;
 }
-void SysCopyCommandToUnitStructure(u8 commandId, u8 order) { NOT_IMPLEMENTED; }
 void SysAddPairMateriaUnordered(u32 materia1, u32 materia2, u8 arg2, u8 arg3, u8 arg4) { NOT_IMPLEMENTED; }
+void SysAddMateria21(u8 arg0, s32 arg1) { NOT_IMPLEMENTED; }
+void SysAddMateria41(u8 arg0, s32 arg1) { NOT_IMPLEMENTED; }
+void SysAddPairCommandWithCounter(s32 arg0, s32 arg1, s32 arg2) { NOT_IMPLEMENTED; }
+void SysAddPairMasterMateriaWithCounter(s32 arg0, u8 arg1) { NOT_IMPLEMENTED; }
+void SysAddPairMagicWithMagicCounter(u8 allCount, u8 materiaId, s32 ap) { NOT_IMPLEMENTED; }
+void SysAddPairSummonWithMagicCounter(u8 allCount, u8 materiaId, s32 ap) { NOT_IMPLEMENTED; }
+void SysAddPairMagicWithMpTurbo(s32 arg0, s32 arg1, s32 arg2) { NOT_IMPLEMENTED; }
+void SysAddPairMasterMagicWithMpTurbo(s32 arg0) { NOT_IMPLEMENTED; }
+void SysAddPairFlagToMagic(s32 arg0, s32 arg1) { NOT_IMPLEMENTED; }
+void SysAddPairFlagToAllMagics(void) { NOT_IMPLEMENTED; }
 
 // Per-character scratch tables filled by src/main/17238.c while it parses equipped materia.
 u8 D_800694B4[16];
@@ -342,6 +347,7 @@ CurrentCharStats D_80069538;
 CurrentCharMagicCommand D_80069554[NUM_MAGICS];
 
 u16 D_80062F34[3];
+u8 D_80063660[0x30]; // size is the gap to g_KernelTextBuffer, not a known size
 u8 D_80069800[48];
 
 // Entry points of menu overlays that are not part of the PC build yet.
@@ -384,9 +390,8 @@ void func_80032E6C() { NOT_IMPLEMENTED; }
 void func_80032ED0() { NOT_IMPLEMENTED; }
 void func_80033894() { NOT_IMPLEMENTED; }
 void func_80038F04() { NOT_IMPLEMENTED; }
-void func_801D0BA0() { NOT_IMPLEMENTED; }
+void ITEMMENU_Init() { NOT_IMPLEMENTED; }
 void func_801D3228() { NOT_IMPLEMENTED; }
-s32 DSCHANGE_WaitDiskLoop(s32 diskNo) { return 0; }
 s32 FetchMemCardStatus(s32 cardId) {
     NOT_IMPLEMENTED;
     return 0;
@@ -399,7 +404,7 @@ DISPENV D_8007EB68[2];
 u8 D_8009AD2C;
 u8 D_8009C540;
 AkaoCmd g_AkaoCmd;
-s16 g_CurrentFieldIndex;
+s16 g_FieldCurrentMap;
 FieldEntity g_FieldEntity[0x100];
 s16 g_PlayerModelId;
 
@@ -407,10 +412,9 @@ u_long* BreakDraw(void) {
     NOT_IMPLEMENTED;
     return 0;
 }
-int IsIdleGPU(int max_count) {
+int IsIdleGPU(int maxCount) {
     NOT_IMPLEMENTED;
     return 0;
 }
 
 void* D_80110BB8;
-void SetFogNearFar(long a, long b, long h) { NOT_IMPLEMENTED; }

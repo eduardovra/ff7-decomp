@@ -74,9 +74,9 @@ static s32 FieldEntityTurnToEntity(s16 entityId);
 static void FieldEventRectClear(RECT* rect);
 
 void FieldEventDebugError(const char* errmsg);
-void FieldDebugStringU8hex(s32 val, char* msg_out);
-void FieldDebugStringU16hex(s32 val, char* msg_out);
-void FieldDebugStringU32hex(s32 val, char* msg_out);
+void FieldDebugStringU8hex(s32 val, char* msgOut);
+void FieldDebugStringU16hex(s32 val, char* msgOut);
+void FieldDebugStringU32hex(s32 val, char* msgOut);
 void SetDebugStrRowColor(s16 page, s16 row, s16 color);
 void FieldDebugPageSetColor(s32 page, s32 r, s32 g, s32 b);
 
@@ -109,7 +109,7 @@ static s32 OpcodeFuncWsize(void);
 
 void DebugUpdateActor(s16 arg0, s16 entityId) {
     if (arg0 == 4) {
-        if (!(D_80071E24 & 4) || (D_80114498[entityId])) {
+        if (!(D_80071E24 & 4) || D_80114498[entityId]) {
             D_800716C8 = entityId;
             if (D_80114498[entityId]) {
                 FieldDebugPageSetColor(4, 127, 1, 127);
@@ -345,7 +345,8 @@ void DebugUpdateActor(s16 arg0, s16 entityId) {
             DebugPrintToFieldWindow(g_DebugText);
         }
         FieldDebugStringCopy(g_DebugText, "B-R    X=");
-        FieldDebugStringU32hex(D_800E4274[g_FieldEntity[g_FieldState.pcModelId].PosI][0].vx, g_DebugMessageBuffer);
+        FieldDebugStringU32hex(
+            g_WalkmeshTriangles[g_FieldEntity[g_FieldState.pcModelId].PosI * 3].vx, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, g_DebugMessageBuffer);
         if (D_8009FE8C | (D_80071E24 & 1)) {
             SetStrToDebugRow(arg0, 9, g_DebugText);
@@ -355,10 +356,12 @@ void DebugUpdateActor(s16 arg0, s16 entityId) {
             DebugPrintToFieldWindow(g_DebugText);
         }
         FieldDebugStringCopy(g_DebugText, "Y=");
-        FieldDebugStringU32hex(D_800E4274[g_FieldEntity[g_FieldState.pcModelId].PosI][0].vy, g_DebugMessageBuffer);
+        FieldDebugStringU32hex(
+            g_WalkmeshTriangles[g_FieldEntity[g_FieldState.pcModelId].PosI * 3].vy, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, " Z=");
-        FieldDebugStringU32hex(D_800E4274[g_FieldEntity[g_FieldState.pcModelId].PosI][0].vz, g_DebugMessageBuffer);
+        FieldDebugStringU32hex(
+            g_WalkmeshTriangles[g_FieldEntity[g_FieldState.pcModelId].PosI * 3].vz, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, g_DebugMessageBuffer);
         if (D_8009FE8C | (D_80071E24 & 1)) {
             SetStrToDebugRow(arg0, 10, g_DebugText);
@@ -367,7 +370,8 @@ void DebugUpdateActor(s16 arg0, s16 entityId) {
             DebugPrintToFieldWindow(g_DebugText);
         }
         FieldDebugStringCopy(g_DebugText, "R-G    X=");
-        FieldDebugStringU32hex(D_800E4274[g_FieldEntity[g_FieldState.pcModelId].PosI][1].vx, g_DebugMessageBuffer);
+        FieldDebugStringU32hex(
+            g_WalkmeshTriangles[g_FieldEntity[g_FieldState.pcModelId].PosI * 3 + 1].vx, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, g_DebugMessageBuffer);
         if (D_8009FE8C | (D_80071E24 & 1)) {
             SetStrToDebugRow(arg0, 11, g_DebugText);
@@ -377,10 +381,12 @@ void DebugUpdateActor(s16 arg0, s16 entityId) {
             DebugPrintToFieldWindow(g_DebugText);
         }
         FieldDebugStringCopy(g_DebugText, "Y=");
-        FieldDebugStringU32hex(D_800E4274[g_FieldEntity[g_FieldState.pcModelId].PosI][1].vy, g_DebugMessageBuffer);
+        FieldDebugStringU32hex(
+            g_WalkmeshTriangles[g_FieldEntity[g_FieldState.pcModelId].PosI * 3 + 1].vy, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, " Z=");
-        FieldDebugStringU32hex(D_800E4274[g_FieldEntity[g_FieldState.pcModelId].PosI][1].vz, g_DebugMessageBuffer);
+        FieldDebugStringU32hex(
+            g_WalkmeshTriangles[g_FieldEntity[g_FieldState.pcModelId].PosI * 3 + 1].vz, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, g_DebugMessageBuffer);
         if (D_8009FE8C | (D_80071E24 & 1)) {
             SetStrToDebugRow(arg0, 12, g_DebugText);
@@ -389,7 +395,8 @@ void DebugUpdateActor(s16 arg0, s16 entityId) {
             DebugPrintToFieldWindow(g_DebugText);
         }
         FieldDebugStringCopy(g_DebugText, "G-B    X=");
-        FieldDebugStringU32hex(D_800E4274[g_FieldEntity[g_FieldState.pcModelId].PosI][2].vx, g_DebugMessageBuffer);
+        FieldDebugStringU32hex(
+            g_WalkmeshTriangles[g_FieldEntity[g_FieldState.pcModelId].PosI * 3 + 2].vx, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, g_DebugMessageBuffer);
         if (D_8009FE8C | (D_80071E24 & 1)) {
             SetStrToDebugRow(arg0, 13, g_DebugText);
@@ -399,10 +406,12 @@ void DebugUpdateActor(s16 arg0, s16 entityId) {
             DebugPrintToFieldWindow(g_DebugText);
         }
         FieldDebugStringCopy(g_DebugText, "Y=");
-        FieldDebugStringU32hex(D_800E4274[g_FieldEntity[g_FieldState.pcModelId].PosI][2].vy, g_DebugMessageBuffer);
+        FieldDebugStringU32hex(
+            g_WalkmeshTriangles[g_FieldEntity[g_FieldState.pcModelId].PosI * 3 + 2].vy, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, " Z=");
-        FieldDebugStringU32hex(D_800E4274[g_FieldEntity[g_FieldState.pcModelId].PosI][2].vz, g_DebugMessageBuffer);
+        FieldDebugStringU32hex(
+            g_WalkmeshTriangles[g_FieldEntity[g_FieldState.pcModelId].PosI * 3 + 2].vz, g_DebugMessageBuffer);
         FieldDebugStringConcat(g_DebugText, g_DebugMessageBuffer);
         if (D_8009FE8C | (D_80071E24 & 1)) {
             SetStrToDebugRow(arg0, 14, g_DebugText);
@@ -476,7 +485,7 @@ void DebugUpdateActor(s16 arg0, s16 entityId) {
         }
         if (D_8009FE8C | (D_80071E24 & 1)) {
             SetStrToDebugRow(arg0, 18, g_DebugText);
-            if ((u_long)D_80075E10 > (u_long)(void*)0x801AFFFF) {
+            if ((u_long)D_80075E10 >= (u_long)FIELD_LOAD_BUFFER) {
                 if (Savemap.memory_bank_1[19] & 0x10) {
                     SetDebugStrRowColor(arg0, 18, 5);
                 } else {
@@ -637,12 +646,12 @@ void FieldDebugAddParseValueToPage2(const char* str, s32 val, s32 kind) {
     }
 }
 
-static u8 FieldEventReadMemoryU8(s16 mb_half, s16 offset) {
+static u8 FieldEventReadMemoryU8(s16 mbHalf, s16 offset) {
     s32 indx;
     u8 value;
     u8 bankId;
 
-    switch (mb_half) {
+    switch (mbHalf) {
     case 1:
         bankId = GET_PARAM_U8(1) >> 4;
         break;
@@ -819,12 +828,12 @@ static void FieldEventWriteMemoryU8(s16 arg0, s16 arg1, u8 value) {
     FieldEventDebugError("Bad Event arg!");
 }
 
-static s16 FieldEventReadMemoryS16(s16 bank_id, s16 offset) {
+static s16 FieldEventReadMemoryS16(s16 bank, s16 offset) {
     u8 bankId;
     s32 indx;
     s16 value;
 
-    switch (bank_id) {
+    switch (bank) {
     case 1:
         bankId = GET_PARAM_U8(1) >> 4;
         break;
@@ -1791,9 +1800,8 @@ static s32 OpcodeFuncKeyEx(void) {
     }
     if (GET_PARAM_U8(2) & 2) {
         return KeyCheck((u16)g_pFieldState->activeKeys);
-    } else {
-        return KeyCheck((u16)g_pFieldState->activeKeysRaw);
     }
+    return KeyCheck((u16)g_pFieldState->activeKeysRaw);
 }
 
 /*
@@ -1808,9 +1816,8 @@ static s32 OpcodeFuncKeyon(void) {
     }
     if (GET_PARAM_U8(2) & 2) {
         return KeyCheck((u16)g_pFieldState->pressedKeys);
-    } else {
-        return KeyCheck((u16)g_pFieldState->pressedKeysRaw);
     }
+    return KeyCheck((u16)g_pFieldState->pressedKeysRaw);
 }
 
 /*
@@ -1825,9 +1832,8 @@ static s32 OpcodeFuncKeyof(void) {
     }
     if (GET_PARAM_U8(2) & 2) {
         return KeyCheck((u16)g_pFieldState->releasedKeys);
-    } else {
-        return KeyCheck((u16)g_pFieldState->releasedKeysRaw);
     }
+    return KeyCheck((u16)g_pFieldState->releasedKeysRaw);
 }
 
 static s32 KeyCheck(u16 keys) {
@@ -1981,7 +1987,8 @@ static s32 FieldEventRequest(s16 type, u8 target, u8 priority, u8 scriptId) {
             }
         }
         return 1;
-    } else if (g_FieldScriptPriority[target] < priority) {
+    }
+    if (g_FieldScriptPriority[target] < priority) {
         if (g_SavedFieldScriptPC[target][priority] != 0) {
             switch (type) {
             case 1:
@@ -2020,7 +2027,8 @@ static s32 FieldEventRequest(s16 type, u8 target, u8 priority, u8 scriptId) {
             return 1;
         }
         return 1;
-    } else if (g_FieldScriptSyncState[target][priority] == SYNC_NONE) {
+    }
+    if (g_FieldScriptSyncState[target][priority] == SYNC_NONE) {
         s32 scriptOffset;
         s32 entityDataSize;
         s32 extrasHeaderSize;
@@ -2066,7 +2074,7 @@ static s32 FieldEventRequest(s16 type, u8 target, u8 priority, u8 scriptId) {
 
 static s32 OpcodeFuncRet(void) {
     u16* fieldScriptPC;
-    u16(*savedPC)[8];
+    u16 (*savedPC)[8];
     u16* savedRow;
     u16 scriptPc;
     u32 entity;
@@ -2100,8 +2108,8 @@ static s32 OpcodeFuncRet(void) {
         g_FieldScriptPriority[g_CurrentEntity]++;
         entity = g_CurrentEntity;
 
-        activePcSlot = (u16*)((entity * sizeof(*fieldScriptPC)) + (s32)fieldScriptPC);
-        loopSavedRow = (u16*)((entity * sizeof(*savedPC)) + (s32)savedPC);
+        activePcSlot = (u16*)((entity * sizeof(*fieldScriptPC)) + (u_long)fieldScriptPC);
+        loopSavedRow = (u16*)((entity * sizeof(*savedPC)) + (u_long)savedPC);
         nextPc = loopSavedRow[g_FieldScriptPriority[entity]];
 
         *activePcSlot = nextPc;
@@ -2198,7 +2206,7 @@ static s32 OpcodeFuncMjump(void) {
         GET_PARAM_S16(g_pFieldState->eventCmdParam, 1);
         GET_PARAM_S16(g_pFieldState->pcPosX, 3);
         GET_PARAM_S16(g_pFieldState->pcPosY, 5);
-        GET_PARAM_S16(g_pFieldState->pcWalkMeshId, 7);
+        GET_PARAM_S16(g_pFieldState->pcPosI, 7);
         g_pFieldState->pcDirection = GET_PARAM_U8(9);
         return 1;
     case EVTCMD_FIELD_MAP_CHANGE:
@@ -2249,7 +2257,7 @@ static s32 OpcodeFuncMgame(void) {
         GET_PARAM_S16(g_pFieldState->eventCmdParam, 1);
         GET_PARAM_S16(g_pFieldState->pcPosX, 3);
         GET_PARAM_S16(g_pFieldState->pcPosY, 5);
-        GET_PARAM_S16(g_pFieldState->pcWalkMeshId, 7);
+        GET_PARAM_S16(g_pFieldState->pcPosI, 7);
         g_pFieldState->pcDirection = GET_PARAM_U8(9);
         g_pFieldState->backgroundLayerVisibility[0] = GET_PARAM_U8(10); // Minigame id
         return 1;
@@ -2395,7 +2403,7 @@ static s32 SetAndApplyAkao(void) {
         if (g_DebugLevel & 3) {
             FieldDebugAddParseValueToPage2("music=", akaoId, 2);
         }
-        g_AkaoCmd.params[0] = (s32)((u8*)g_FieldScripts + GetAkaoBlockOffset(akaoId));
+        g_AkaoCmd.params[0] = (u_long)((u8*)g_FieldScripts + GetAkaoBlockOffset(akaoId));
         g_pFieldState->nextFieldMusic = g_AkaoCmd.params[0];
         AkaoExec();
     }
@@ -2404,10 +2412,10 @@ static s32 SetAndApplyAkao(void) {
 }
 
 static u32 GetAkaoBlockOffset(s16 akaoId) {
-    s32 akaoData;
+    u_long akaoData;
     u32 akaoOffset;
 
-    akaoData = akaoId * 4 + g_FieldScripts->numEntities * 8 + (u32)g_FieldScripts;
+    akaoData = akaoId * 4 + g_FieldScripts->numEntities * 8 + (u_long)g_FieldScripts;
     akaoOffset = ((u8*)akaoData)[sizeof(FieldScriptHeader)];
     akaoOffset |= ((u8*)akaoData)[sizeof(FieldScriptHeader) + 1] << 8;
     akaoOffset |= ((u8*)akaoData)[sizeof(FieldScriptHeader) + 2] << 16;
@@ -2710,14 +2718,14 @@ static s32 OpcodeFuncCcanm(void) {
  */
 static void StartModelAnimation(void) {
     FieldModelAnimation* anims;
-    FieldModelEntry* model;
+    FieldModel* model;
 
     g_FieldModels[g_EntityToModel[g_CurrentEntity]].activeAnimId = GET_PARAM_U8(1);
     g_FieldModels[g_EntityToModel[g_CurrentEntity]].animSpeed =
         g_FieldModelBaseAnimSpeed[g_EntityToModel[g_CurrentEntity]] / GET_PARAM_U8(2);
     g_FieldModels[g_EntityToModel[g_CurrentEntity]].animCurrentFrame = 0;
 
-    model = &g_FieldModelData->modelEntries[g_FieldModelLoaderData[g_EntityToModel[g_CurrentEntity]].modelEntryIndex];
+    model = &g_FieldModelData->models[g_FieldModelLoaderData[g_EntityToModel[g_CurrentEntity]].modelEntryIndex];
     anims = (FieldModelAnimation*)(model->modelData + model->animationOffset);
     g_FieldModels[g_EntityToModel[g_CurrentEntity]].animLastFrame =
         anims[g_FieldEntity[g_EntityToModel[g_CurrentEntity]].activeAnimId].frameCount - 1;
@@ -2798,7 +2806,7 @@ static s32 OpcodeFuncAnimEx(void) {
 }
 
 static s32 OpcodeFuncCanim(void) {
-    FieldModelEntry* model;
+    FieldModel* model;
     FieldModelAnimation* anims;
     s16 animationLastFrame;
     s16 requestedLastFrame;
@@ -2823,8 +2831,7 @@ static s32 OpcodeFuncCanim(void) {
             g_FieldModelBaseAnimSpeed[g_EntityToModel[g_CurrentEntity]] / speed;
         g_FieldModels[g_EntityToModel[g_CurrentEntity]].animCurrentFrame = 16 * (GET_PARAM_U8(2) / speed);
 
-        model =
-            &g_FieldModelData->modelEntries[g_FieldModelLoaderData[g_EntityToModel[g_CurrentEntity]].modelEntryIndex];
+        model = &g_FieldModelData->models[g_FieldModelLoaderData[g_EntityToModel[g_CurrentEntity]].modelEntryIndex];
         anims = (FieldModelAnimation*)(model->modelData + model->animationOffset);
         animationLastFrame = anims[g_FieldEntity[g_EntityToModel[g_CurrentEntity]].activeAnimId].frameCount - 1;
         requestedLastFrame = GET_PARAM_U8(3) / speed;
@@ -2851,7 +2858,7 @@ static s32 OpcodeFuncCanim(void) {
 }
 
 static s32 OpcodeFuncCanmEx(void) {
-    FieldModelEntry* model;
+    FieldModel* model;
     FieldModelAnimation* animations;
     s16 animationLastFrame;
     s16 requestedLastFrame;
@@ -2876,8 +2883,7 @@ static s32 OpcodeFuncCanmEx(void) {
             g_FieldModelBaseAnimSpeed[g_EntityToModel[g_CurrentEntity]] / speed;
         g_FieldModels[g_EntityToModel[g_CurrentEntity]].animCurrentFrame = 16 * GET_PARAM_U8(2);
 
-        model =
-            &g_FieldModelData->modelEntries[g_FieldModelLoaderData[g_EntityToModel[g_CurrentEntity]].modelEntryIndex];
+        model = &g_FieldModelData->models[g_FieldModelLoaderData[g_EntityToModel[g_CurrentEntity]].modelEntryIndex];
         animations = (FieldModelAnimation*)(model->modelData + model->animationOffset);
         animationLastFrame = animations[g_FieldEntity[g_EntityToModel[g_CurrentEntity]].activeAnimId].frameCount - 1;
         requestedLastFrame = GET_PARAM_U8(3) / speed;
@@ -2943,7 +2949,7 @@ static s32 OpcodeFuncAnimb(void) {
 
 static s32 OpcodeFuncMove(void) {
     FieldEntity* entity;
-    FieldModelEntry* model;
+    FieldModel* model;
     FieldModelAnimation* anims;
     s32 modelEntryId;
 
@@ -2968,7 +2974,7 @@ static s32 OpcodeFuncMove(void) {
             g_FieldModels[g_EntityToModel[g_CurrentEntity]].animCurrentFrame = 0;
 
             modelEntryId = g_FieldModelLoaderData[g_EntityToModel[g_CurrentEntity]].modelEntryIndex;
-            model = &g_FieldModelData->modelEntries[modelEntryId];
+            model = &g_FieldModelData->models[modelEntryId];
             anims = (FieldModelAnimation*)(model->modelData + model->animationOffset);
             g_FieldModels[g_EntityToModel[g_CurrentEntity]].animLastFrame =
                 anims[g_FieldEntity[g_EntityToModel[g_CurrentEntity]].activeAnimId].frameCount - 1;
@@ -2980,7 +2986,7 @@ static s32 OpcodeFuncMove(void) {
             g_FieldModels[g_EntityToModel[g_CurrentEntity]].animCurrentFrame = 0;
 
             modelEntryId = g_FieldModelLoaderData[g_EntityToModel[g_CurrentEntity]].modelEntryIndex;
-            model = &g_FieldModelData->modelEntries[modelEntryId];
+            model = &g_FieldModelData->models[modelEntryId];
             anims = (FieldModelAnimation*)(model->modelData + model->animationOffset);
             g_FieldModels[g_EntityToModel[g_CurrentEntity]].animLastFrame =
                 anims[g_FieldEntity[g_EntityToModel[g_CurrentEntity]].activeAnimId].frameCount - 1;
@@ -3167,8 +3173,8 @@ static s32 OpcodeFuncLader(void) {
         g_FieldModelBaseAnimSpeed[g_EntityToModel[g_CurrentEntity]] / GET_PARAM_U8(14);
     g_FieldModels[g_EntityToModel[g_CurrentEntity]].animCurrentFrame = 0;
     {
-        FieldModelEntry* entry =
-            &g_FieldModelData->modelEntries[g_FieldModelLoaderData[g_EntityToModel[g_CurrentEntity]].modelEntryIndex];
+        FieldModel* entry =
+            &g_FieldModelData->models[g_FieldModelLoaderData[g_EntityToModel[g_CurrentEntity]].modelEntryIndex];
         FieldModelAnimation* anims = (FieldModelAnimation*)(entry->modelData + entry->animationOffset);
         g_FieldModels[g_EntityToModel[g_CurrentEntity]].animLastFrame =
             anims[g_FieldEntity[g_EntityToModel[g_CurrentEntity]].activeAnimId].frameCount - 1;
@@ -3200,8 +3206,8 @@ static s32 OpcodeFuncMova(void) {
 }
 
 static s32 FieldMoveToEntityUpdate(u8 entityId) {
-    FieldModelEntry* entry;
-    FieldModelEntry* modelEntries;
+    FieldModel* entry;
+    FieldModel* models;
     FieldModelAnimation* anims;
     s32 entryId;
     u8 modelId;
@@ -3228,7 +3234,7 @@ static s32 FieldMoveToEntityUpdate(u8 entityId) {
 
                     modelId = g_EntityToModel[g_CurrentEntity];
                     entryId = g_FieldModelLoaderData[modelId].modelEntryIndex;
-                    entry = &g_FieldModelData->modelEntries[entryId];
+                    entry = &g_FieldModelData->models[entryId];
                     anims = (FieldModelAnimation*)(entry->modelData + entry->animationOffset);
                     g_FieldModels[modelId].animLastFrame = anims[g_FieldEntity[modelId].activeAnimId].frameCount - 1;
                 }
@@ -3239,7 +3245,7 @@ static s32 FieldMoveToEntityUpdate(u8 entityId) {
 
                 modelId = g_EntityToModel[g_CurrentEntity];
                 entryId = g_FieldModelLoaderData[modelId].modelEntryIndex;
-                entry = &g_FieldModelData->modelEntries[entryId];
+                entry = &g_FieldModelData->models[entryId];
                 anims = (FieldModelAnimation*)(entry->modelData + entry->animationOffset);
                 g_FieldModels[modelId].animLastFrame = anims[g_FieldEntity[modelId].activeAnimId].frameCount - 1;
             }
@@ -3547,9 +3553,10 @@ static s32 OpcodeFuncTurnr(void) {
             g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnSteps = 0;
             PC_INC(6);
             return 0;
-        } else if (g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnStep == 0 ||
-                   g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnType != GET_PARAM_U8(5) ||
-                   g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnSteps != GET_PARAM_U8(4)) {
+        }
+        if (g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnStep == 0 ||
+            g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnType != GET_PARAM_U8(5) ||
+            g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnSteps != GET_PARAM_U8(4)) {
             g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnStart =
                 g_FieldModels[g_EntityToModel[g_CurrentEntity]].Dir;
             g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnType = GET_PARAM_U8(5);
@@ -3567,9 +3574,8 @@ static s32 OpcodeFuncTurnr(void) {
                         g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnStart) {
                         g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnEnd -= 256;
                         return 1;
-                    } else {
-                        g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnEnd += 256;
                     }
+                    g_FieldModels[g_EntityToModel[g_CurrentEntity]].TurnEnd += 256;
                 }
                 break;
             case 1:
@@ -6077,7 +6083,7 @@ static s32 FieldEventSplitSet(s16 entityId, s16 x, s16 y, u8 direction, s16 spee
 static void FieldEventSplitJoinSetMove(s16 entityId, s16 x, s16 y, s16 speed, s16 copyPcPos) {
     VECTOR start, target;
     s32 distance;
-    FieldModelEntry* model;
+    FieldModel* model;
     s32 modelEntryId;
     FieldModelAnimation* anims;
     s16 pcEntity;
@@ -6126,7 +6132,7 @@ static void FieldEventSplitJoinSetMove(s16 entityId, s16 x, s16 y, s16 speed, s1
             g_FieldModels[g_EntityToModel[entityId]].animCurrentFrame = 0;
 
             modelEntryId = g_FieldModelLoaderData[g_EntityToModel[entityId]].modelEntryIndex;
-            model = &g_FieldModelData->modelEntries[modelEntryId];
+            model = &g_FieldModelData->models[modelEntryId];
             anims = (FieldModelAnimation*)(model->modelData + model->animationOffset);
             g_FieldModels[g_EntityToModel[entityId]].animLastFrame =
                 anims[g_FieldEntity[g_EntityToModel[entityId]].activeAnimId].frameCount - 1;
@@ -6137,7 +6143,7 @@ static void FieldEventSplitJoinSetMove(s16 entityId, s16 x, s16 y, s16 speed, s1
         g_FieldModels[g_EntityToModel[entityId]].animCurrentFrame = 0;
 
         modelEntryId = g_FieldModelLoaderData[g_EntityToModel[entityId]].modelEntryIndex;
-        model = &g_FieldModelData->modelEntries[modelEntryId];
+        model = &g_FieldModelData->models[modelEntryId];
         anims = (FieldModelAnimation*)(model->modelData + model->animationOffset);
         g_FieldModels[g_EntityToModel[entityId]].animLastFrame =
             anims[g_FieldEntity[g_EntityToModel[entityId]].activeAnimId].frameCount - 1;
@@ -6376,7 +6382,7 @@ static s32 OpcodeFuncStitm(void) {
     if (g_DebugLevel & 3) {
         DebugPrintOpcode("stitm", 4);
     }
-    item = (FieldEventReadMemoryU8(2, 4)) << 9;
+    item = FieldEventReadMemoryU8(2, 4) << 9;
     item |= FieldEventReadMemoryS16(1, 2);
     if (g_DebugLevel & 3) {
         FieldDebugAddParseValueToPage2("S item=", item, 4);
@@ -6392,7 +6398,7 @@ static s32 OpcodeFuncDlitm(void) {
     if (g_DebugLevel & 3) {
         DebugPrintOpcode("dlitm", 4);
     }
-    item = (FieldEventReadMemoryU8(2, 4)) << 9;
+    item = FieldEventReadMemoryU8(2, 4) << 9;
     item |= FieldEventReadMemoryS16(1, 2);
     if (g_DebugLevel & 3) {
         FieldDebugAddParseValueToPage2("G item=", item, 4);
@@ -6545,12 +6551,12 @@ static s32 OpcodeFuncBgscr(void) {
     }
     switch (GET_PARAM_U8(2)) {
     case 2:
-        g_pFieldState->layer2_bgScrollXSpeed = FieldEventReadMemoryS16(1, 3);
-        g_pFieldState->layer2_bgScrollYSpeed = FieldEventReadMemoryS16(2, 5);
+        g_pFieldState->layer2ScrollXSpeed = FieldEventReadMemoryS16(1, 3);
+        g_pFieldState->layer2ScrollYSpeed = FieldEventReadMemoryS16(2, 5);
         break;
     case 3:
-        g_pFieldState->layer3_bgScrollXSpeed = FieldEventReadMemoryS16(1, 3);
-        g_pFieldState->layer3_bgScrollYSpeed = FieldEventReadMemoryS16(2, 5);
+        g_pFieldState->layer3ScrollXSpeed = FieldEventReadMemoryS16(1, 3);
+        g_pFieldState->layer3ScrollYSpeed = FieldEventReadMemoryS16(2, 5);
         break;
     default:
         break;
@@ -6566,10 +6572,10 @@ static s32 OpcodeFuncBgdph(void) {
     }
     switch (GET_PARAM_U8(2)) {
     case 2:
-        g_pFieldState->layer2_depth = FieldEventReadMemoryS16(1, 3);
+        g_pFieldState->layer2Depth = FieldEventReadMemoryS16(1, 3);
         break;
     case 3:
-        g_pFieldState->layer3_depth = FieldEventReadMemoryS16(1, 3);
+        g_pFieldState->layer3Depth = FieldEventReadMemoryS16(1, 3);
         break;
     default:
         break;
@@ -6586,8 +6592,8 @@ static s32 OpcodeFuncSmtra(void) {
         DebugPrintOpcode("smtra", 6);
     }
     materia = FieldEventReadMemoryU8(1, 3);
-    materia |= (FieldEventReadMemoryU8(2, 4)) << 8;
-    materia |= (FieldEventReadMemoryU8(3, 5)) << 16;
+    materia |= FieldEventReadMemoryU8(2, 4) << 8;
+    materia |= FieldEventReadMemoryU8(3, 5) << 16;
     materia |= FieldEventReadMemoryU8(4, 6) << 24;
     if (SysMenuAddMateria(materia) == -1) {
         Savemap.memory_bank_4[31] = 0;
@@ -6605,8 +6611,8 @@ static s32 OpcodeFuncDmtra(void) {
         DebugPrintOpcode("dmtra", 7);
     }
     materia = FieldEventReadMemoryU8(1, 3);
-    materia |= (FieldEventReadMemoryU8(2, 4)) << 8;
-    materia |= (FieldEventReadMemoryU8(3, 5)) << 16;
+    materia |= FieldEventReadMemoryU8(2, 4) << 8;
+    materia |= FieldEventReadMemoryU8(3, 5) << 16;
     materia |= FieldEventReadMemoryU8(4, 6) << 24;
     SysMenuRemoveMateria(materia, GET_PARAM_U8(7));
     PC_INC(8);
@@ -6620,8 +6626,8 @@ static s32 OpcodeFuncCmtra(void) {
         DebugPrintOpcode("cmtra", 8);
     }
     materia = FieldEventReadMemoryU8(1, 4);
-    materia |= (FieldEventReadMemoryU8(2, 5)) << 8;
-    materia |= (FieldEventReadMemoryU8(3, 6)) << 16;
+    materia |= FieldEventReadMemoryU8(2, 5) << 8;
+    materia |= FieldEventReadMemoryU8(3, 6) << 16;
     materia |= FieldEventReadMemoryU8(4, 7) << 24;
     FieldEventWriteMemoryU8(6, 9, func_80025650(materia, GET_PARAM_U8(8)));
     PC_INC(10);
@@ -7205,7 +7211,7 @@ static s32 OpcodeFuncKawai(void) {
     modelId = g_EntityToModel[g_CurrentEntity];
     if (modelId != 0xFF) {
         kawaiType = GET_PARAM_U8(2);
-        g_FieldModelData->modelEntries[g_FieldModelLoaderData[modelId].modelEntryIndex].kawaiType = kawaiType;
+        g_FieldModelData->models[g_FieldModelLoaderData[modelId].modelEntryIndex].kawaiType = kawaiType;
         g_FieldModels[g_EntityToModel[g_CurrentEntity]].KawaiOp1 = 1;
         type = kawaiType;
         g_FieldModels[g_EntityToModel[g_CurrentEntity]].KawaiOp0 = 0;
